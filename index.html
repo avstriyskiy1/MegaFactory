@@ -2,9 +2,10 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
 <title>МегаЗавод</title>
-<script src="/sdk.js"></script>
 <script src="https://unpkg.com/@vkontakte/vk-bridge/dist/browser.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Russo+One&family=Exo+2:wght@300;400;500;700&display=swap" rel="stylesheet">
@@ -13,8 +14,16 @@
   --bg:#0d0f14;--bg2:#141720;--bg3:#1c2030;--border:#2a2f45;
   --accent:#f0a500;--accent2:#e05c00;--teal:#00c9a7;--text:#e8eaf0;--muted:#6b7394;--card:#181c28;
 }
-*{box-sizing:border-box;margin:0;padding:0;}
-html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-family:'Exo 2',sans-serif;color:var(--text);display:flex;flex-direction:column;}
+*{box-sizing:border-box;margin:0;padding:0;
+  -webkit-user-select:none;user-select:none;
+  -webkit-touch-callout:none;
+  -webkit-tap-highlight-color:transparent;
+}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-family:'Exo 2',sans-serif;color:var(--text);display:flex;flex-direction:column;
+  overscroll-behavior:none;
+  position:fixed;
+  touch-action:manipulation;
+}
 #game{display:none;flex-direction:column;flex:1;min-height:0;overflow:hidden;
   background-image:linear-gradient(rgba(255,255,255,.02) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.02) 1px,transparent 1px);
   background-size:40px 40px;}
@@ -42,7 +51,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
 
 /* LAYOUT */
 .layout{display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden;}
-.tab-content{flex:1;overflow-y:auto;padding:12px;min-height:0;}
+.tab-content{flex:1;overflow-y:auto;padding:12px;min-height:0;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;}
 .tab-content::-webkit-scrollbar{width:4px;}.tab-content::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
 .tab-pane{display:none;flex-direction:column;gap:10px;}.tab-pane.active{display:flex;}
 
@@ -60,7 +69,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
 
 /* MACHINE CARD */
 .machines-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:8px;}
-.mcard{background:var(--card);border:1px solid var(--border);border-radius:6px;padding:12px;cursor:pointer;transition:border-color .2s,transform .1s;position:relative;overflow:hidden;}
+.mcard{background:var(--card);border:1px solid var(--border);border-radius:6px;padding:12px;transition:border-color .2s,transform .1s;position:relative;overflow:hidden;}
 .mcard:hover{border-color:#3a4060;}.mcard:active{transform:scale(.98);}
 .mcard.working{border-color:var(--teal);}
 .mcard.working::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--teal);animation:scanline .3s ease-out;}
@@ -75,11 +84,24 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
 .mcard-footer{display:flex;gap:6px;margin-top:8px;}
 .btn-upg{flex:1;padding:5px 0;font-size:11px;background:transparent;border:1px solid var(--border);border-radius:3px;color:var(--muted);cursor:pointer;font-family:'Exo 2',sans-serif;transition:all .15s;}
 .btn-upg:hover:not(:disabled){border-color:var(--accent);color:var(--accent);}.btn-upg:disabled{opacity:.3;cursor:not-allowed;}
+.btn-upg.ad{border-color:rgba(0,201,167,.4);color:var(--teal);}
+.btn-upg.ad:hover:not(:disabled){border-color:var(--teal);background:rgba(0,201,167,.08);}
+.btn-upg.ad:disabled{opacity:.3;cursor:not-allowed;}
 .mcard-auto-badge{font-size:10px;padding:2px 7px;border-radius:10px;background:rgba(0,201,167,.12);color:var(--teal);border:1px solid rgba(0,201,167,.3);align-self:center;}
+/* BUYABLE CARD — следующий цех для покупки */
+.mcard.buyable{border-color:#2a6aDD;background:linear-gradient(135deg,rgba(30,70,180,.12),rgba(5,10,30,.7));cursor:default;}
+.mcard.buyable:hover{border-color:#4477FF;}
+.mcard.buyable .mcard-icon{border-color:#2a6aDD;background:rgba(30,70,200,.18);}
+.btn-buy-big{width:100%;padding:9px 0;font-size:13px;font-weight:600;background:var(--accent);border:none;border-radius:4px;color:#000;cursor:pointer;font-family:'Exo 2',sans-serif;transition:filter .15s;margin-top:2px;}
+.btn-buy-big:hover{filter:brightness(1.12);}
+.btn-buy-big:disabled{opacity:.35;cursor:not-allowed;filter:none;background:var(--bg3);color:var(--muted);border:1px solid var(--border);}
+.buy-progress-label{font-size:11px;color:var(--muted);margin-bottom:4px;display:flex;justify-content:space-between;}
+.buy-progress-label span{color:var(--teal);}
 
 /* SHOP */
 .upg-list{display:flex;flex-direction:column;gap:6px;}
 .upg-item{background:var(--card);border:1px solid var(--border);border-radius:6px;padding:10px 12px;display:flex;align-items:center;gap:10px;}
+.upg-item.upg-item-ad{border-color:#2a6aDD;background:linear-gradient(135deg,rgba(30,70,180,.08),rgba(5,10,30,.6));align-items:flex-start;}
 .upg-info{flex:1;}.upg-name{font-size:13px;font-weight:500;}.upg-desc{font-size:11px;color:var(--muted);margin-top:2px;}.upg-cost{font-size:12px;color:var(--accent);margin-top:3px;}
 .btn-buy{padding:6px 14px;background:transparent;border:1px solid var(--accent);border-radius:4px;color:var(--accent);font-size:12px;cursor:pointer;font-family:'Exo 2',sans-serif;white-space:nowrap;transition:all .15s;flex-shrink:0;}
 .btn-buy:hover:not(:disabled){background:var(--accent);color:#000;}
@@ -100,6 +122,33 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
 .coinpop{position:fixed;font-size:13px;color:var(--accent);font-weight:500;pointer-events:none;z-index:40;animation:popup .9s ease-out forwards;}
 @keyframes popup{0%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(-40px)}}
 
+/* PARTICLES */
+.particle{position:fixed;pointer-events:none;z-index:39;border-radius:50%;animation:particle-fly 0.8s ease-out forwards;}
+@keyframes particle-fly{
+  0%  {opacity:1;transform:translate(0,0) scale(1);}
+  100%{opacity:0;transform:translate(var(--tx),var(--ty)) scale(0);}
+}
+
+/* MACHINE PULSE on cycle complete */
+@keyframes machine-pulse{
+  0%  {box-shadow:0 0 0 0 rgba(0,201,167,.6);}
+  50% {box-shadow:0 0 0 8px rgba(0,201,167,.0);}
+  100%{box-shadow:0 0 0 0 rgba(0,201,167,.0);}
+}
+.mcard.pulse-once{animation:machine-pulse .5s ease-out;}
+
+/* GOLDEN GLOW for rewards */
+@keyframes golden-flash{
+  0%  {box-shadow:0 0 0 0 rgba(240,165,0,.8);}
+  50% {box-shadow:0 0 20px 8px rgba(240,165,0,.3);}
+  100%{box-shadow:0 0 0 0 rgba(240,165,0,.0);}
+}
+.golden-glow{animation:golden-flash .6s ease-out;}
+
+/* PROGRESS BAR smooth transition */
+.pbar{transition:width .12s linear;}
+.quest-pbar{transition:width .3s ease;}
+
 /* MODAL */
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;z-index:80;opacity:0;pointer-events:none;transition:opacity .2s;}
 .modal-overlay.show{opacity:1;pointer-events:all;}
@@ -110,7 +159,101 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
 .btn-modal{padding:10px 28px;border-radius:4px;font-family:'Exo 2',sans-serif;font-size:14px;cursor:pointer;transition:all .15s;}
 .btn-modal.primary{background:var(--accent);border:none;color:#000;font-weight:700;}.btn-modal.primary:hover{filter:brightness(1.1);}
 .btn-modal.secondary{background:transparent;border:1px solid var(--border);color:var(--muted);}.btn-modal.secondary:hover{border-color:var(--text);color:var(--text);}
+/* OFFLINE MODAL */
+.offline-modal { text-align:center; }
+.offline-icon { font-size:52px; margin-bottom:8px; }
+.offline-coins { font-size:32px; font-weight:700; color:var(--accent); margin:8px 0; }
+.offline-sub { font-size:13px; color:var(--muted); margin-bottom:20px; }
+.quest-timer{font-size:12px;color:var(--muted);text-align:center;padding:8px 0 4px;}
+.quest-timer b{color:var(--accent);}
+.quest-list{display:flex;flex-direction:column;gap:8px;}
+.quest-card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:14px;}
+.quest-card.done{border-color:var(--teal);background:rgba(0,201,167,.05);}
+.quest-card.claimed{border-color:var(--border);opacity:.5;}
+.quest-head{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.quest-icon{font-size:26px;flex-shrink:0;}
+.quest-info{flex:1;}
+.quest-name{font-size:14px;font-weight:500;}
+.quest-desc{font-size:12px;color:var(--muted);margin-top:2px;}
+.quest-reward{font-size:12px;color:var(--accent);margin-top:4px;}
+.quest-progress{display:flex;align-items:center;gap:8px;}
+.quest-pbar-wrap{flex:1;height:6px;background:var(--bg3);border-radius:3px;overflow:hidden;}
+.quest-pbar{height:100%;background:var(--teal);border-radius:3px;transition:width .3s;}
+.quest-pct{font-size:11px;color:var(--muted);width:36px;text-align:right;flex-shrink:0;}
+.btn-claim{margin-top:10px;width:100%;padding:8px;background:var(--teal);border:none;border-radius:4px;color:#000;font-family:'Exo 2',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:filter .15s;}
+.btn-claim:hover{filter:brightness(1.1);}
+.btn-claim:disabled{background:var(--bg3);color:var(--muted);cursor:default;filter:none;border:1px solid var(--border);}
+.ach-summary{font-size:12px;color:var(--muted);text-align:center;padding:8px 0 4px;}
+.ach-summary b{color:var(--accent);}
+.quest-card.ach-tier-bronze{border-color:#CD7F32;}
+.quest-card.ach-tier-silver{border-color:#C0C0C0;}
+.quest-card.ach-tier-gold{border-color:#FFD700;}
+.quest-card.ach-tier-bronze.done{background:rgba(205,127,50,.08);}
+.quest-card.ach-tier-silver.done{background:rgba(192,192,192,.08);}
+.quest-card.ach-tier-gold.done{background:rgba(255,215,0,.08);}
+
+/* IAP SHOP */
+/* FRIENDS / REFERRAL */
+.friends-box{background:linear-gradient(135deg,rgba(255,107,157,.08),rgba(180,50,120,.06));border:1px solid rgba(255,107,157,.3);border-radius:8px;padding:14px;}
+.friends-desc{font-size:12px;color:var(--muted);margin-bottom:10px;text-align:center;}
+.friends-stats{display:flex;gap:10px;margin-bottom:10px;}
+.friends-stat{flex:1;background:var(--bg3);border-radius:6px;padding:10px;text-align:center;}
+.friends-stat-val{font-size:18px;font-weight:700;color:#ff6b9d;}
+.friends-stat-label{font-size:10px;color:var(--muted);margin-top:2px;}
+.btn-friends{width:100%;padding:10px;background:linear-gradient(135deg,#ff6b9d,#c2387a);border:none;border-radius:6px;color:#fff;font-family:'Exo 2',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:filter .15s;}
+.btn-friends:hover{filter:brightness(1.1);}
+.friends-code{font-size:10px;color:var(--muted);text-align:center;margin-top:8px;word-break:break-all;}
+
+.iap-list { display:flex; flex-direction:column; gap:8px; }
+.iap-item { background:var(--card); border-radius:8px; padding:14px; display:flex; align-items:center; gap:12px; position:relative; overflow:hidden; }
+.iap-item.starter { border:1px solid #4a9eff; }
+.iap-item.vip     { border:1px solid var(--accent); background:linear-gradient(135deg,rgba(240,165,0,.07),rgba(224,92,0,.05)); }
+.iap-item.coins   { border:1px solid #7c5cff; }
+.iap-item.owned   { border-color:#3a4060; opacity:.65; }
+.iap-icon { font-size:32px; flex-shrink:0; }
+.iap-info { flex:1; }
+.iap-name { font-size:14px; font-weight:500; margin-bottom:3px; }
+.iap-desc { font-size:11px; color:var(--muted); line-height:1.5; }
+.iap-badge { position:absolute; top:8px; right:90px; font-size:10px; padding:2px 8px; border-radius:10px; background:rgba(0,201,167,.15); color:var(--teal); border:1px solid rgba(0,201,167,.3); }
+.btn-iap { padding:8px 14px; border-radius:6px; font-family:'Exo 2',sans-serif; font-size:13px; font-weight:500; cursor:pointer; transition:all .15s; flex-shrink:0; text-align:center; min-width:72px; }
+.btn-iap.starter { background:#4a9eff22; border:1px solid #4a9eff; color:#4a9eff; }
+.btn-iap.starter:hover { background:#4a9eff; color:#000; }
+.btn-iap.vip     { background:var(--accent); border:1px solid var(--accent); color:#000; font-weight:700; }
+.btn-iap.vip:hover { filter:brightness(1.1); }
+.btn-iap.coins   { background:#7c5cff22; border:1px solid #7c5cff; color:#a090ff; }
+.btn-iap.coins:hover { background:#7c5cff; color:#fff; }
+.btn-iap:disabled { opacity:.4; cursor:not-allowed; filter:none; }
+.lb-wrap { display:flex; flex-direction:column; gap:6px; }
+.lb-item { background:var(--card); border:1px solid var(--border); border-radius:6px; padding:10px 14px; display:flex; align-items:center; gap:12px; }
+.lb-item.me { border-color:var(--accent); background:rgba(240,165,0,0.06); }
+.lb-rank { font-size:15px; font-weight:500; width:28px; text-align:center; flex-shrink:0; color:var(--muted); }
+.lb-rank.top1 { color:#FFD700; font-size:18px; }
+.lb-rank.top2 { color:#C0C0C0; }
+.lb-rank.top3 { color:#CD7F32; }
+.lb-avatar { width:36px; height:36px; border-radius:50%; background:var(--bg3); border:1px solid var(--border); flex-shrink:0; object-fit:cover; }
+.lb-name { flex:1; font-size:13px; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.lb-score { font-size:13px; color:var(--accent); font-weight:500; flex-shrink:0; }
+.lb-empty { font-size:13px; color:var(--muted); padding:20px; text-align:center; }
+.lb-myrank { background:var(--bg3); border:1px solid var(--border); border-radius:6px; padding:10px 14px; font-size:13px; color:var(--muted); text-align:center; margin-bottom:4px; }
+.lb-myrank b { color:var(--accent); }
+.btn-lb-refresh { width:100%; padding:8px; background:transparent; border:1px solid var(--border); border-radius:4px; color:var(--muted); font-family:'Exo 2',sans-serif; font-size:13px; cursor:pointer; transition:all .15s; margin-top:4px; }
+.btn-lb-refresh:hover { border-color:var(--accent); color:var(--accent); }
+.lb-tabs { display:flex; gap:6px; margin-bottom:10px; }
+.lb-tab { flex:1; padding:7px 0; background:var(--bg3); border:1px solid var(--border); border-radius:4px; color:var(--muted); font-family:'Exo 2',sans-serif; font-size:12px; cursor:pointer; transition:all .15s; }
+.lb-tab.active { background:rgba(240,165,0,0.1); border-color:var(--accent); color:var(--accent); }
 /* AD BUTTON */
+/* MANUAL PRODUCTION / ENERGY */
+.energy-box{background:linear-gradient(135deg,rgba(74,217,255,.08),rgba(20,80,120,.06));border:1px solid rgba(74,217,255,.3);border-radius:8px;padding:14px;margin-bottom:10px;}
+.energy-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+.energy-label{font-size:13px;font-weight:500;color:#4ad9ff;}
+.energy-val{font-size:12px;color:var(--muted);}
+.btn-manual{width:100%;padding:14px;background:linear-gradient(135deg,#4ad9ff,#2a9fd6);border:none;border-radius:6px;color:#001a26;font-family:'Russo One',sans-serif;font-size:15px;cursor:pointer;transition:filter .1s,transform .05s;display:flex;align-items:center;justify-content:center;gap:8px;}
+.btn-manual:hover{filter:brightness(1.08);}
+.btn-manual:active{transform:scale(0.97);}
+.btn-manual:disabled{background:var(--bg3);color:var(--muted);cursor:not-allowed;filter:none;}
+.manual-icon{font-size:20px;}
+.manual-sub{font-size:11px;color:var(--muted);text-align:center;margin-top:6px;}
+
 .ad-box{background:linear-gradient(135deg,rgba(0,201,167,.08),rgba(0,150,100,.08));border:1px solid rgba(0,201,167,.3);border-radius:6px;padding:12px;text-align:center;margin-top:8px;}
 .ad-title{font-size:13px;font-weight:500;color:var(--teal);margin-bottom:4px;}
 .ad-desc{font-size:11px;color:var(--muted);margin-bottom:10px;line-height:1.5;}
@@ -125,11 +268,26 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
   <svg class="splash-gear" viewBox="0 0 100 100" fill="none"><path d="M43 5h14l2 10a33 33 0 0 1 8 3l9-5 10 10-5 9a33 33 0 0 1 3 8l10 2v14l-10 2a33 33 0 0 1-3 8l5 9-10 10-9-5a33 33 0 0 1-8 3l-2 10H43l-2-10a33 33 0 0 1-8-3l-9 5-10-10 5-9a33 33 0 0 1-3-8L6 57V43l10-2a33 33 0 0 1 3-8l-5-9 10-10 9 5a33 33 0 0 1 8-3l2-10Z" stroke="#f0a500" stroke-width="3"/><circle cx="50" cy="50" r="14" stroke="#f0a500" stroke-width="3"/></svg>
   <div class="splash-logo">МегаЗавод</div>
   <div class="splash-sub">Idle Factory Tycoon</div>
-  <button class="splash-btn" id="startBtn">▶ НАЧАТЬ</button>
+  <button class="splash-btn" id="startBtn" style="display:none">▶ НАЧАТЬ</button>
+  <div id="sdkLoading" style="margin-top:36px;font-size:14px;color:var(--muted);letter-spacing:2px">⏳ Загрузка...</div>
   <div class="splash-save-note" id="saveNote"></div>
 </div>
 
 <div class="milestone-toast" id="toast"></div>
+
+<div class="modal-overlay" id="offlineModal">
+  <div class="modal offline-modal">
+    <div class="offline-icon">🏭</div>
+    <h2 id="offlineTitle">Завод работал!</h2>
+    <div class="offline-sub" id="offlineSub"></div>
+    <div class="offline-coins" id="offlineCoins"></div>
+    <div class="offline-sub" id="offlineSub2"></div>
+    <div class="modal-btns">
+      <button class="btn-modal primary" onclick="claimOffline()">💰 Забрать</button>
+      <button class="btn-modal secondary" id="offlineAdBtn" onclick="claimOfflineAd()">📺 ×2 за рекламу</button>
+    </div>
+  </div>
+</div>
 
 <div class="modal-overlay" id="prestigeModal">
   <div class="modal">
@@ -143,7 +301,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
       <div class="modal-btns"><button class="btn-modal secondary" onclick="closePrestige()">Закрыть</button></div>
     </div>
     <div id="prestige-ready-view" style="display:none">
-      <p>Цель достигнута! Получите <b id="prestigeBonus" style="color:var(--accent)">x1.5</b> к доходу навсегда.<br><br>Текущий множитель: <b id="currentMult" style="color:var(--teal)">x1.0</b></p>
+      <p id="prestige-ready-text">Цель достигнута! Получите <b id="prestigeBonus" style="color:var(--accent)">x1.5</b> к доходу навсегда.<br><br>Текущий множитель: <b id="currentMult" style="color:var(--teal)">x1.0</b></p>
       <div class="modal-btns">
         <button class="btn-modal secondary" onclick="closePrestige()">Отмена</button>
         <button class="btn-modal primary" onclick="doPrestige()">Подтвердить сброс</button>
@@ -160,13 +318,28 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
     <div class="stat-pill">🏭 <b id="hSold">0</b></div>
     <div class="stat-pill">✨ x<b id="hMult">1.0</b></div>
     <div class="header-right">
-      <button class="btn-hdr" onclick="openPrestige()">⚡ Престиж</button>
+      <button class="btn-hdr" id="langBtn" onclick="toggleLang()">EN</button>
+      <button class="btn-hdr" onclick="openPrestige()" id="prestigeHdrBtn">⚡ Престиж</button>
     </div>
   </div>
   <div class="layout">
     <div class="tab-content">
       <div class="tab-pane active" id="pane-factory">
         <div class="sec-hdr">Производственные цеха</div>
+
+        <div class="energy-box" id="energyBox">
+          <div class="energy-head">
+            <div class="energy-label" id="energyLabel">⚡ Энергия</div>
+            <div class="energy-val" id="energyVal">100/100</div>
+          </div>
+          <div class="pbar-wrap" style="margin-bottom:10px"><div class="pbar" id="energyBar" style="width:100%;background:#4ad9ff"></div></div>
+          <button class="btn-manual" id="manualClickBtn" onclick="manualProduce(event)">
+            <span class="manual-icon">🔨</span>
+            <span id="manualLabel">Произвести вручную</span>
+          </button>
+          <div class="manual-sub" id="manualSub">+0 монет за клик · -1 ⚡</div>
+        </div>
+
         <div class="ad-box">
           <div class="ad-title">📺 Бонус за рекламу</div>
           <div class="ad-desc">Посмотри рекламу и получи бонус ×2 к доходу на 5 минут</div>
@@ -178,12 +351,64 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
       <div class="tab-pane" id="pane-shop">
         <div class="sec-hdr">Магазин улучшений</div>
         <div class="upg-list" id="upgList"></div>
+
+        <!-- Друзья / Рефералы -->
+        <div class="sec-hdr" style="margin-top:12px" id="friendsHdr">👥 Друзья</div>
+        <div class="friends-box">
+          <div class="friends-desc" id="friendsDesc">Пригласи друга — оба получите бонус!</div>
+          <div class="friends-stats">
+            <div class="friends-stat">
+              <div class="friends-stat-val" id="friendsInvited">0</div>
+              <div class="friends-stat-label" id="friendsInvitedLabel">Приглашено</div>
+            </div>
+            <div class="friends-stat">
+              <div class="friends-stat-val" id="friendsBonusMult">×1.00</div>
+              <div class="friends-stat-label" id="friendsBonusLabel">Бонус к доходу</div>
+            </div>
+          </div>
+          <button class="btn-friends" onclick="shareReferralLink()" id="friendsShareBtn">📤 Пригласить друга</button>
+          <div class="friends-code" id="friendsCode"></div>
+        </div>
+
+        <!-- Донат-магазин -->
+        <div class="sec-hdr" style="margin-top:12px">💎 Премиум</div>
+        <div id="iapList" class="iap-list"></div>
+
         <div class="prestige-box" style="margin-top:8px">
           <div class="prestige-title">⚡ Система Престижа</div>
           <div class="prestige-desc">Сбрось прогресс ради постоянного бонуса к доходу</div>
           <button class="btn-prestige" id="prestigeBtn" onclick="openPrestige()">Нужно монет</button>
         </div>
       </div>
+
+      <div class="tab-pane" id="pane-lb">
+        <div class="sec-hdr">Таблица лидеров</div>
+        <div class="lb-tabs">
+          <button class="lb-tab active" data-lb="sold"     onclick="setLbTab('sold')">🏭 Детали</button>
+          <button class="lb-tab"        data-lb="coins"    onclick="setLbTab('coins')">💰 Монеты</button>
+          <button class="lb-tab"        data-lb="prestige" onclick="setLbTab('prestige')">⚡ Престиж</button>
+        </div>
+        <div id="lbMyRank" class="lb-myrank" style="display:none"></div>
+        <div class="lb-wrap" id="lbList">
+          <div class="lb-empty">Загрузка...</div>
+        </div>
+        <button class="btn-lb-refresh" onclick="loadLeaderboard()">↻ Обновить</button>
+      </div>
+      <div class="tab-pane" id="pane-quests">
+        <div class="lb-tabs">
+          <button class="lb-tab active" data-qtab="daily" onclick="setQuestSubTab('daily')" id="subtab-daily">📋 Ежедневные</button>
+          <button class="lb-tab"        data-qtab="ach"   onclick="setQuestSubTab('ach')"   id="subtab-ach">🏅 Достижения</button>
+        </div>
+        <div id="questSubDaily">
+          <div class="quest-timer" id="questTimer"></div>
+          <div class="quest-list" id="questList"></div>
+        </div>
+        <div id="questSubAch" style="display:none">
+          <div class="ach-summary" id="achSummary"></div>
+          <div class="quest-list" id="achList"></div>
+        </div>
+      </div>
+
     </div>
     <div class="bottom-tabs">
       <button class="tab-btn active" id="tab-factory" onclick="switchTab('factory')">
@@ -193,59 +418,712 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
         <span class="tab-icon">🛒</span><span class="tab-label">Магазин</span>
         <span class="tab-badge" id="shopBadge"></span>
       </button>
+      <button class="tab-btn" id="tab-quests" onclick="switchTab('quests')">
+        <span class="tab-icon">📋</span><span class="tab-label">Задания</span>
+        <span class="tab-badge" id="questBadge"></span>
+      </button>
+      <button class="tab-btn" id="tab-lb" onclick="switchTab('lb'); loadLeaderboard()">
+        <span class="tab-icon">🏆</span><span class="tab-label">Рейтинг</span>
+      </button>
     </div>
   </div>
 </div>
 
 <script>
-// ── БАЛАНС ───────────────────────────────────────────────────────
+// ── ЛОКАЛИЗАЦИЯ ──────────────────────────────────────────────────
+let LANG = 'ru'; // текущий язык
+
+const I18N = {
+  ru: {
+    // Заставка
+    start: '▶ НАЧАТЬ',
+    saveFound: 'Найдено сохранение',
+    // Хедер
+    prestige: '⚡ Престиж',
+    cpsUnit: '/с',
+    // Вкладки
+    tabFactory: 'Цеха',
+    tabShop: 'Магазин',
+    tabLb: 'Рейтинг',
+    tabQuests: 'Задания',
+    // Цеха
+    sectionFactory: 'Производственные цеха',
+    adTitle: '📺 Бонус за рекламу',
+    adDesc: 'Посмотри рекламу и получи бонус ×2 к доходу на 5 минут',
+    adWatch: '▶ Смотреть рекламу',
+    adActive: '✅ Бонус активен — ×2',
+    adRecharge: 'Перезарядка',
+    adLeft: 'Осталось',
+    minShort: 'мин',
+    secShort: 'с',
+    adLoading: '⏳ Загрузка...',
+    buyShop: '🏭 Купить цех',
+    buyLocked: '🔒 Нужно',
+    coins: 'монет',
+    ready: '✅ Готово к покупке!',
+    nextMachine: 'Следующий цех',
+    remain: 'Осталось',
+    enough: 'Хватает!',
+    upgrade: 'Апгрейд',
+    lvl: 'Ур.',
+    autobadge: 'АВТО',
+    adWatch2: '📺 Смотреть рекламу',
+    adUnavail: '📺 Недоступно (10 мин)',
+    buyPrev: 'Купи',
+    // Магазин
+    sectionShop: 'Магазин улучшений',
+    sectionPremium: '💎 Премиум',
+    buy: 'Купить',
+    bought: 'Куплено',
+    allBought: 'Все улучшения куплены!',
+    // Престиж
+    prestigeTitle: '⚡ Система Престижа',
+    prestigeDesc: 'Сбрось прогресс ради постоянного бонуса к доходу',
+    prestigeNeed: 'Нужно монет',
+    prestigeActivate: '⚡ Активировать',
+    prestigePct: '⚡ Престиж',
+    prestigeModalTitle: '⚡ Престиж',
+    prestigeNeedCoins: 'Нужно',
+    prestigeLeft: 'Осталось',
+    prestigeReset: 'сброс #',
+    prestigeGoal: 'Цель достигнута! Получите',
+    prestigeForever: 'к доходу навсегда.',
+    prestigeCurrentMult: 'Текущий множитель:',
+    prestigeCancel: 'Отмена',
+    prestigeConfirm: 'Подтвердить сброс',
+    prestigeClose: 'Закрыть',
+    prestigeToast: 'Престиж! Множитель x',
+    // Лидерборд
+    sectionLb: 'Таблица лидеров',
+    lbDetails: '🏭 Детали',
+    lbCoins: '💰 Монеты',
+    lbPrestige: '⚡ Престиж',
+    lbRefresh: '↻ Обновить',
+    lbLoading: 'Загрузка...',
+    lbEmpty: 'Пока никого нет — будь первым!',
+    lbError: 'Не удалось загрузить рейтинг',
+    lbMe: 'ты',
+    lbMe2: 'Ты',
+    lbMyRank: 'Твоё место',
+    lbUnits: { sold:'шт.', coins:'монет', prestige:'раз' },
+    lbDemo: 'На Яндекс.Играх будет реальный рейтинг',
+    lbAnon: 'Аноним',
+    // Тосты
+    toastSave: 'Сохранено',
+    toastAdBonus: '📺 Бонус ×2 активирован на 5 минут!',
+    toastFillCoin: '📺 Монеты пополнены — покупай цех!',
+    toastFillUpg: '📺 Монеты пополнены — апгрейди!',
+    toastFillShop: '📺 Монеты пополнены — купи улучшение!',
+    toastAdUnavail: 'Реклама недоступна, попробуй позже',
+    toastMachineOpen: 'Открыт цех:',
+    // Вехи
+    m100: 'Первая сотня!', m1000: 'Тысячник!', m10000: '10 тысяч!',
+    m100000: '100 тысяч!', m1000000: 'Миллионер!', m10000000: 'Магнат!',
+    // IAP
+    iapStarter: '🚀 Стартовый пак',
+    iapStarterDesc: 'Убирает таймер рекламы навсегда + x2 к первым 10 минутам каждой сессии',
+    iapVip: '👑 VIP Статус',
+    iapVipDesc: 'Постоянный ×1.5 к доходу со всех цехов навсегда',
+    iapCoins: '💰 Мешок монет',
+    iapCoinsDesc: 'Мгновенно добавляет монет эквивалентных 2 часам производства',
+    iapBadge: 'ВЫГОДНО',
+    iapToastVip: '👑 VIP активирован — доход ×1.5 навсегда!',
+    iapToastStarter: '🚀 Стартовый пак активирован!',
+    iapToastCoins: '💰 +{n} монет!',
+    iapLab: '🧪 Секретная лаборатория',
+    iapLabDesc: 'Уникальный цех с огромной прибылью и автоматическим производством — навсегда',
+    iapLabBadge: 'ЭКСКЛЮЗИВ',
+    iapToastLab: '🧪 Секретная лаборатория открыта!',
+    premiumOnly: 'Только за реальные деньги',
+    perCycle: 'за цикл',
+    // Вехи новые
+    m100000000: '100 миллионов!', m1000000000: 'Миллиардер!',
+    goldenPart: 'Золотая деталь',
+    refWelcomeBonus: 'Бонус новичку',
+    refFriendAdded: 'Друг приглашён',
+    refBonusNow: 'Бонус теперь',
+    refShareText: 'Играю в МегаЗавод — присоединяйся, получи бонус на старте!',
+    refLinkCopied: 'Ссылка скопирована!',
+    refShareUnavailable: 'Не удалось поделиться, попробуй позже',
+    refYourCode: 'Твой код',
+    friendsDesc: 'Пригласи друга — оба получите бонус!',
+    friendsInvitedLabel: 'Приглашено',
+    friendsBonusLabel: 'Бонус к доходу',
+    friendsShareBtn: '📤 Пригласить друга',
+    // Достижения — общие
+    achUnlocked: 'Достижение разблокировано',
+    achUnlocked2: 'Получено',
+    achTotalBonus: 'Общий бонус',
+    achBonusLabel: 'Бонус',
+    achBonusToAll: 'к доходу навсегда',
+    energyLabel: '⚡ Энергия',
+    manualLabel: 'Произвести вручную',
+    // Достижения — тексты
+    ach_sold_1k_n:'Первая тысяча', ach_sold_1k_d:'Произведи 1 000 деталей',
+    ach_sold_100k_n:'Массовое производство', ach_sold_100k_d:'Произведи 100 000 деталей',
+    ach_sold_10m_n:'Промышленный гигант', ach_sold_10m_d:'Произведи 10 000 000 деталей',
+    ach_coins_10k_n:'Первые накопления', ach_coins_10k_d:'Заработай 10 000 монет за всё время',
+    ach_coins_1m_n:'Миллионер', ach_coins_1m_d:'Заработай 1 000 000 монет за всё время',
+    ach_coins_1b_n:'Магнат', ach_coins_1b_d:'Заработай 1 000 000 000 монет за всё время',
+    ach_machines_5_n:'Растущий завод', ach_machines_5_d:'Купи 5 разных цехов',
+    ach_machines_9_n:'Полный комплекс', ach_machines_9_d:'Купи 9 разных цехов',
+    ach_machines_11_n:'Вся империя', ach_machines_11_d:'Купи все цеха, включая лабораторию',
+    ach_prestige_1_n:'Новое начало', ach_prestige_1_d:'Сделай первый престиж',
+    ach_prestige_5_n:'Опытный магнат', ach_prestige_5_d:'Сделай 5 престижей',
+    ach_prestige_15_n:'Легенда завода', ach_prestige_15_d:'Сделай 15 престижей',
+    ach_clicks_500_n:'Трудяга', ach_clicks_500_d:'Нажми на цеха 500 раз',
+    ach_clicks_5000_n:'Неутомимый', ach_clicks_5000_d:'Нажми на цеха 5 000 раз',
+    ach_ads_10_n:'Зритель', ach_ads_10_d:'Посмотри 10 рекламных роликов',
+    ach_ads_50_n:'Постоянный зритель', ach_ads_50_d:'Посмотри 50 рекламных роликов',
+    // Задания
+    questTitle:'Ежедневные задания', questTimer:'Обновление через',
+    questClaim:'🎁 Забрать награду', questDone:'✅ Выполнено',
+    questClaimed:'Получено', questNew:'🎯 Новые задания доступны!',
+    qtProduce:{name:'Производитель',desc:'Произведи {n} единиц',icon:'⚙️'},
+    qtClick:  {name:'Кликер',       desc:'Нажми на цеха {n} раз',icon:'👆'},
+    qtCoins:  {name:'Накопитель',   desc:'Накопи {n} монет',     icon:'💰'},
+    qtUpgrade:{name:'Инженер',      desc:'Сделай {n} апгрейдов', icon:'⬆️'},
+    qtBuy:    {name:'Расширение',   desc:'Купи {n} цехов',       icon:'🏭'},
+    qtAd:     {name:'Рекламщик',    desc:'Посмотри {n} рекламу', icon:'📺'},
+    qrCoins:'монет', qrBoost:'Буст ×2 на 30 мин', qrUpgrade:'Бесплатный апгрейд',
+  },
+  en: {
+    start: '▶ PLAY',
+    saveFound: 'Save found',
+    prestige: '⚡ Prestige',
+    cpsUnit: '/s',
+    tabFactory: 'Factory',
+    tabShop: 'Shop',
+    tabLb: 'Ranking',
+    tabQuests: 'Quests',
+    sectionFactory: 'Production workshops',
+    adTitle: '📺 Ad Bonus',
+    adDesc: 'Watch an ad and get ×2 income for 5 minutes',
+    adWatch: '▶ Watch Ad',
+    adActive: '✅ Bonus active — ×2',
+    adRecharge: 'Recharge',
+    adLeft: 'Left',
+    minShort: 'min',
+    secShort: 's',
+    adLoading: '⏳ Loading...',
+    buyShop: '🏭 Buy Workshop',
+    buyLocked: '🔒 Need',
+    coins: 'coins',
+    ready: '✅ Ready to buy!',
+    nextMachine: 'Next workshop',
+    remain: 'Need',
+    enough: 'Enough!',
+    upgrade: 'Upgrade',
+    lvl: 'Lvl',
+    autobadge: 'AUTO',
+    adWatch2: '📺 Watch Ad',
+    adUnavail: '📺 Unavailable (10 min)',
+    buyPrev: 'Buy',
+    sectionShop: 'Upgrade Shop',
+    sectionPremium: '💎 Premium',
+    buy: 'Buy',
+    bought: 'Owned',
+    allBought: 'All upgrades purchased!',
+    prestigeTitle: '⚡ Prestige System',
+    prestigeDesc: 'Reset progress for a permanent income bonus',
+    prestigeNeed: 'Need coins',
+    prestigeActivate: '⚡ Activate',
+    prestigePct: '⚡ Prestige',
+    prestigeModalTitle: '⚡ Prestige',
+    prestigeNeedCoins: 'Need',
+    prestigeLeft: 'Still need',
+    prestigeReset: 'reset #',
+    prestigeGoal: 'Goal reached! Get',
+    prestigeForever: 'income bonus forever.',
+    prestigeCurrentMult: 'Current multiplier:',
+    prestigeCancel: 'Cancel',
+    prestigeConfirm: 'Confirm Reset',
+    prestigeClose: 'Close',
+    prestigeToast: 'Prestige! Multiplier x',
+    sectionLb: 'Leaderboard',
+    lbDetails: '🏭 Parts',
+    lbCoins: '💰 Coins',
+    lbPrestige: '⚡ Prestige',
+    lbRefresh: '↻ Refresh',
+    lbLoading: 'Loading...',
+    lbEmpty: 'Nobody yet — be first!',
+    lbError: 'Failed to load leaderboard',
+    lbMe: 'you',
+    lbMe2: 'You',
+    lbMyRank: 'Your rank',
+    lbUnits: { sold:'pcs', coins:'coins', prestige:'times' },
+    lbDemo: 'Real ranking on Yandex Games',
+    lbAnon: 'Anonymous',
+    toastSave: 'Saved',
+    toastAdBonus: '📺 ×2 bonus activated for 5 minutes!',
+    toastFillCoin: '📺 Coins added — buy the workshop!',
+    toastFillUpg: '📺 Coins added — upgrade now!',
+    toastFillShop: '📺 Coins added — buy the upgrade!',
+    toastAdUnavail: 'Ad unavailable, try later',
+    toastMachineOpen: 'Workshop unlocked:',
+    m100: 'First hundred!', m1000: 'One thousand!', m10000: '10 thousand!',
+    m100000: '100 thousand!', m1000000: 'Millionaire!', m10000000: 'Tycoon!',
+    iapStarter: '🚀 Starter Pack',
+    iapStarterDesc: 'Removes ad cooldown forever + x2 for first 10 min of each session',
+    iapVip: '👑 VIP Status',
+    iapVipDesc: 'Permanent ×1.5 income from all workshops forever',
+    iapCoins: '💰 Coin Bag',
+    iapCoinsDesc: 'Instantly adds coins equal to 2 hours of production',
+    iapBadge: 'BEST VALUE',
+    iapToastVip: '👑 VIP activated — ×1.5 income forever!',
+    iapToastStarter: '🚀 Starter Pack activated!',
+    iapToastCoins: '💰 +{n} coins!',
+    iapLab: '🧪 Secret Laboratory',
+    iapLabDesc: 'Unique workshop with massive income and auto-production — forever',
+    iapLabBadge: 'EXCLUSIVE',
+    iapToastLab: '🧪 Secret Laboratory unlocked!',
+    premiumOnly: 'Real money only',
+    perCycle: 'per cycle',
+    m100000000: '100 million!', m1000000000: 'Billionaire!',
+    goldenPart: 'Golden Part',
+    refWelcomeBonus: 'Welcome bonus',
+    refFriendAdded: 'Friend invited',
+    refBonusNow: 'Bonus is now',
+    refShareText: "I'm playing MegaFactory — join me, get a starting bonus!",
+    refLinkCopied: 'Link copied!',
+    refShareUnavailable: 'Could not share, try again later',
+    refYourCode: 'Your code',
+    friendsDesc: 'Invite a friend — you both get a bonus!',
+    friendsInvitedLabel: 'Invited',
+    friendsBonusLabel: 'Income bonus',
+    friendsShareBtn: '📤 Invite a Friend',
+    achUnlocked: 'Achievement unlocked',
+    achUnlocked2: 'Unlocked',
+    achTotalBonus: 'Total bonus',
+    achBonusLabel: 'Bonus',
+    achBonusToAll: 'to income forever',
+    energyLabel: '⚡ Energy',
+    manualLabel: 'Produce Manually',
+    ach_sold_1k_n:'First Thousand', ach_sold_1k_d:'Produce 1,000 parts',
+    ach_sold_100k_n:'Mass Production', ach_sold_100k_d:'Produce 100,000 parts',
+    ach_sold_10m_n:'Industrial Giant', ach_sold_10m_d:'Produce 10,000,000 parts',
+    ach_coins_10k_n:'First Savings', ach_coins_10k_d:'Earn 10,000 coins total',
+    ach_coins_1m_n:'Millionaire', ach_coins_1m_d:'Earn 1,000,000 coins total',
+    ach_coins_1b_n:'Tycoon', ach_coins_1b_d:'Earn 1,000,000,000 coins total',
+    ach_machines_5_n:'Growing Factory', ach_machines_5_d:'Buy 5 different workshops',
+    ach_machines_9_n:'Full Complex', ach_machines_9_d:'Buy 9 different workshops',
+    ach_machines_11_n:'Whole Empire', ach_machines_11_d:'Buy all workshops, including the lab',
+    ach_prestige_1_n:'New Beginning', ach_prestige_1_d:'Do your first prestige',
+    ach_prestige_5_n:'Experienced Tycoon', ach_prestige_5_d:'Do 5 prestiges',
+    ach_prestige_15_n:'Factory Legend', ach_prestige_15_d:'Do 15 prestiges',
+    ach_clicks_500_n:'Hard Worker', ach_clicks_500_d:'Click workshops 500 times',
+    ach_clicks_5000_n:'Tireless', ach_clicks_5000_d:'Click workshops 5,000 times',
+    ach_ads_10_n:'Viewer', ach_ads_10_d:'Watch 10 ads',
+    ach_ads_50_n:'Loyal Viewer', ach_ads_50_d:'Watch 50 ads',
+    // Quests
+    questTitle:'Daily Quests', questTimer:'Resets in',
+    questClaim:'🎁 Claim Reward', questDone:'✅ Completed',
+    questClaimed:'Claimed', questNew:'🎯 New quests available!',
+    qtProduce:{name:'Producer',  desc:'Produce {n} units',    icon:'⚙️'},
+    qtClick:  {name:'Clicker',   desc:'Click workshops {n}x', icon:'👆'},
+    qtCoins:  {name:'Saver',     desc:'Earn {n} coins',       icon:'💰'},
+    qtUpgrade:{name:'Engineer',  desc:'Upgrade {n} workshops',icon:'⬆️'},
+    qtBuy:    {name:'Expand',    desc:'Buy {n} workshops',    icon:'🏭'},
+    qtAd:     {name:'Ad Watcher',desc:'Watch {n} ads',        icon:'📺'},
+    qrCoins:'coins', qrBoost:'×2 Boost for 30 min', qrUpgrade:'Free Upgrade',
+  }
+};
+
+function t(key) { return (I18N[LANG] || I18N.ru)[key] || key; }
+
+function toggleLang() {
+  LANG = LANG === 'ru' ? 'en' : 'ru';
+  G.lang = LANG;
+  applyLang();
+  fullRender();
+  saveGame();
+}
+
+function applyLang() {
+ try {
+  const isEn = LANG === 'en';
+  const btn = document.getElementById('langBtn');
+  if (btn) btn.textContent = isEn ? 'RU' : 'EN';
+
+  // Статичные тексты в HTML
+  const set = (id, val) => { const el=document.getElementById(id); if(el) el.textContent=val; };
+  const setHTML = (id, val) => { const el=document.getElementById(id); if(el) el.innerHTML=val; };
+
+  // Заставка
+  set('startBtn', t('start'));
+  // Хедер
+  const gameTitle = document.querySelector('.game-title');
+  if (gameTitle) gameTitle.textContent = isEn ? 'MegaFactory' : 'МегаЗавод';
+  const prestigeHdrBtn = document.getElementById('prestigeHdrBtn');
+  if (prestigeHdrBtn) prestigeHdrBtn.textContent = t('prestige');
+  // Вкладки
+  const tabFactory = document.querySelector('#tab-factory .tab-label');
+  const tabShop    = document.querySelector('#tab-shop .tab-label');
+  const tabLb      = document.querySelector('#tab-lb .tab-label');
+  const tabQuests  = document.querySelector('#tab-quests .tab-label');
+  if (tabFactory) tabFactory.textContent = t('tabFactory');
+  if (tabShop)    tabShop.textContent    = t('tabShop');
+  if (tabLb)      tabLb.textContent      = t('tabLb');
+  if (tabQuests)  tabQuests.textContent  = t('tabQuests')||'📋';
+  // Цеха
+  const factoryHdr = document.querySelector('#pane-factory .sec-hdr');
+  if (factoryHdr) factoryHdr.textContent = t('sectionFactory');
+  const adTitle = document.querySelector('.ad-title');
+  const adDesc  = document.querySelector('.ad-desc');
+  const energyLabel = document.getElementById('energyLabel');
+  const manualLabel = document.getElementById('manualLabel');
+  if (energyLabel) energyLabel.textContent = t('energyLabel');
+  if (manualLabel) manualLabel.textContent = t('manualLabel');
+  if (adTitle) adTitle.textContent = t('adTitle');
+  if (adDesc)  adDesc.textContent  = t('adDesc');
+  // Магазин
+  const shopHdrs = document.querySelectorAll('#pane-shop .sec-hdr');
+  if (shopHdrs[0]) shopHdrs[0].textContent = t('sectionShop');
+  const friendsHdr = document.getElementById('friendsHdr');
+  if (friendsHdr) friendsHdr.textContent = '👥 ' + (isEn ? 'Friends' : 'Друзья');
+  if (shopHdrs[2]) shopHdrs[2].textContent = t('sectionPremium');
+  // Друзья / Рефералы
+  const friendsDesc  = document.getElementById('friendsDesc');
+  const friendsInvL  = document.getElementById('friendsInvitedLabel');
+  const friendsBonL  = document.getElementById('friendsBonusLabel');
+  const friendsBtn   = document.getElementById('friendsShareBtn');
+  if (friendsDesc) friendsDesc.textContent = t('friendsDesc');
+  if (friendsInvL) friendsInvL.textContent = t('friendsInvitedLabel');
+  if (friendsBonL) friendsBonL.textContent = t('friendsBonusLabel');
+  if (friendsBtn)  friendsBtn.textContent  = t('friendsShareBtn');
+  if (G && G.myRefCode !== undefined) renderFriends();
+  // Престиж в модалке
+  const presModalTitle = document.querySelector('#prestigeModal h2');
+  if (presModalTitle) presModalTitle.textContent = t('prestigeModalTitle');
+  const presCancelBtn  = document.querySelector('#prestige-ready-view .btn-modal.secondary');
+  const presConfirmBtn = document.querySelector('#prestige-ready-view .btn-modal.primary');
+  const presCloseBtn   = document.querySelector('#prestige-locked-view .btn-modal.secondary');
+  if (presCancelBtn)  presCancelBtn.textContent  = t('prestigeCancel');
+  if (presConfirmBtn) presConfirmBtn.textContent = t('prestigeConfirm');
+  if (presCloseBtn)   presCloseBtn.textContent   = t('prestigeClose');
+  // Престиж в магазине
+  const presTitle = document.querySelector('.prestige-title');
+  const presDesc  = document.querySelector('.prestige-desc');
+  if (presTitle) presTitle.textContent = t('prestigeTitle');
+  if (presDesc)  presDesc.textContent  = t('prestigeDesc');
+  // Лидерборд
+  const lbHdr     = document.querySelector('#pane-lb .sec-hdr');
+  const lbSold    = document.querySelector('[data-lb="sold"]');
+  const lbCoins   = document.querySelector('[data-lb="coins"]');
+  const lbPres    = document.querySelector('[data-lb="prestige"]');
+  const lbRefresh = document.querySelector('.btn-lb-refresh');
+  if (lbHdr)     lbHdr.textContent     = t('sectionLb');
+  if (lbSold)    lbSold.textContent    = t('lbDetails');
+  if (lbCoins)   lbCoins.textContent   = t('lbCoins');
+  if (lbPres)    lbPres.textContent    = t('lbPrestige');
+  if (lbRefresh) lbRefresh.textContent = t('lbRefresh');
+  const questsHdr = document.getElementById('questsHdr');
+  if (questsHdr) questsHdr.textContent = t('questTitle');
+  // Перерисовываем задания с новым языком (только если игра уже стартовала)
+  if (G && G.quests) renderQuests();
+  const splashSub   = document.querySelector('.splash-sub');
+  const splashLogo  = document.querySelector('.splash-logo');
+  if (splashSub)  splashSub.textContent  = 'Idle Factory Tycoon';
+  if (splashLogo) splashLogo.textContent = isEn ? 'MegaFactory' : 'МегаЗавод';
+  document.title = isEn ? 'MegaFactory' : 'МегаЗавод';
+  document.documentElement.lang = LANG;
+ } catch(e) {
+   console.warn('[i18n] applyLang error:', e.message);
+ }
+}
 // Цеха: baseReward/baseSpeed подобраны так чтобы каждый следующий
 // окупался ~в 4-5 раз дольше предыдущего.
 // Апгрейд цеха: +20% к награде, -5% к скорости, цена ×2.2 за уровень.
 // Улучшения магазина: дорожают ×4 за покупку (не ×2.8).
 // Авто-режим стоит дорого и покупается один раз.
 const MACHINES_DEF = [
-  { id:0, name:'Болты',     emoji:'⚙️',  baseCost:0,      baseReward:1,    baseSpeed:5000  },
-  { id:1, name:'Шестерни', emoji:'🔩',  baseCost:100,    baseReward:6,    baseSpeed:10000 },
-  { id:2, name:'Поршни',   emoji:'🔧',  baseCost:800,    baseReward:35,   baseSpeed:16000 },
-  { id:3, name:'Моторы',   emoji:'🛠️',  baseCost:6500,   baseReward:150,  baseSpeed:24000 },
-  { id:4, name:'Роботы',   emoji:'🤖',  baseCost:55000,  baseReward:800,  baseSpeed:36000 },
-  { id:5, name:'ИИ-блок',  emoji:'💡',  baseCost:500000, baseReward:5000, baseSpeed:55000 },
+  { id:0,  name:{ru:'Болты',          en:'Bolts'},          emoji:'⚙️',  baseCost:80,         baseReward:6,        baseSpeed:4000  },
+  { id:1,  name:{ru:'Шестерни',       en:'Gears'},          emoji:'🔩',  baseCost:600,        baseReward:56,       baseSpeed:7000  },
+  { id:2,  name:{ru:'Поршни',         en:'Pistons'},        emoji:'🔧',  baseCost:4500,       baseReward:495,      baseSpeed:11000 },
+  { id:3,  name:{ru:'Моторы',         en:'Motors'},         emoji:'🛠️',  baseCost:34000,      baseReward:4533,     baseSpeed:16000 },
+  { id:4,  name:{ru:'Роботы',         en:'Robots'},         emoji:'🤖',  baseCost:260000,     baseReward:44571,    baseSpeed:24000 },
+  { id:5,  name:{ru:'ИИ-блок',        en:'AI Unit'},        emoji:'💡',  baseCost:2000000,    baseReward:464516,   baseSpeed:36000 },
+  { id:6,  name:{ru:'Нанофабрика',    en:'Nanofactory'},    emoji:'🔬',  baseCost:15000000,   baseReward:4588235,  baseSpeed:52000 },
+  { id:7,  name:{ru:'Квантовый цех',  en:'Quantum Plant'},  emoji:'⚛️',  baseCost:115000000,  baseReward:47916667, baseSpeed:75000 },
+  { id:8,  name:{ru:'Мегакомплекс',   en:'Megaplex'},       emoji:'🏗️',  baseCost:880000000,  baseReward:486315790,baseSpeed:105000},
+  { id:9,  name:{ru:'Орбитальный цех',en:'Orbital Plant'},  emoji:'🛸',  baseCost:6700000000, baseReward:4857500000,baseSpeed:145000},
+  // Платный цех — разблокируется через IAP
+  { id:10, name:{ru:'Секретная лаборатория',en:'Secret Lab'}, emoji:'🧪', baseCost:0, baseReward:50, baseSpeed:8000, premium:true },
 ];
 
 // cost  = базовая цена улучшения
 // mult  = множитель за покупку (применяется 1 раз к цеху)
 // scale = во сколько раз дорожает каждая следующая покупка
 const UPGRADES_DEF = [
-  { id:'a0', name:'Авто-болты',         desc:'Болты производятся автоматически',    cost:80,     mid:0,  type:'auto'      },
-  { id:'a1', name:'Авто-шестерни',      desc:'Шестерни производятся автоматически', cost:600,    mid:1,  type:'auto'      },
-  { id:'a2', name:'Авто-поршни',        desc:'Поршни производятся автоматически',   cost:4000,   mid:2,  type:'auto'      },
-  { id:'a3', name:'Авто-моторы',        desc:'Моторы производятся автоматически',   cost:30000,  mid:3,  type:'auto'      },
-  { id:'a4', name:'Авто-роботы',        desc:'Роботы производятся автоматически',   cost:250000, mid:4,  type:'auto'      },
-  { id:'s0', name:'Смазка конвейера',   desc:'Скорость болтов ×1.5',                cost:300,    mid:0,  type:'speed', mult:1.5, scale:5 },
-  { id:'s1', name:'Точная настройка',   desc:'Скорость шестерён ×1.5',              cost:2000,   mid:1,  type:'speed', mult:1.5, scale:5 },
-  { id:'s2', name:'Гидравлика',         desc:'Скорость поршней ×1.5',               cost:14000,  mid:2,  type:'speed', mult:1.5, scale:5 },
-  { id:'s3', name:'Турбопривод',        desc:'Скорость моторов ×1.5',               cost:90000,  mid:3,  type:'speed', mult:1.5, scale:5 },
-  { id:'r0', name:'Легированная сталь', desc:'Выручка с болтов ×1.8',               cost:500,    mid:0,  type:'reward',mult:1.8, scale:6 },
-  { id:'r1', name:'Карбоновые детали',  desc:'Выручка с шестерён ×1.8',             cost:3500,   mid:1,  type:'reward',mult:1.8, scale:6 },
-  { id:'r2', name:'Нано-покрытие',      desc:'Выручка с поршней ×1.8',              cost:25000,  mid:2,  type:'reward',mult:1.8, scale:6 },
-  { id:'r3', name:'Квантовый чип',      desc:'Выручка с моторов ×1.8',              cost:160000, mid:3,  type:'reward',mult:1.8, scale:6 },
-  { id:'rA', name:'Глобальный буст',    desc:'Выручка со всех цехов ×1.5',          cost:300000, mid:-1, type:'rewardAll',mult:1.5,scale:8 },
+  // ── Глобальные усилители (уникально — влияют на всё сразу) ──
+  { id:'gA', name:{ru:'Синхронизация цехов',  en:'Workshop Sync'},       desc:{ru:'Все цеха производят одновременно — скорость каждого ×1.3', en:'All workshops speed ×1.3'},      cost:400000,     mid:-1, type:'speedAll',  mult:1.3, scale:8  },
+  { id:'gB', name:{ru:'Мегапроизводство',     en:'Megaproduction'},      desc:{ru:'Выручка со всех цехов ×2 навсегда',       en:'All workshop income ×2 forever'},  cost:3500000,    mid:-1, type:'rewardAll', mult:2.0, scale:10 },
+  { id:'gC', name:{ru:'Хронодвигатель',       en:'Chrono Engine'},       desc:{ru:'Все цеха работают вдвое быстрее',         en:'All workshops run 2x faster'},     cost:28000000,   mid:-1, type:'speedAll',  mult:2.0, scale:12 },
+  { id:'gD', name:{ru:'Квантовый синтез',     en:'Quantum Synthesis'},   desc:{ru:'Выручка со всех цехов ×3',                en:'All workshop income ×3'},          cost:400000000,  mid:-1, type:'rewardAll', mult:3.0, scale:15 },
+
+  // ── Энергия и ручное производство (прокачка отдельного клика) ──
+  { id:'eA', name:{ru:'Бутылка с энергетиком', en:'Energy Drink'},        desc:{ru:'Максимум энергии +50',                    en:'Max energy +50'},                  cost:300,        mid:-1, type:'energyMax',   mult:50,  scale:4 },
+  { id:'eB', name:{ru:'Кофе-машина',           en:'Coffee Machine'},      desc:{ru:'Энергия восстанавливается на +1 быстрее', en:'Energy regen +1 faster'},          cost:1500,       mid:-1, type:'energyRegen', mult:1,   scale:6 },
+  { id:'eC', name:{ru:'Рабочие перчатки',      en:'Work Gloves'},         desc:{ru:'Монет за ручной клик ×1.5',               en:'Manual click coins ×1.5'},         cost:2500,       mid:-1, type:'clickValue',  mult:1.5, scale:5 },
+  { id:'eD', name:{ru:'Энергетический модуль', en:'Energy Module'},       desc:{ru:'Максимум энергии +200',                   en:'Max energy +200'},                 cost:260000,     mid:-1, type:'energyMax',   mult:200, scale:6 },
+  { id:'eE', name:{ru:'Экзоскелет',            en:'Exoskeleton'},         desc:{ru:'Монет за ручной клик ×2',                 en:'Manual click coins ×2'},           cost:1800000,    mid:-1, type:'clickValue',  mult:2.0, scale:7 },
+
+  // ── Специальные эффекты (уникально — нельзя получить апгрейдом) ──
+  { id:'sY', name:{ru:'Ночная смена',         en:'Night Shift'},         desc:{ru:'Авто-цеха дают +50% пока не играешь',     en:'Auto workshops earn +50% offline'}, cost:180000,    mid:-1, type:'offline',   mult:1.5, scale:7  },
+  { id:'sZ', name:{ru:'Золотая деталь',       en:'Golden Part'},         desc:{ru:'Каждые 60с случайный цех выдаёт ×10',     en:'Every 60s random workshop gives ×10'}, cost:900000, mid:-1, type:'golden',   mult:10,  scale:9  },
 ];
 
 const MILESTONES = [
-  {coins:100,msg:'Первая сотня!'},{coins:1000,msg:'Тысячник!'},
-  {coins:10000,msg:'10 тысяч!'},{coins:100000,msg:'100 тысяч!'},
-  {coins:1000000,msg:'Миллионер!'},{coins:10000000,msg:'Магнат!'},
+  {coins:100,key:'m100'},{coins:1000,key:'m1000'},
+  {coins:10000,key:'m10000'},{coins:100000,key:'m100000'},
+  {coins:1000000,key:'m1000000'},{coins:10000000,key:'m10000000'},
+  {coins:100000000,key:'m100000000'},{coins:1000000000,key:'m1000000000'},
 ];
 
-// ── ОПРЕДЕЛЕНИЕ ПЛАТФОРМЫ ────────────────────────────────────────
+// ── IN-APP PURCHASES ─────────────────────────────────────────────
+// Товары создаются в консоли Яндекс.Игр → Монетизация → Товары
+// ID товаров должны совпадать с теми что зарегистрированы в консоли
+
+const IAP_PRODUCTS = [
+  {
+    id:       'starter_pack',
+    type:     'starter',
+    nameKey:  'iapStarter',
+    descKey:  'iapStarterDesc',
+    price:    '99 ₽',
+    once:     true,   // разовая покупка
+    onBuy:    () => {
+      G.purchases.starterPack = true;
+      adCooldownEnd = 0; // Сбрасываем cooldown рекламы
+      showToast(t('iapToastStarter'));
+    },
+  },
+  {
+    id:       'vip_status',
+    type:     'vip',
+    nameKey:  'iapVip',
+    descKey:  'iapVipDesc',
+    price:    '299 ₽',
+    once:     true,
+    badgeKey: 'iapBadge',
+    onBuy:    () => {
+      G.purchases.vipStatus = true;
+      showToast(t('iapToastVip'));
+    },
+  },
+  {
+    id:       'secret_lab',
+    type:     'vip',
+    nameKey:  'iapLab',
+    descKey:  'iapLabDesc',
+    price:    '199 ₽',
+    once:     true,
+    badgeKey: 'iapLabBadge',
+    onBuy:    () => {
+      G.purchases.secretLab = true;
+      const m = getMachine(10);
+      m.owned = true;
+      m.auto  = true; // Лаборатория сразу работает автоматически
+      // Награда зависит от прогресса — на старте скромная, в эндгейме весомая,
+      // но не превышает доход последнего обычного цеха (Орбитальный) больше чем на 50%.
+      const ref = getMachine(9); // Орбитальный цех как ориентир силы
+      const refDps = ref.owned ? (ref.reward / ref.speed * 1000) : (cps() * 0.3 || 5);
+      m.reward = Math.max(50, Math.round(refDps * (m.speed/1000) * 1.5));
+      showToast(t('iapToastLab'));
+      fullRender();
+    },
+  },
+  {
+    id:       'coin_pack',
+    type:     'coins',
+    nameKey:  'iapCoins',
+    descKey:  'iapCoinsDesc',
+    price:    '59 ₽',
+    once:     false,  // можно покупать несколько раз
+    onBuy:    () => {
+      const hourly = cps() * 7200; // 2 часа
+      const bonus  = Math.max(hourly, 10000);
+      G.coins += bonus;
+      showToast(t('iapToastCoins').replace('{n}', fmt(bonus)));
+    },
+  },
+];
+
+// Хранит id купленных товаров (сохраняется в G)
+// G.purchases = { starterPack: false, vipStatus: false }
+
+function iapMultiplier() {
+  return G.purchases && G.purchases.vipStatus ? 1.5 : 1;
+}
+
+function hasNoAdCooldown() {
+  return G.purchases && G.purchases.starterPack;
+}
+
+async function initIAP() {
+  if (PLATFORM !== 'yandex' || !ysdk) { renderIAP(); return; }
+  try {
+    const payments = await ysdk.getPayments({ signed: true });
+    // Восстанавливаем уже купленные товары при загрузке
+    const purchased = await payments.getPurchases();
+    purchased.forEach(p => {
+      const prod = IAP_PRODUCTS.find(x => x.id === p.productID);
+      if (prod && prod.once) {
+        if (p.productID === 'starter_pack') G.purchases.starterPack = true;
+        if (p.productID === 'vip_status')   G.purchases.vipStatus   = true;
+        if (p.productID === 'secret_lab') { G.purchases.secretLab = true; const ml=getMachine(10); ml.owned=true; ml.auto=true; }
+      }
+    });
+    renderIAP();
+  } catch(e) {
+    console.warn('[IAP] Инициализация:', e);
+    renderIAP();
+  }
+}
+
+async function buyProduct(id) {
+  const prod = IAP_PRODUCTS.find(p => p.id === id);
+  if (!prod) { console.error('[IAP] Товар не найден:', id); return; }
+
+  if (PLATFORM === 'yandex' && ysdk) {
+    try {
+      const payments = await ysdk.getPayments({ signed: true });
+      const purchase = await payments.purchase({ id });
+      prod.onBuy();
+      // Подтверждаем покупку (обязательно для Яндекс)
+      await payments.consumePurchase(purchase.purchaseToken);
+      fullRender();
+      saveGame();
+    } catch(e) {
+      console.warn('[IAP] Ошибка покупки на Яндексе:', e);
+      if (e && e.code !== 'USER_CANCELED') showToast(t('iapErrPayment'));
+    }
+  } else {
+    // Локально / на других платформах — симуляция для тестирования
+    try {
+      prod.onBuy();
+      fullRender();
+      saveGame();
+    } catch(e) {
+      console.error('[IAP] Ошибка в onBuy (локальный режим):', e);
+    }
+  }
+}
+
+function renderIAP() {
+  const el = document.getElementById('iapList');
+  if (!el) return;
+  el.innerHTML = IAP_PRODUCTS.map(prod => {
+    const owned  = prod.once && (
+      (prod.id==='starter_pack' && G.purchases?.starterPack) ||
+      (prod.id==='vip_status'   && G.purchases?.vipStatus)   ||
+      (prod.id==='secret_lab'   && G.purchases?.secretLab)
+    );
+    return `<div class="iap-item ${prod.type}${owned?' owned':''}">
+      <div class="iap-info">
+        <div class="iap-name">${t(prod.nameKey)}${owned?' ✓':''}</div>
+        <div class="iap-desc">${t(prod.descKey)}</div>
+      </div>
+      ${prod.badgeKey && !owned ? `<div class="iap-badge">${t(prod.badgeKey)}</div>` : ''}
+      <button class="btn-iap ${prod.type}" onclick="buyProduct('${prod.id}')" ${owned?'disabled':''}>
+        ${owned ? t('bought') : prod.price}
+      </button>
+    </div>`;
+  }).join('');
+}
+const LB_BOARDS = {
+  sold:     { key:'sold',     getLabel:()=>t('lbDetails').replace(/^\S+\s/,''),  getUnit:()=>t('lbUnits').sold,     getValue:()=>Math.floor(G.sold) },
+  coins:    { key:'coins',    getLabel:()=>t('lbCoins').replace(/^\S+\s/,''),    getUnit:()=>t('lbUnits').coins,    getValue:()=>Math.floor(G.coins) },
+  prestige: { key:'prestige', getLabel:()=>t('lbPrestige').replace(/^\S+\s/,''), getUnit:()=>t('lbUnits').prestige, getValue:()=>Math.floor(G.prestigeCount) },
+};
+let currentLb = 'sold';
+
+function setLbTab(name) {
+  currentLb = name;
+  document.querySelectorAll('.lb-tab').forEach(b => b.classList.toggle('active', b.dataset.lb === name));
+  loadLeaderboard();
+}
+
+async function submitScore() {
+  if (PLATFORM !== 'yandex' || !ysdk) return;
+  try {
+    const lb = await ysdk.getLeaderboards();
+    await Promise.all(Object.values(LB_BOARDS).map(b =>
+      lb.setLeaderboardScore(b.key, b.getValue()).catch(()=>{})
+    ));
+  } catch(e) { console.warn('[LB] Ошибка отправки:', e); }
+}
+
+async function loadLeaderboard() {
+  const list    = document.getElementById('lbList');
+  const myRank  = document.getElementById('lbMyRank');
+  const board   = LB_BOARDS[currentLb];
+  list.innerHTML = `<div class="lb-empty">${t('lbLoading')}</div>`;
+  myRank.style.display = 'none';
+
+  if (PLATFORM !== 'yandex' || !ysdk) {
+    const demos = {
+      sold:     [98400,74200,55800,12000,8500],
+      coins:    [1240000,890000,540000,320000,180000],
+      prestige: [12,9,7,5,3],
+    };
+    const names = ['ЗаводчикПро','МегаМагнат','IronTycoon','RoboFactory','Механик77'];
+    list.innerHTML = renderLbItems(
+      demos[currentLb].map((score,i) => ({
+        rank:i+1, name:names[i], score, avatar:'', isCurrentPlayer:false
+      })).concat([{ rank:4, name:t('lbMe2'), score:board.getValue(), avatar:'', isCurrentPlayer:true }])
+      .sort((a,b)=>b.score-a.score).map((e,i)=>({...e,rank:i+1}))
+    , board.getUnit())
+    + `<div class="lb-empty" style="font-size:11px;margin-top:8px">${t('lbDemo')}</div>`;
+    return;
+  }
+
+  try {
+    const lb  = await ysdk.getLeaderboards();
+    const res = await lb.getLeaderboardEntries(board.key, {
+      includeUser:true, quantityAround:3, quantityTop:10,
+    });
+    if (res.userRank > 0) {
+      myRank.style.display = 'block';
+      myRank.innerHTML = `${t('lbMyRank')}: <b>#${res.userRank}</b> · ${board.getLabel()}: <b>${fmt(board.getValue())}</b>`;
+    }
+    const entries = res.entries.map(e => ({
+      rank: e.rank,
+      name: e.player.publicName || t('lbAnon'),
+      score: e.score,
+      avatar: e.player.getAvatarSrc('small'),
+      isCurrentPlayer: e.player.uniqueID === yplayer.getUniqueID(),
+    }));
+    list.innerHTML = entries.length
+      ? renderLbItems(entries, board.getUnit())
+      : `<div class="lb-empty">${t('lbEmpty')}</div>`;
+  } catch(e) {
+    list.innerHTML = `<div class="lb-empty">${t('lbError')}</div>`;
+  }
+}
+
+function renderLbItems(entries, unit) {
+  unit = unit || t('lbUnits').sold;
+  return entries.map(e => {
+    const rankClass = e.rank===1?'top1':e.rank===2?'top2':e.rank===3?'top3':'';
+    const rankIcon  = e.rank===1?'🥇':e.rank===2?'🥈':e.rank===3?'🥉':e.rank;
+    const avatar = e.avatar
+      ? `<img class="lb-avatar" src="${e.avatar}" alt="">`
+      : `<div class="lb-avatar" style="display:flex;align-items:center;justify-content:center;font-size:16px">🏭</div>`;
+    return `<div class="lb-item${e.isCurrentPlayer?' me':''}">
+      <div class="lb-rank ${rankClass}">${rankIcon}</div>
+      ${avatar}
+      <div class="lb-name">${e.name}${e.isCurrentPlayer?' ('+t('lbMe')+')':''}</div>
+      <div class="lb-score">${fmt(e.score)} ${unit}</div>
+    </div>`;
+  }).join('');
+}
 // Игра определяет платформу автоматически и использует нужный SDK.
 // Яндекс: наличие YaGames в window
 // ВК:     наличие vk_app_id в URL параметрах
 // Локально: офлайн-режим, всё работает через localStorage
 const PLATFORM = (() => {
-  if (typeof YaGames !== 'undefined') return 'yandex';
+  if (location.hostname.includes('yandex') || location.search.includes('game_sid')) return 'yandex';
   if (location.search.includes('vk_app_id') || typeof vkBridge !== 'undefined') return 'vk';
   return 'local';
 })();
@@ -254,30 +1132,8 @@ const PLATFORM = (() => {
 let ysdk = null;
 let yplayer = null;
 
-async function initYandex() {
-  try {
-    ysdk = await YaGames.init();
-    yplayer = await ysdk.getPlayer({ scopes: false });
-    await loadCloudSave();
-  } catch(e) {
-    console.warn('[YA] SDK недоступен:', e.message);
-  }
-}
-
 // ── VK BRIDGE SDK ────────────────────────────────────────────────
-// VK Bridge подключается через CDN — не нужен локальный файл
 let vkReady = false;
-
-async function initVK() {
-  try {
-    await vkBridge.send('VKWebAppInit');
-    vkReady = true;
-    console.log('[VK] Bridge готов, платформа:', PLATFORM);
-    await loadVKSave();
-  } catch(e) {
-    console.warn('[VK] Bridge недоступен:', e.message);
-  }
-}
 
 async function saveVK(data) {
   if (!vkReady) return;
@@ -309,6 +1165,7 @@ async function loadVKSave() {
 
 // ── ОБЛАЧНЫЕ СОХРАНЕНИЯ — единая точка ──────────────────────────
 async function saveGame() {
+  G.lastSaved = Date.now();
   const data = JSON.stringify(G);
   localStorage.setItem(SAVE_KEY, data);
   if (PLATFORM === 'yandex' && yplayer) {
@@ -316,6 +1173,7 @@ async function saveGame() {
   } else if (PLATFORM === 'vk') {
     await saveVK(data);
   }
+  submitScore();
 }
 
 async function loadCloudSave() {
@@ -332,7 +1190,66 @@ async function loadCloudSave() {
   } catch(e) { console.warn('[YA] Ошибка загрузки из облака:', e); }
 }
 
-// ── REWARDED ADS ─────────────────────────────────────────────────
+// ── РЕКЛАМНЫЕ МЕХАНИКИ ───────────────────────────────────────────
+// 1. Бесплатный апгрейд цеха раз в 10 минут
+// 2. Открыть новый цех на ур.3 за рекламу (скидка ~50% времени фарма)
+// 3. Два разовых буста в магазине за рекламу
+
+const AD_FREE_UPG_CD = 10 * 60 * 1000; // 10 минут
+let adFreeUpgEnd = 0; // когда снова доступен бесплатный апгрейд
+
+function canFreeUpgrade() { return Date.now() >= adFreeUpgEnd; }
+
+async function adOpenMachine(id) {
+  const m = getMachine(id), d = getDef(id);
+  if (m.owned) return;
+  // Добавляем монеты ровно до стоимости цеха
+  await watchAdThen(() => {
+    G.coins = Math.max(G.coins, d.baseCost);
+    showToast(t('toastFillCoin'));
+    fullRender();
+  });
+}
+
+async function adFreeUpgrade(id) {
+  if (!canFreeUpgrade()) return;
+  // Добавляем монеты ровно до стоимости апгрейда
+  await watchAdThen(() => {
+    const cost = machineUpgCost(id);
+    G.coins = Math.max(G.coins, cost);
+    adFreeUpgEnd = Date.now() + AD_FREE_UPG_CD;
+    showToast(t('toastFillUpg'));
+    fullRender();
+  });
+}
+
+async function adFreeShopUpg(id) {
+  // Добавляем монеты ровно до стоимости улучшения магазина
+  await watchAdThen(() => {
+    const cost = getUpgCost(id);
+    G.coins = Math.max(G.coins, cost);
+    showToast(t('toastFillShop'));
+    fullRender();
+  });
+}
+
+// Универсальная обёртка: показывает рекламу и вызывает callback при успехе
+async function watchAdThen(callback) {
+  if (PLATFORM === 'yandex' && ysdk) {
+    try {
+      await ysdk.adv.showRewardedVideo({
+        callbacks: {
+          onRewarded: () => callback(),
+          onClose:    () => {},
+          onError:    () => showToast(t('toastAdUnavail')),
+        }
+      });
+    } catch(e) { showToast(t('toastAdUnavail')); }
+  } else {
+    // Локально — симуляция
+    callback();
+  }
+}
 const AD_BONUS_DURATION = 5 * 60 * 1000;
 const AD_COOLDOWN       = 5 * 60 * 1000;
 let adBonusEnd    = 0;
@@ -342,11 +1259,18 @@ function getAdMultiplier() {
   return Date.now() < adBonusEnd ? 2 : 1;
 }
 
+// Стартовый пак убирает cooldown между просмотрами рекламы
+const _origAdCooldownCheck = () => Date.now() < adCooldownEnd;
+function adIsOnCooldown() {
+  if (hasNoAdCooldown()) return false;
+  return _origAdCooldownCheck();
+}
+
 async function showRewardedAd() {
-  if (Date.now() < adCooldownEnd) return;
+  if (adIsOnCooldown()) return;
   const btn = document.getElementById('adBtn');
   btn.disabled = true;
-  btn.textContent = '⏳ Загрузка...';
+  btn.textContent = t('adLoading');
 
   if (PLATFORM === 'yandex' && ysdk) {
     // Яндекс Rewarded Video
@@ -377,7 +1301,8 @@ async function showRewardedAd() {
 function onAdRewarded() {
   adBonusEnd = Date.now() + AD_BONUS_DURATION;
   adCooldownEnd = Date.now() + AD_COOLDOWN;
-  showToast('📺 Бонус ×2 активирован на 5 минут!');
+  trackQuest('qtAd', 1);
+  showToast(t('toastAdBonus'));
   updateAdButton();
 }
 
@@ -399,16 +1324,16 @@ function updateAdButton() {
   if (bonusLeft > 0) {
     const mins = Math.ceil(bonusLeft / 60000);
     btn.disabled = true;
-    btn.textContent = `✅ Бонус активен — ×2`;
-    cd.textContent = `Осталось: ${mins} мин`;
+    btn.textContent = t('adActive');
+    cd.textContent = `${t('adLeft')}: ${mins} ${t('minShort')}`;
   } else if (cdLeft > 0) {
     const secs = Math.ceil(cdLeft / 1000);
     btn.disabled = true;
-    btn.textContent = '▶ Смотреть рекламу';
-    cd.textContent = `Перезарядка: ${secs}с`;
+    btn.textContent = t('adWatch');
+    cd.textContent = `${t('adRecharge')}: ${secs}${t('secShort')}`;
   } else {
     btn.disabled = false;
-    btn.textContent = '▶ Смотреть рекламу';
+    btn.textContent = t('adWatch');
     cd.textContent = '';
   }
 }
@@ -418,8 +1343,15 @@ const SAVE_KEY = 'megafactory_v3';
 function defaultState() {
   return {
     coins:0, sold:0, prestigeMult:1.0, prestigeCount:0,
+    lang: LANG,
+    clickMult: 1, offlineMult: 1, goldenTimer: 0,
+    lifetimeCoins: 0, lifetimeClicks: 0, lifetimeAds: 0,
+    energy: 100, energyMaxBonus: 0, energyRegenBonus: 0, clickValueMult: 1,
+    achievements: {},
+    myRefCode: null, friendsInvited: 0, referredBy: null,
+    purchases: { starterPack: false, vipStatus: false, secretLab: false },
     machines: MACHINES_DEF.map(d=>({
-      id:d.id, level:1, owned:d.id===0, auto:false,
+      id:d.id, level:1, owned:false, auto:true,
       progress:0, reward:d.baseReward, speed:d.baseSpeed,
     })),
     upgrades: UPGRADES_DEF.map(d=>({id:d.id, level:0})),
@@ -429,7 +1361,7 @@ function defaultState() {
 let G = defaultState();
 
 // ── SAVE / LOAD ─────────────────────────────────────────────────
-function saveGame() { localStorage.setItem(SAVE_KEY, JSON.stringify(G)); }
+function saveGame() { G.lastSaved = Date.now(); localStorage.setItem(SAVE_KEY, JSON.stringify(G)); }
 
 function loadGame() {
   try {
@@ -475,7 +1407,7 @@ function getUpgCost(id) {
 }
 
 function prestigeThreshold() {
-  return Math.round(50000 * Math.pow(4, G.prestigeCount));
+  return Math.round(350000 * Math.pow(4, G.prestigeCount));
 }
 
 // ── ACTIONS ─────────────────────────────────────────────────────
@@ -484,7 +1416,9 @@ function buyMachine(id) {
   if (m.owned || G.coins < d.baseCost) return;
   G.coins -= d.baseCost;
   m.owned = true;
-  showToast('🏭 Открыт цех: ' + d.name + '!');
+  m.auto  = true;
+  trackQuest('qtBuy', 1);
+  showToast('🏭 ' + t('toastMachineOpen') + ' ' + (d.name[LANG]||d.name.ru) + '!');
   fullRender();
 }
 
@@ -492,8 +1426,12 @@ function clickMachine(id, evt) {
   const m = getMachine(id);
   if (!m||!m.owned||m.progress>0) return;
   m.progress = 1;
-  if (evt) spawnPop(evt.clientX, evt.clientY, '+'+fmt(m.reward*G.prestigeMult));
-  tickRender(performance.now());
+  // Клик по карточке только запускает цикл — монеты приходят по завершении как обычно.
+  // Мгновенные монеты теперь даёт отдельная кнопка "Произвести вручную" (тратит энергию).
+  const card = document.querySelector('[data-mid="'+id+'"]');
+  if (card) card.classList.add('working');
+  const pb = document.getElementById('pb'+id);
+  if (pb) pb.style.width = '0%';
 }
 
 function upgradeMachine(id) {
@@ -504,6 +1442,7 @@ function upgradeMachine(id) {
   m.level += 1;
   m.reward = Math.round(m.reward * 1.20);   // +20% к награде
   m.speed  = Math.max(800, Math.round(m.speed * 0.95)); // -5% к времени
+  trackQuest('qtUpgrade', 1);
   fullRender();
 }
 
@@ -517,38 +1456,84 @@ function buyUpgrade(id) {
   if      (ud.type==='auto')      { getMachine(ud.mid).auto = true; }
   else if (ud.type==='speed')     { const m=getMachine(ud.mid); m.speed=Math.max(800,Math.round(m.speed/ud.mult)); }
   else if (ud.type==='reward')    { const m=getMachine(ud.mid); m.reward=Math.round(m.reward*ud.mult); }
-  else if (ud.type==='rewardAll') { G.machines.forEach(m=>{ m.reward=Math.round(m.reward*ud.mult); }); }
+  else if (ud.type==='rewardAll') { G.machines.forEach(m=>{ if(m.owned) m.reward=Math.round(m.reward*ud.mult); }); }
+  else if (ud.type==='speedAll')  { G.machines.forEach(m=>{ if(m.owned) m.speed=Math.max(800,Math.round(m.speed/ud.mult)); }); }
+  else if (ud.type==='clickMult') { G.clickMult = (G.clickMult||1) * ud.mult; }
+  else if (ud.type==='offline')   { G.offlineMult = (G.offlineMult||1) * ud.mult; }
+  else if (ud.type==='golden')    { /* активируется в тике */ }
+  else if (ud.type==='energyMax')   { G.energyMaxBonus   = (G.energyMaxBonus||0) + ud.mult; }
+  else if (ud.type==='energyRegen') { G.energyRegenBonus = (G.energyRegenBonus||0) + ud.mult; }
+  else if (ud.type==='clickValue')  { G.clickValueMult   = (G.clickValueMult||1) * ud.mult; }
   fullRender();
 }
 
 function openPrestige() {
   const thr = prestigeThreshold();
   const ready = G.coins >= thr;
-  document.getElementById('prestige-locked-view').style.display = ready?'none':'block';
-  document.getElementById('prestige-ready-view').style.display  = ready?'block':'none';
+  const lockedView = document.getElementById('prestige-locked-view');
+  const readyView  = document.getElementById('prestige-ready-view');
+  if (lockedView) lockedView.style.display = ready?'none':'block';
+  if (readyView)  readyView.style.display  = ready?'block':'none';
   if (!ready) {
     const pct = Math.min(100, Math.round(G.coins/thr*100));
-    document.getElementById('prestige-locked-text').innerHTML =
-      `Нужно <b style="color:var(--accent)">${fmt(thr)}</b> монет.<br>Осталось: <b style="color:var(--teal)">${fmt(thr-Math.floor(G.coins))}</b>`;
-    document.getElementById('prestige-pbar').style.width = pct+'%';
-    document.getElementById('prestige-pbar-label').textContent = pct+'% — сброс #'+(G.prestigeCount+1);
+    const lockedText = document.getElementById('prestige-locked-text');
+    const pbar  = document.getElementById('prestige-pbar');
+    const pbarL = document.getElementById('prestige-pbar-label');
+    if (lockedText) lockedText.innerHTML =
+      `${t('prestigeNeedCoins')} <b style="color:var(--accent)">${fmt(thr)}</b> ${t('coins')}.<br>${t('prestigeLeft')}: <b style="color:var(--teal)">${fmt(thr-Math.floor(G.coins))}</b>`;
+    if (pbar)  pbar.style.width = pct+'%';
+    if (pbarL) pbarL.textContent = pct+'% — '+t('prestigeReset')+(G.prestigeCount+1);
   } else {
-    document.getElementById('prestigeBonus').textContent = 'x'+(G.prestigeMult*1.5).toFixed(1);
-    document.getElementById('currentMult').textContent   = 'x'+G.prestigeMult.toFixed(1);
+    const newMult = (G.prestigeMult*1.5).toFixed(1);
+    const readyText = document.getElementById('prestige-ready-text');
+    if (readyText) readyText.innerHTML =
+      `${t('prestigeGoal')} <b id="prestigeBonus" style="color:var(--accent)">x${newMult}</b> ${t('prestigeForever')}<br><br>${t('prestigeCurrentMult')} <b id="currentMult" style="color:var(--teal)">x${G.prestigeMult.toFixed(1)}</b>`;
   }
-  document.getElementById('prestigeModal').classList.add('show');
+  const modal = document.getElementById('prestigeModal');
+  if (modal) modal.classList.add('show');
 }
-function closePrestige() { document.getElementById('prestigeModal').classList.remove('show'); }
+function closePrestige() {
+  const modal = document.getElementById('prestigeModal');
+  if (modal) modal.classList.remove('show');
+}
 function doPrestige() {
   G.prestigeMult = parseFloat((G.prestigeMult*1.5).toFixed(1));
   G.prestigeCount++;
-  const mult=G.prestigeMult, cnt=G.prestigeCount;
+  const mult         = G.prestigeMult;
+  const cnt          = G.prestigeCount;
+  const purchases    = G.purchases;
+  const quests       = G.quests;
+  const achievements = G.achievements;
+  const lifeCoins    = G.lifetimeCoins;
+  const lifeClicks   = G.lifetimeClicks;
+  const lifeAds      = G.lifetimeAds;
+  const energyMaxB   = G.energyMaxBonus;
+  const energyRegenB = G.energyRegenBonus;
+  const clickValMult = G.clickValueMult;
+  const myRefCode    = G.myRefCode;
+  const friendsInv   = G.friendsInvited;
+  const referredBy   = G.referredBy;
   G = defaultState();
-  G.prestigeMult=mult; G.prestigeCount=cnt;
+  G.prestigeMult   = mult;
+  G.prestigeCount  = cnt;
+  G.purchases      = purchases;
+  G.quests         = quests;
+  G.achievements   = achievements;
+  G.lifetimeCoins  = lifeCoins;
+  G.lifetimeClicks = lifeClicks;
+  G.lifetimeAds    = lifeAds;
+  G.energyMaxBonus    = energyMaxB;
+  G.energyRegenBonus  = energyRegenB;
+  G.clickValueMult    = clickValMult;
+  G.myRefCode      = myRefCode;
+  G.friendsInvited = friendsInv;
+  G.referredBy     = referredBy;
+  G.energy = energyMax();
+  if (purchases.secretLab) { const ml=getMachine(10); ml.owned=true; ml.auto=true; }
   closePrestige();
   fullRender();
   saveGame();
-  showToast('⚡ Престиж! Множитель x'+mult.toFixed(1));
+  showToast('⚡ '+t('prestigeToast')+mult.toFixed(1));
 }
 
 // ── UI HELPERS ───────────────────────────────────────────────────
@@ -565,12 +1550,43 @@ function spawnPop(x,y,text) {
   el.style.left=(x-20)+'px'; el.style.top=(y-10)+'px';
   document.body.appendChild(el);
   setTimeout(()=>el.remove(),900);
+  spawnParticles(x, y, 6, '#F0A500');
+}
+
+function spawnParticles(x, y, count, color) {
+  for (let i=0; i<count; i++) {
+    const el = document.createElement('div');
+    el.className = 'particle';
+    const size  = 4 + Math.random()*5;
+    const angle = (Math.PI*2/count)*i + Math.random()*0.5;
+    const dist  = 28 + Math.random()*35;
+    el.style.cssText = `width:${size}px;height:${size}px;background:${color};left:${x}px;top:${y}px;--tx:${Math.cos(angle)*dist}px;--ty:${Math.sin(angle)*dist-18}px;animation-delay:${Math.random()*0.08}s;animation-duration:${0.55+Math.random()*0.3}s;`;
+    document.body.appendChild(el);
+    setTimeout(()=>el.remove(), 900);
+  }
+}
+
+function pulseCard(machineId) {
+  const card = document.querySelector(`[data-mid="${machineId}"]`);
+  if (!card) return;
+  card.classList.remove('pulse-once');
+  void card.offsetWidth;
+  card.classList.add('pulse-once');
+  setTimeout(()=>card.classList.remove('pulse-once'), 500);
+}
+
+function goldenGlow(el) {
+  if (!el) return;
+  el.classList.remove('golden-glow');
+  void el.offsetWidth;
+  el.classList.add('golden-glow');
+  setTimeout(()=>el.classList.remove('golden-glow'), 600);
 }
 function checkMilestones() {
   MILESTONES.forEach(m=>{
     if(G.coins>=m.coins && !G.milestonesHit.includes(m.coins)){
       G.milestonesHit.push(m.coins);
-      showToast('🏆 '+m.msg);
+      showToast('🏆 '+t(m.key));
     }
   });
 }
@@ -590,64 +1606,140 @@ function switchTab(tab) {
 //   tickRender(now)    — обновляет только числа и прогресс-бары (каждый кадр)
 // Это исключает проблему «двойного клика»: DOM не пересоздаётся во время игры.
 
+// Следующий незакупленный цех для покупки (последовательная разблокировка)
+function nextUnlockedMachineId() {
+  const first = G.machines.find(m => !m.owned && !getDef(m.id).premium);
+  return first ? first.id : -1;
+}
+
 function buildMachineCard(m) {
   const d = getDef(m.id);
+
   if (!m.owned) {
-    const pct = Math.min(100, Math.round(G.coins/d.baseCost*100));
-    const can = G.coins >= d.baseCost;
-    return `<div class="mcard${can?' mcard-buyable':''}" data-mid="${m.id}" data-locked="1">
-      <div class="mcard-head">
-        <div class="mcard-icon">${d.emoji}</div>
-        <div><div class="mcard-name">${d.name}</div>
-        <div class="mcard-lvl" id="mlvl${m.id}">${can?'Доступно!':'Нужно '+fmt(d.baseCost)+' монет'}</div></div>
-      </div>
-      <div class="pbar-wrap"><div class="pbar" id="pb${m.id}" style="width:${pct}%;background:${can?'var(--accent)':'var(--teal)'}"></div></div>
-      <div class="mcard-footer">
-        <button class="btn-upg" data-action="buy" style="${can?'border-color:var(--accent);color:var(--accent)':''}" ${can?'':'disabled'}>
-          Купить за ${fmt(d.baseCost)} 💰
+    // Платный цех — показываем отдельно с кнопкой IAP
+    if (d.premium) {
+      const bought = G.purchases?.secretLab;
+      if (bought) return ''; // куплен — уже owned, не попадёт сюда
+      return `<div class="mcard" style="border-color:#7c5cff;background:linear-gradient(135deg,rgba(124,92,255,.1),rgba(50,30,120,.08))" data-mid="${m.id}" data-premium="1">
+        <div class="mcard-head">
+          <div class="mcard-icon" style="border-color:#7c5cff;font-size:22px">${d.emoji}</div>
+          <div style="flex:1">
+            <div class="mcard-name" style="color:#a090ff">${d.name[LANG]||d.name.ru}</div>
+            <div class="mcard-lvl">${t('iapLabBadge')} · ${t('premiumOnly')}</div>
+          </div>
+          <div style="font-size:11px;color:#a090ff;font-weight:600">199 ₽</div>
+        </div>
+        <div class="mcard-reward" style="color:#a090ff">+${fmt(d.baseReward * G.prestigeMult)} ${t('coins')} ${t('perCycle')}</div>
+        <button class="btn-buy-big" data-action="buypremium" data-product="secret_lab"
+          style="background:#7c5cff;margin-top:8px;pointer-events:all;cursor:pointer">
+          💎 ${t('iapLab')} — 199 ₽
         </button>
+      </div>`;
+    }
+
+    const nextId = nextUnlockedMachineId();
+    // Если это не следующий по очереди — показываем замок
+    if (m.id !== nextId) {
+      const prevDef = MACHINES_DEF[m.id - 1];
+      const prevName = prevDef ? (prevDef.name[LANG]||prevDef.name.ru) : '';
+      return `<div class="mcard locked" style="opacity:0.3;cursor:default;pointer-events:none">
+        <div class="mcard-head">
+          <div class="mcard-icon" style="font-size:22px">🔒</div>
+          <div>
+            <div class="mcard-name">${d.name[LANG]||d.name.ru}</div>
+            <div class="mcard-lvl">${t('buyPrev')} «${prevName}»</div>
+          </div>
+        </div>
+      </div>`;
+    }
+
+    const pct    = Math.min(100, Math.round(G.coins / d.baseCost * 100));
+    const can    = G.coins >= d.baseCost;
+    const need   = Math.max(0, d.baseCost - Math.floor(G.coins));
+    const adShow = !can && pct >= 70;
+
+    return `<div class="mcard buyable" data-mid="${m.id}" data-locked="1">
+      <div class="mcard-head">
+        <div class="mcard-icon">${can ? d.emoji : '🔓'}</div>
+        <div style="flex:1">
+          <div class="mcard-name">${d.name[LANG]||d.name.ru}</div>
+          <div class="mcard-lvl">${can ? t('ready') : t('nextMachine')}</div>
+        </div>
+        <div style="font-size:11px;color:var(--accent);font-weight:600">${fmt(d.baseCost)} 💰</div>
       </div>
+      <div class="buy-progress-label">
+        <span>${pct}%</span>
+        <span>${can ? t('enough') : t('remain') + ' ' + fmt(need)}</span>
+      </div>
+      <div class="pbar-wrap" style="margin-bottom:8px">
+        <div class="pbar" id="pb${m.id}" style="width:${pct}%;background:${can?'var(--accent)':'#2a6aDD'}"></div>
+      </div>
+      <button class="btn-buy-big" data-action="buy" ${can?'':'disabled'}>
+        ${can ? t('buyShop') : t('buyLocked') + ' ' + fmt(d.baseCost) + ' ' + t('coins')}
+      </button>
+      ${adShow ? `<button class="btn-upg ad" data-action="adopen" style="margin-top:4px;width:100%">${t('adWatch2')}</button>` : ''}
     </div>`;
   }
-  const pct = m.progress>0 ? Math.min(100,Math.round(m.progress/m.speed*100)) : 0;
+
+  const pct     = m.progress > 0 ? Math.min(100, Math.round(m.progress / m.speed * 100)) : 0;
   const upgCost = machineUpgCost(m.id);
-  const canUpg = G.coins >= upgCost;
-  const eff = Math.round(m.reward*G.prestigeMult);
+  const canUpg  = G.coins >= upgCost;
+  const upgPct  = Math.min(100, Math.round(G.coins / upgCost * 100));
+  const adUpg   = !canUpg && upgPct >= 80 && canFreeUpgrade();
+  const eff     = Math.round(m.reward * G.prestigeMult);
+
   return `<div class="mcard${m.progress>0?' working':''}" data-mid="${m.id}">
     <div class="mcard-head">
       <div class="mcard-icon">${d.emoji}</div>
       <div>
-        <div class="mcard-name">${d.name}</div>
-        <div class="mcard-lvl" id="mlvl${m.id}">Ур.${m.level} · ${(m.speed/1000).toFixed(1)}с</div>
+        <div class="mcard-name">${d.name[LANG]||d.name.ru}</div>
+        <div class="mcard-lvl" id="mlvl${m.id}">${t('lvl')}${m.level} · ${(m.speed/1000).toFixed(1)}${LANG==='en'?'s':'с'}</div>
       </div>
-      ${m.auto?'<div class="mcard-auto-badge">АВТО</div>':''}
+      ${m.auto ? '<div class="mcard-auto-badge">'+t('autobadge')+'</div>' : ''}
     </div>
-    <div class="mcard-reward" id="mrew${m.id}">+${fmt(eff)} монет</div>
+    <div class="mcard-reward" id="mrew${m.id}">+${fmt(eff)} ${t('coins')}</div>
     <div class="pbar-wrap"><div class="pbar" id="pb${m.id}" style="width:${pct}%"></div></div>
     <div class="mcard-footer">
       <button class="btn-upg" data-action="upgrade" id="mupg${m.id}"
         style="${canUpg?'border-color:var(--accent);color:var(--accent)':''}"
         ${canUpg?'':'disabled'}>
-        Апгрейд ${fmt(upgCost)} 💰
+        ${t('upgrade')} ${fmt(upgCost)} 💰
       </button>
+      ${adUpg ? `<button class="btn-upg ad" data-action="adupgrade" id="madupg${m.id}">${t('adWatch2')}</button>` : ''}
     </div>
   </div>`;
 }
 
 function buildUpgradeItem(ud) {
-  const us = getUpgState(ud.id);
+  const us   = getUpgState(ud.id);
   const cost = getUpgCost(ud.id);
-  const can = G.coins >= cost;
-  const isRep = ud.type!=='auto';
-  const lvlBadge = isRep && us.level>0
-    ? `<span style="font-size:10px;padding:1px 6px;border-radius:10px;background:rgba(0,201,167,.12);color:var(--teal);border:1px solid rgba(0,201,167,.3);margin-left:6px">ур.${us.level}</span>` : '';
-  return `<div class="upg-item" id="ui${ud.id}">
+  const can  = G.coins >= cost;
+  const pct  = Math.min(100, Math.round(G.coins / cost * 100));
+  const need = Math.max(0, cost - Math.floor(G.coins));
+  const adShow = !can && pct >= 80;
+  const isRep  = ud.type !== 'auto';
+  const lvlBadge = isRep && us.level > 0
+    ? `<span style="font-size:10px;padding:1px 6px;border-radius:10px;background:rgba(0,201,167,.12);color:var(--teal);border:1px solid rgba(0,201,167,.3);margin-left:6px">${t('lvl').toLowerCase()}${us.level}</span>` : '';
+
+  return `<div class="upg-item${adShow?' upg-item-ad':''}" id="ui${ud.id}">
     <div class="upg-info">
-      <div class="upg-name">${ud.name}${lvlBadge}</div>
-      <div class="upg-desc">${ud.desc}</div>
-      <div class="upg-cost" id="uc${ud.id}">${fmt(cost)} монет${isRep?' · дорожает ×'+(ud.scale||4):''}</div>
+      <div class="upg-name">${ud.name[LANG]||ud.name.ru}${lvlBadge}</div>
+      <div class="upg-desc">${ud.desc[LANG]||ud.desc.ru}</div>
+      ${adShow ? `
+        <div style="margin-top:6px">
+          <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:3px">
+            <span style="color:var(--teal)">${pct}%</span>
+            <span>${t('remain')} ${fmt(need)} ${t('coins')}</span>
+          </div>
+          <div class="pbar-wrap"><div class="pbar" id="uapb${ud.id}" style="width:${pct}%;background:#2a6aDD"></div></div>
+        </div>
+      ` : `<div class="upg-cost" id="uc${ud.id}">${fmt(cost)} ${t('coins')}</div>`}
     </div>
-    <button class="btn-buy" data-uid="${ud.id}" id="ub${ud.id}" ${can?'':'disabled'}>Купить</button>
+    <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0">
+      <button class="btn-buy" data-uid="${ud.id}" id="ub${ud.id}" ${can?'':'disabled'}>${t('buy')}</button>
+      ${adShow ? `<button class="btn-buy" data-adupg="${ud.id}"
+        style="border-color:var(--teal);color:var(--teal);font-size:11px;padding:4px 10px;white-space:nowrap">${t('adWatch2')}</button>` : ''}
+    </div>
   </div>`;
 }
 
@@ -665,7 +1757,10 @@ function fullRender() {
   });
   list.innerHTML = visible.length
     ? visible.map(ud=>buildUpgradeItem(ud)).join('')
-    : '<div style="font-size:12px;color:var(--muted);padding:8px">Все улучшения куплены!</div>';
+    : `<div style="font-size:12px;color:var(--muted);padding:8px">${t('allBought')}</div>`;
+
+  // IAP
+  renderIAP();
 
   renderHeader();
   updateShopBadge();
@@ -675,29 +1770,34 @@ function fullRender() {
 function tickRender(now) {
   G.machines.forEach(m=>{
     if(!m.owned) {
+      // Пропускаем premium цеха — у них нет прогресс-бара покупки
+      if(getDef(m.id).premium) return;
       const d=getDef(m.id);
       const pb=document.getElementById('pb'+m.id);
       const card=document.querySelector('[data-mid="'+m.id+'"]');
       if(!pb||!card) return;
       const can=G.coins>=d.baseCost;
       const pct=Math.min(100,Math.round(G.coins/d.baseCost*100));
+      const need=Math.max(0,d.baseCost-Math.floor(G.coins));
       pb.style.width=pct+'%';
-      pb.style.background=can?'var(--accent)':'var(--teal)';
-      const lbl=document.getElementById('mlvl'+m.id);
-      const lblText=can?'Доступно!':'Нужно '+fmt(d.baseCost)+' монет';
-      if(lbl&&lbl.textContent!==lblText) lbl.textContent=lblText;
+      pb.style.background=can?'var(--accent)':'#2a6aDD';
+      // Прогресс-лейбл
+      const labels=card.querySelectorAll('.buy-progress-label span');
+      if(labels[0]&&labels[0].textContent!==pct+'%') labels[0].textContent=pct+'%';
+      const r2=can?t('enough'):t('remain')+' '+fmt(need);
+      if(labels[1]&&labels[1].textContent!==r2) labels[1].textContent=r2;
+      // Кнопка купить
       const btn=card.querySelector('[data-action="buy"]');
-      if(btn){
-        // Меняем только если статус изменился — не трогаем DOM зря
-        if(btn.disabled===can){
-          btn.disabled=!can;
-          btn.style.borderColor=can?'var(--accent)':'';
-          btn.style.color=can?'var(--accent)':'';
-          // pointer-events явно чтобы клик не терялся
-          card.style.pointerEvents=can?'all':'none';
-          card.style.opacity=can?'0.85':'0.4';
-        }
+      if(btn&&btn.disabled===can){
+        btn.disabled=!can;
+        btn.textContent=can?t('buyShop'):t('buyLocked')+' '+fmt(d.baseCost)+' '+t('coins');
       }
+      // Иконка и заголовок
+      const icon=card.querySelector('.mcard-icon');
+      if(icon&&icon.textContent!==(can?d.emoji:'🔓')) icon.textContent=can?d.emoji:'🔓';
+      const lvl=card.querySelector('.mcard-lvl');
+      const lvlT=can?t('ready'):t('nextMachine');
+      if(lvl&&lvl.textContent!==lvlT) lvl.textContent=lvlT;
       return;
     }
     // Прогресс-бар производства
@@ -706,9 +1806,17 @@ function tickRender(now) {
     // working class
     const card=document.querySelector('[data-mid="'+m.id+'"]');
     if(card) card.classList.toggle('working', m.progress>0);
+    // Кнопка рекламного апгрейда
+    const adBtn=document.getElementById('madupg'+m.id);
+    if(adBtn){
+      const free=canFreeUpgrade();
+      adBtn.disabled=!free;
+      const adTxt=free?t('adWatch2'):t('adUnavail');
+      if(adBtn.textContent!==adTxt) adBtn.textContent=adTxt;
+    }
     // Награда — обновляем только если изменилась
     const rew=document.getElementById('mrew'+m.id);
-    const rewText='+'+fmt(Math.round(m.reward*G.prestigeMult))+' монет';
+    const rewText='+'+fmt(Math.round(m.reward*G.prestigeMult))+' '+t('coins');
     if(rew&&rew.textContent!==rewText) rew.textContent=rewText;
     // Кнопка апгрейда — обновляем только disabled/цвет, текст только при изменении суммы
     const btn=document.getElementById('mupg'+m.id);
@@ -718,33 +1826,37 @@ function tickRender(now) {
       if(btn.disabled===can) btn.disabled=!can;
       btn.style.borderColor=can?'var(--accent)':'';
       btn.style.color=can?'var(--accent)':'';
-      const t='Апгрейд '+fmt(cost)+' 💰';
-      if(btn.textContent!==t) btn.textContent=t;
+      const upgTxt=t('upgrade')+' '+fmt(cost)+' 💰';
+      if(btn.textContent!==upgTxt) btn.textContent=upgTxt;
     }
   });
-  // Кнопки покупки в магазине
+  // Кнопки и прогресс-бары в магазине
   UPGRADES_DEF.forEach(ud=>{
     const btn=document.getElementById('ub'+ud.id);
     if(!btn) return;
-    const can=G.coins>=getUpgCost(ud.id);
+    const cost=getUpgCost(ud.id);
+    const can=G.coins>=cost;
+    const pct=Math.min(100,Math.round(G.coins/cost*100));
     if(btn.disabled===can) btn.disabled=!can;
     const costEl=document.getElementById('uc'+ud.id);
     if(costEl){
-      const isRep=ud.type!=='auto';
-      const t=fmt(getUpgCost(ud.id))+' монет'+(isRep?' · дорожает ×'+(ud.scale||4):'');
-      if(costEl.textContent!==t) costEl.textContent=t;
+      const costTxt=fmt(cost)+' '+t('coins');
+      if(costEl.textContent!==costTxt) costEl.textContent=costTxt;
     }
+    // Прогресс-бар рекламной кнопки
+    const apb=document.getElementById('uapb'+ud.id);
+    if(apb) apb.style.width=pct+'%';
   });
 }
 
 function renderHeader() {
   document.getElementById('hCoins').textContent = fmt(G.coins);
-  document.getElementById('hCps').textContent   = cps().toFixed(1)+'/с';
+  document.getElementById('hCps').textContent   = cps().toFixed(1)+t('cpsUnit');
   document.getElementById('hSold').textContent  = fmt(G.sold);
   document.getElementById('hMult').textContent  = G.prestigeMult.toFixed(1);
   const thr=prestigeThreshold();
   const btn=document.getElementById('prestigeBtn');
-  btn.textContent = G.coins>=thr ? '⚡ Активировать' : '⚡ Престиж · '+Math.min(100,Math.round(G.coins/thr*100))+'%';
+  btn.textContent = G.coins>=thr ? t('prestigeActivate') : t('prestigePct')+' · '+Math.min(100,Math.round(G.coins/thr*100))+'%';
 }
 
 function updateShopBadge() {
@@ -757,6 +1869,493 @@ function updateShopBadge() {
   if(badge) badge.classList.toggle('show', has&&currentTab!=='shop');
 }
 
+// ── ОФЛАЙН ДОХОД ─────────────────────────────────────────────────
+const MAX_OFFLINE_HOURS = 8;     // максимум 8 часов офлайн дохода
+const OFFLINE_EFFICIENCY = 0.5;  // офлайн даёт 50% от обычного дохода — стимулирует активную игру,
+                                  // а не просто заходить раз в 8 часов забрать монеты
+
+let pendingOfflineCoins = 0;
+
+function calcOfflineIncome() {
+  const lastSaved = G.lastSaved || 0;
+  if (!lastSaved) return 0;
+  const now = Date.now();
+  const elapsed = Math.min(now - lastSaved, MAX_OFFLINE_HOURS * 3600000); // не более 8ч
+  if (elapsed < 30000) return 0; // менее 30 секунд — не считаем
+
+  let total = 0;
+  const offMult = G.offlineMult || 1; // улучшение "Ночная смена" компенсирует часть штрафа
+  G.machines.forEach(m => {
+    if (!m.owned || !m.auto) return;
+    const cycles = elapsed / m.speed;
+    total += cycles * m.reward * G.prestigeMult * iapMultiplier() * achievementMult() * referralMult() * offMult * OFFLINE_EFFICIENCY;
+  });
+  return Math.floor(total);
+}
+
+function showOfflineModal(coins, elapsed) {
+  if (coins <= 0) return;
+  pendingOfflineCoins = coins;
+
+  const hours   = Math.floor(elapsed / 3600000);
+  const minutes = Math.floor((elapsed % 3600000) / 60000);
+  const timeStr = hours > 0
+    ? `${hours}${LANG==='en'?'h':'ч'} ${minutes}${LANG==='en'?'m':'м'}`
+    : `${minutes}${LANG==='en'?'m':'м'}`;
+
+  document.getElementById('offlineTitle').textContent = LANG==='en' ? 'Factory worked!' : 'Завод работал!';
+  document.getElementById('offlineSub').textContent   = (LANG==='en' ? 'You were away for ' : 'Вы отсутствовали ') + timeStr;
+  document.getElementById('offlineCoins').textContent = '+' + fmt(coins) + ' ' + t('coins');
+  document.getElementById('offlineSub2').textContent  = LANG==='en'
+    ? 'All auto workshops earned while you were away'
+    : 'Все авто-цеха работали пока вас не было';
+  document.getElementById('offlineModal').classList.add('show');
+}
+
+function claimOffline() {
+  G.coins += pendingOfflineCoins;
+  pendingOfflineCoins = 0;
+  document.getElementById('offlineModal').classList.remove('show');
+  goldenGlow(document.getElementById('hCoins'));
+  // Частицы из центра экрана
+  spawnParticles(window.innerWidth/2, window.innerHeight/2, 16, '#F0A500');
+  renderHeader();
+  saveGame();
+}
+
+async function claimOfflineAd() {
+  await watchAdThen(() => {
+    G.coins += pendingOfflineCoins * 2;
+    pendingOfflineCoins = 0;
+    document.getElementById('offlineModal').classList.remove('show');
+    showToast('📺 ' + (LANG==='en' ? 'Offline income ×2!' : 'Офлайн доход ×2!'));
+    renderHeader();
+    saveGame();
+  });
+}
+// ── ДРУЗЬЯ И РЕФЕРАЛЬНЫЕ БОНУСЫ ───────────────────────────────────
+// Без бэкенда честный кросс-девайсный трекинг невозможен, поэтому:
+//  1. У каждого игрока — персональный код (на основе ID игрока / случайный для local)
+//  2. Шеринг ссылки ?ref=CODE через Яндекс/ВК нативный шаринг или копирование в буфер
+//  3. Новый игрок, открывший игру по такой ссылке, получает приветственный бонус
+//  4. Счётчик "приглашённых" растёт локально на устройстве реферера —
+//     это типичное решение для idle-игр без сервера: засчитывается переход по
+//     персональной ссылке именно на этом устройстве/входе.
+
+const REFERRAL_BONUS_PER_FRIEND = 0.05; // +5% к доходу за каждого друга
+const NEW_PLAYER_BONUS_COINS = 200;     // бонус новичку по реф-ссылке
+
+function getMyRefCode() {
+  if (G.myRefCode) return G.myRefCode;
+  let code;
+  if (yplayer && yplayer.getUniqueID) {
+    code = 'M' + yplayer.getUniqueID().toString().slice(-6);
+  } else {
+    code = 'M' + Math.random().toString(36).slice(2, 8).toUpperCase();
+  }
+  G.myRefCode = code;
+  return code;
+}
+
+function referralMult() {
+  return 1 + (G.friendsInvited || 0) * REFERRAL_BONUS_PER_FRIEND;
+}
+
+// Проверяем URL на входящую реферальную ссылку — вызывается один раз при старте
+function checkIncomingReferral() {
+  const params = new URLSearchParams(location.search);
+  const ref = params.get('ref');
+  if (!ref) return;
+  if (G.referredBy) return; // уже обработали раньше
+  if (ref === getMyRefCode()) return; // нельзя пригласить самого себя
+
+  G.referredBy = ref;
+  G.coins += NEW_PLAYER_BONUS_COINS;
+  showToast('🎁 ' + t('refWelcomeBonus') + ': +' + fmt(NEW_PLAYER_BONUS_COINS) + ' ' + t('coins'));
+
+  // Если это устройство реферера (тот же браузер/локальное хранилище совпадает
+  // по коду — например, человек поделился ссылкой и сам же по ней перешёл для теста),
+  // засчитываем приглашённого. В реальности обычно это будет новый игрок на новом
+  // устройстве — счётчик у реферера обновится при следующем визите по share-флоу.
+  const invitesKey = 'megafactory_invites_sent';
+  try {
+    const sentList = JSON.parse(localStorage.getItem(invitesKey) || '[]');
+    if (!sentList.includes(ref)) {
+      // отмечаем что по этому коду уже был переход — простая защита от накрутки в рамках устройства
+      sentList.push(ref);
+      localStorage.setItem(invitesKey, JSON.stringify(sentList));
+    }
+  } catch(e) {}
+}
+
+// Вызывается когда сам реферер делится ссылкой — увеличиваем его счётчик
+// сразу (оптимистично) после успешного шеринга, так как подтверждения от
+// друга у нас в реальном времени без сервера нет.
+function registerFriendInvited() {
+  G.friendsInvited = (G.friendsInvited || 0) + 1;
+  showToast('🎉 ' + t('refFriendAdded') + '! ' + t('refBonusNow') + ' ×' + referralMult().toFixed(2));
+  renderFriends();
+  saveGame();
+}
+
+async function shareReferralLink() {
+  const code = getMyRefCode();
+  const url  = location.origin + location.pathname + '?ref=' + code;
+  const shareText = t('refShareText');
+
+  if (PLATFORM === 'yandex' && ysdk) {
+    try {
+      // У Яндекс.Игр нет единого share-диалога во всех версиях SDK,
+      // поэтому копируем ссылку в буфер как самый надёжный способ.
+      await navigator.clipboard.writeText(url);
+      showToast('📋 ' + t('refLinkCopied'));
+      registerFriendInvited();
+    } catch(e) {
+      showToast(t('refShareUnavailable'));
+    }
+  } else if (PLATFORM === 'vk' && vkReady) {
+    try {
+      await vkBridge.send('VKWebAppShare', { link: url });
+      registerFriendInvited();
+    } catch(e) {
+      // Пользователь закрыл диалог шеринга — не считаем это ошибкой
+    }
+  } else {
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: 'МегаЗавод', text: shareText, url });
+        registerFriendInvited();
+      } else {
+        await navigator.clipboard.writeText(url);
+        showToast('📋 ' + t('refLinkCopied'));
+        registerFriendInvited();
+      }
+    } catch(e) {
+      // Отмена шеринга пользователем — игнорируем
+    }
+  }
+}
+
+function renderFriends() {
+  const invitedEl = document.getElementById('friendsInvited');
+  const multEl    = document.getElementById('friendsBonusMult');
+  const codeEl    = document.getElementById('friendsCode');
+  if (invitedEl) invitedEl.textContent = G.friendsInvited || 0;
+  if (multEl)    multEl.textContent    = '×' + referralMult().toFixed(2);
+  if (codeEl)    codeEl.textContent    = t('refYourCode') + ': ' + getMyRefCode();
+}
+
+// ── ЭНЕРГИЯ И РУЧНОЕ ПРОИЗВОДСТВО ─────────────────────────────────
+// Отдельная механика клика, не зависящая от авто-цехов.
+// Энергия тратится на клик, восстанавливается со временем.
+// Прокачивается через специальные апгрейды в магазине: макс. энергия,
+// скорость восстановления, монет за клик.
+
+function energyMax()    { return 100 + (G.energyMaxBonus || 0); }
+function energyRegen()  { return 1 + (G.energyRegenBonus || 0); } // ед./сек
+function clickValue()   {
+  // cps() уже включает prestigeMult — повторно их не умножаем, иначе двойная инфляция.
+  // Берём ~30% от дохода в секунду как разовую награду за клик.
+  const base = Math.max(1, Math.round(cps() * 0.3)) || 1;
+  return Math.round(base * (G.clickValueMult || 1) * iapMultiplier() * achievementMult() * referralMult());
+}
+
+function regenEnergy(dtMs) {
+  if (G.energy == null) G.energy = energyMax();
+  const max = energyMax();
+  if (G.energy < max) {
+    G.energy = Math.min(max, G.energy + energyRegen() * (dtMs/1000));
+  }
+}
+
+function manualProduce(evt) {
+  if (G.energy == null) G.energy = energyMax();
+  if (G.energy < 1) return;
+  G.energy -= 1;
+  const earned = clickValue();
+  G.coins += earned;
+  trackQuest('qtClick', 1);
+  trackQuest('qtCoins', earned);
+  if (evt) spawnPop(evt.clientX, evt.clientY, '+'+fmt(earned));
+  const btn = document.getElementById('manualClickBtn');
+  if (btn) {
+    const r = btn.getBoundingClientRect();
+    spawnParticles(r.left + r.width/2, r.top + r.height/2, 5, '#4ad9ff');
+  }
+  updateEnergyUI();
+}
+
+function updateEnergyUI() {
+  const max = energyMax();
+  const cur = Math.floor(G.energy != null ? G.energy : max);
+  const bar = document.getElementById('energyBar');
+  const val = document.getElementById('energyVal');
+  const sub = document.getElementById('manualSub');
+  const btn = document.getElementById('manualClickBtn');
+  const pct = Math.min(100, Math.round((G.energy/max)*100));
+  if (bar) bar.style.width = pct + '%';
+  if (val) val.textContent = cur + '/' + max;
+  if (sub) sub.textContent = '+' + fmt(clickValue()) + ' ' + t('coins') + ' · -1 ⚡';
+  if (btn) btn.disabled = (G.energy < 1);
+}
+
+// ── ДОСТИЖЕНИЯ ───────────────────────────────────────────────────
+// В отличие от заданий — не сбрасываются, дают постоянные бонусы.
+// tier: bronze/silver/gold влияет на цвет рамки и размер награды.
+
+const ACHIEVEMENTS_DEF = [
+  // Производство
+  { id:'ach_sold_1k',    cat:'sold',     target:1000,        tier:'bronze', icon:'⚙️', rewardMult:1.02 },
+  { id:'ach_sold_100k',  cat:'sold',     target:100000,      tier:'silver', icon:'⚙️', rewardMult:1.05 },
+  { id:'ach_sold_10m',   cat:'sold',     target:10000000,    tier:'gold',   icon:'⚙️', rewardMult:1.10 },
+  // Монеты накоплено за всё время
+  { id:'ach_coins_10k',  cat:'coinsTotal', target:10000,      tier:'bronze', icon:'💰', rewardMult:1.02 },
+  { id:'ach_coins_1m',   cat:'coinsTotal', target:1000000,    tier:'silver', icon:'💰', rewardMult:1.05 },
+  { id:'ach_coins_1b',   cat:'coinsTotal', target:1000000000, tier:'gold',   icon:'💰', rewardMult:1.10 },
+  // Цеха куплено
+  { id:'ach_machines_5', cat:'machines', target:5,  tier:'bronze', icon:'🏭', rewardMult:1.02 },
+  { id:'ach_machines_9', cat:'machines', target:9,  tier:'silver', icon:'🏭', rewardMult:1.05 },
+  { id:'ach_machines_11',cat:'machines', target:11, tier:'gold',   icon:'🏭', rewardMult:1.10 },
+  // Престиж
+  { id:'ach_prestige_1', cat:'prestige', target:1,  tier:'bronze', icon:'⚡', rewardMult:1.03 },
+  { id:'ach_prestige_5', cat:'prestige', target:5,  tier:'silver', icon:'⚡', rewardMult:1.06 },
+  { id:'ach_prestige_15',cat:'prestige', target:15, tier:'gold',   icon:'⚡', rewardMult:1.12 },
+  // Клики
+  { id:'ach_clicks_500', cat:'clicksTotal', target:500,   tier:'bronze', icon:'👆', rewardMult:1.02 },
+  { id:'ach_clicks_5000',cat:'clicksTotal', target:5000,  tier:'silver', icon:'👆', rewardMult:1.04 },
+  // Реклама
+  { id:'ach_ads_10',     cat:'adsTotal', target:10,  tier:'bronze', icon:'📺', rewardMult:1.02 },
+  { id:'ach_ads_50',     cat:'adsTotal', target:50,  tier:'silver', icon:'📺', rewardMult:1.05 },
+];
+
+function achState(id) {
+  if (!G.achievements) G.achievements = {};
+  if (!G.achievements[id]) G.achievements[id] = { claimed:false };
+  return G.achievements[id];
+}
+
+function achProgress(def) {
+  const map = {
+    sold:        G.sold,
+    coinsTotal:  G.lifetimeCoins || 0,
+    machines:    G.machines.filter(m=>m.owned).length,
+    prestige:    G.prestigeCount,
+    clicksTotal: G.lifetimeClicks || 0,
+    adsTotal:    G.lifetimeAds || 0,
+  };
+  return map[def.cat] || 0;
+}
+
+// Суммарный бонус от всех заклеймленных достижений
+function achievementMult() {
+  let mult = 1;
+  ACHIEVEMENTS_DEF.forEach(def => {
+    const st = achState(def.id);
+    if (st.claimed) mult *= def.rewardMult;
+  });
+  return mult;
+}
+
+function claimAchievement(id) {
+  const def = ACHIEVEMENTS_DEF.find(a => a.id === id);
+  if (!def) return;
+  const st = achState(id);
+  if (st.claimed || achProgress(def) < def.target) return;
+  st.claimed = true;
+  showToast('🏅 ' + t('achUnlocked') + ': x' + def.rewardMult.toFixed(2));
+  goldenGlow(document.getElementById('hCoins'));
+  spawnParticles(window.innerWidth/2, 120, 14, def.tier==='gold'?'#FFD700':def.tier==='silver'?'#C0C0C0':'#CD7F32');
+  renderAchievements();
+  updateQuestBadge();
+  saveGame();
+}
+
+function renderAchievements() {
+  const list = document.getElementById('achList');
+  const summary = document.getElementById('achSummary');
+  if (!list) return;
+
+  const unlocked = ACHIEVEMENTS_DEF.filter(d => achState(d.id).claimed).length;
+  if (summary) summary.innerHTML = `${t('achUnlocked2')}: <b>${unlocked}/${ACHIEVEMENTS_DEF.length}</b> · ${t('achTotalBonus')}: <b>×${achievementMult().toFixed(2)}</b>`;
+
+  list.innerHTML = ACHIEVEMENTS_DEF.map(def => {
+    const st = achState(def.id);
+    const progress = Math.min(achProgress(def), def.target);
+    const pct = Math.min(100, Math.round(progress/def.target*100));
+    const done = progress >= def.target;
+    return `<div class="quest-card ach-tier-${def.tier} ${st.claimed?'claimed':done?'done':''}">
+      <div class="quest-head">
+        <div class="quest-icon">${def.icon}</div>
+        <div class="quest-info">
+          <div class="quest-name">${t(def.id+'_n')}</div>
+          <div class="quest-desc">${t(def.id+'_d')}</div>
+          <div class="quest-reward">🎁 ${t('achBonusLabel')} ×${def.rewardMult.toFixed(2)} ${t('achBonusToAll')}</div>
+        </div>
+      </div>
+      <div class="quest-progress">
+        <div class="quest-pbar-wrap"><div class="quest-pbar" style="width:${pct}%;background:${def.tier==='gold'?'#FFD700':def.tier==='silver'?'#C0C0C0':'#CD7F32'}"></div></div>
+        <div class="quest-pct">${fmt(progress)}/${fmt(def.target)}</div>
+      </div>
+      ${!st.claimed
+        ? `<button class="btn-claim" onclick="claimAchievement('${def.id}')" ${done?'':'disabled'}>${done?t('questClaim'):pct+'%'}</button>`
+        : `<button class="btn-claim" disabled>${t('questClaimed')}</button>`}
+    </div>`;
+  }).join('');
+}
+
+function setQuestSubTab(tab) {
+  const isDaily = tab === 'daily';
+  document.getElementById('questSubDaily').style.display = isDaily ? 'block' : 'none';
+  document.getElementById('questSubAch').style.display   = isDaily ? 'none'  : 'block';
+  document.getElementById('subtab-daily').classList.toggle('active', isDaily);
+  document.getElementById('subtab-ach').classList.toggle('active', !isDaily);
+  if (!isDaily) renderAchievements();
+}
+
+// ── ЕЖЕДНЕВНЫЕ ЗАДАНИЯ ───────────────────────────────────────────
+const QUEST_TYPES = ['qtProduce','qtClick','qtCoins','qtUpgrade','qtBuy','qtAd'];
+
+function questTarget(type) {
+  return {
+    qtProduce: Math.max(50,  Math.round(G.sold * 0.15 + 50)),
+    qtClick:   Math.max(20,  Math.round(G.sold * 0.05 + 20)),
+    qtCoins:   Math.max(500, Math.round(cps() * 120 + 500)),
+    qtUpgrade: Math.max(3,   G.prestigeCount + 3),
+    qtBuy:     1,
+    qtAd:      3,
+  }[type] || 10;
+}
+
+const QUEST_REWARDS = [
+  { type:'coins',   getValue:() => Math.max(2000,  Math.round(cps() * 300))  },
+  { type:'coins',   getValue:() => Math.max(10000, Math.round(cps() * 900))  },
+  { type:'boost',   getValue:() => 30 * 60 * 1000 },
+  { type:'upgrade', getValue:() => 1 },
+];
+
+function pickRandom(arr, n) {
+  const copy=[...arr], res=[];
+  while(res.length<n && copy.length) res.push(copy.splice(Math.floor(Math.random()*copy.length),1)[0]);
+  return res;
+}
+
+function generateQuests() {
+  return pickRandom(QUEST_TYPES, 3).map((type,i)=>({
+    id:i, type, target:questTarget(type), progress:0,
+    rewardIdx: i % QUEST_REWARDS.length, claimed:false,
+  }));
+}
+
+function initQuests() {
+  if (!G.quests) G.quests = { list:[], resetAt:0, sessionCoins:0, sessionClicks:0, sessionUpgrades:0, sessionBuys:0, sessionAds:0 };
+  if (Date.now() >= G.quests.resetAt) {
+    G.quests.list = generateQuests();
+    G.quests.resetAt = Date.now() + 24*60*60*1000;
+    G.quests.sessionCoins=0; G.quests.sessionClicks=0;
+    G.quests.sessionUpgrades=0; G.quests.sessionBuys=0; G.quests.sessionAds=0;
+    showToast(t('questNew'));
+  }
+  renderQuests();
+  if (!G.achievements) G.achievements = {};
+  updateQuestBadge();
+}
+
+function trackQuest(type, amount=1) {
+  // Lifetime-счётчики для достижений — работают всегда, независимо от заданий
+  if (type==='qtCoins') G.lifetimeCoins  = (G.lifetimeCoins||0)  + amount;
+  if (type==='qtClick') G.lifetimeClicks = (G.lifetimeClicks||0) + amount;
+  if (type==='qtAd')    G.lifetimeAds    = (G.lifetimeAds||0)    + amount;
+
+  if (!G.quests) return;
+  const q = G.quests;
+  if (type==='qtCoins')   q.sessionCoins    = (q.sessionCoins||0)    + amount;
+  if (type==='qtClick')   q.sessionClicks   = (q.sessionClicks||0)   + amount;
+  if (type==='qtUpgrade') q.sessionUpgrades = (q.sessionUpgrades||0) + amount;
+  if (type==='qtBuy')     q.sessionBuys     = (q.sessionBuys||0)     + amount;
+  if (type==='qtAd')      q.sessionAds      = (q.sessionAds||0)      + amount;
+  q.list.forEach(quest => {
+    if (quest.claimed) return;
+    if (quest.type==='qtProduce') quest.progress = G.sold;
+    if (quest.type==='qtClick')   quest.progress = q.sessionClicks;
+    if (quest.type==='qtCoins')   quest.progress = q.sessionCoins;
+    if (quest.type==='qtUpgrade') quest.progress = q.sessionUpgrades;
+    if (quest.type==='qtBuy')     quest.progress = q.sessionBuys;
+    if (quest.type==='qtAd')      quest.progress = q.sessionAds;
+  });
+  updateQuestBadge();
+  if (currentTab==='quests') renderQuests();
+}
+
+function claimQuest(idx) {
+  const q = G.quests.list[idx];
+  if (!q||q.claimed||q.progress<q.target) return;
+  q.claimed = true;
+  const reward = QUEST_REWARDS[q.rewardIdx];
+  if (reward.type==='coins') {
+    const n = reward.getValue();
+    G.coins += n;
+    showToast('🎁 +'+fmt(n)+' '+t('qrCoins')+'!');
+    goldenGlow(document.getElementById('hCoins'));
+  } else if (reward.type==='boost') {
+    adBonusEnd = Math.max(adBonusEnd, Date.now()+reward.getValue());
+    showToast('🎁 '+t('qrBoost')+'!');
+    updateAdButton();
+  } else {
+    adFreeUpgEnd = 0;
+    showToast('🎁 '+t('qrUpgrade')+'!');
+  }
+  renderQuests(); updateQuestBadge(); saveGame();
+}
+
+function updateQuestBadge() {
+  const hasQuest = G.quests && G.quests.list.some(q=>!q.claimed && q.progress>=q.target);
+  const hasAch   = ACHIEVEMENTS_DEF.some(def => {
+    const st = achState(def.id);
+    return !st.claimed && achProgress(def) >= def.target;
+  });
+  const badge = document.getElementById('questBadge');
+  if (badge) badge.classList.toggle('show', (hasQuest || hasAch) && currentTab!=='quests');
+}
+
+function renderQuests() {
+  if (!G.quests) return;
+  const now = Date.now();
+  const timerEl = document.getElementById('questTimer');
+  if (timerEl) {
+    const left = Math.max(0, G.quests.resetAt - now);
+    const h=Math.floor(left/3600000), m=Math.floor((left%3600000)/60000), s=Math.floor((left%60000)/1000);
+    timerEl.innerHTML = `${t('questTimer')}: <b>${h}${LANG==='en'?'h':'ч'} ${m}${LANG==='en'?'m':'м'} ${s}${t('secShort')}</b>`;
+  }
+  const list = document.getElementById('questList');
+  if (!list) return;
+  list.innerHTML = G.quests.list.map((q,i)=>{
+    const qt = t(q.type);
+    const pct = Math.min(100, Math.round(q.progress/q.target*100));
+    const done = q.progress >= q.target;
+    const reward = QUEST_REWARDS[q.rewardIdx];
+    const rewardText = reward.type==='coins'
+      ? '+'+fmt(reward.getValue())+' '+t('qrCoins')
+      : reward.type==='boost' ? t('qrBoost') : t('qrUpgrade');
+    return `<div class="quest-card ${q.claimed?'claimed':done?'done':''}">
+      <div class="quest-head">
+        <div class="quest-icon">${qt.icon}</div>
+        <div class="quest-info">
+          <div class="quest-name">${qt.name}</div>
+          <div class="quest-desc">${qt.desc.replace('{n}', fmt(q.target))}</div>
+          <div class="quest-reward">🎁 ${rewardText}</div>
+        </div>
+      </div>
+      <div class="quest-progress">
+        <div class="quest-pbar-wrap"><div class="quest-pbar" style="width:${pct}%"></div></div>
+        <div class="quest-pct">${fmt(Math.min(q.progress,q.target))}/${fmt(q.target)}</div>
+      </div>
+      ${!q.claimed
+        ? `<button class="btn-claim" onclick="claimQuest(${i})" ${done?'':'disabled'}>${done?t('questClaim'):pct+'%'}</button>`
+        : `<button class="btn-claim" disabled>${t('questClaimed')}</button>`}
+    </div>`;
+  }).join('');
+}
+
 // ── GAME LOOP ─────────────────────────────────────────────────────
 let lastTick=performance.now(), saveTimer=0;
 
@@ -765,15 +2364,29 @@ function tick(now) {
   saveTimer+=dt;
   let needFull=false;
 
+  regenEnergy(dt);
+
   G.machines.forEach(m=>{
     if(!m.owned) return;
     if(m.auto && m.progress===0) m.progress=1;
     if(m.progress>0){
       m.progress+=dt;
       if(m.progress>=m.speed){
-        G.coins += m.reward * G.prestigeMult * getAdMultiplier();
-        G.sold+=1;
-        m.progress=0;
+        const earned = m.reward * G.prestigeMult * getAdMultiplier() * iapMultiplier() * achievementMult() * referralMult();
+        G.coins += earned;
+        G.sold  += 1;
+        m.progress = 0;
+        pulseCard(m.id);
+        // Авто-цехи спавнят частицы у карточки
+        if (m.auto) {
+          const card = document.querySelector(`[data-mid="${m.id}"]`);
+          if (card) {
+            const r = card.getBoundingClientRect();
+            spawnParticles(r.left + r.width/2, r.top + r.height/2, 4, '#F0A500');
+          }
+        }
+        trackQuest('qtCoins', earned);
+        trackQuest('qtProduce', 1);
         checkMilestones();
       }
     }
@@ -781,15 +2394,44 @@ function tick(now) {
 
   if(saveTimer>30000){ saveTimer=0; saveGame(); }
 
+  // Золотая деталь — раз в 60с случайный цех даёт ×10
+  const goldenUs = G.upgrades && G.upgrades.find(u=>u.id==='sZ');
+  if (goldenUs && goldenUs.level > 0) {
+    G.goldenTimer = (G.goldenTimer||0) + dt;
+    if (G.goldenTimer >= 60000) {
+      G.goldenTimer = 0;
+      const owned = G.machines.filter(m=>m.owned);
+      if (owned.length) {
+        const m = owned[Math.floor(Math.random()*owned.length)];
+        const bonus = Math.round(m.reward * G.prestigeMult * 10);
+        G.coins += bonus;
+        showToast('✨ Золотая деталь! +'+fmt(bonus));
+        goldenGlow(document.getElementById('hCoins'));
+        const card = document.querySelector(`[data-mid="${m.id}"]`);
+        if (card) {
+          const r = card.getBoundingClientRect();
+          spawnParticles(r.left+r.width/2, r.top+r.height/2, 12, '#FFD600');
+        }
+      }
+    }
+  }
+
   // Обновляем кнопку рекламы каждую секунду
   if (!tick.lastAdUpdate || now - tick.lastAdUpdate > 1000) {
     tick.lastAdUpdate = now;
     updateAdButton();
+    updateQuestBadge();
+    if (currentTab==='quests') {
+      const achVisible = document.getElementById('questSubAch');
+      if (achVisible && achVisible.style.display !== 'none') renderAchievements();
+      else renderQuests();
+    }
   }
 
   tickRender(now);
   renderHeader();
   updateShopBadge();
+  updateEnergyUI();
   requestAnimationFrame(tick);
 }
 
@@ -802,40 +2444,136 @@ function applyLoaded(saved) {
     if (o.level!=null) return {id:d.id,level:o.level};
     return {id:d.id,level:o.bought?1:0};
   });
+  // Миграция старых сохранений: все купленные цеха теперь работают автоматически
+  G.machines.forEach(m => { if (m.owned) m.auto = true; });
 }
 
-const hasSave = loadGame();
-if(hasSave) document.getElementById('saveNote').textContent='Найдено сохранение · '+fmt(G.coins)+' монет';
+// ── INIT ─────────────────────────────────────────────────────────
+// Шаг 1: SDK инициализируется ДО показа кнопки "Начать"
+// Яндекс требует определять язык через environment.i18n.lang при запуске
 
-// Инициализируем нужный SDK
-if (PLATFORM === 'yandex') initYandex();
-else if (PLATFORM === 'vk') initVK();
+async function initSDK() {
+  if (PLATFORM === 'yandex') {
+    try {
+      // Загружаем SDK динамически
+      await new Promise((res, rej) => {
+        const s = document.createElement('script');
+        s.src = '/sdk.js';
+        s.onload = res;
+        s.onerror = rej;
+        document.head.appendChild(s);
+      });
+      ysdk = await Promise.race([
+        YaGames.init(),
+        new Promise((_,rej) => setTimeout(() => rej(new Error('timeout')), 3000))
+      ]);
 
-document.getElementById('startBtn').addEventListener('click',()=>{
+      // Обязательное требование п. 1.19.2 — Game Ready API
+      // Сообщаем платформе что игра загрузилась и готова к показу
+      try { ysdk.features.LoadingAPI?.ready(); } catch(e) {}
+
+      const yLang = ysdk.environment.i18n.lang;
+      LANG = (yLang === 'ru') ? 'ru' : 'en';
+      applyLang();
+      yplayer = await ysdk.getPlayer({ scopes: false });
+      await loadCloudSave();
+    } catch(e) {
+      console.warn('[YA] SDK недоступен:', e.message);
+    }
+  } else if (PLATFORM === 'vk') {
+    try {
+      await vkBridge.send('VKWebAppInit');
+      vkReady = true;
+      await loadVKSave();
+    } catch(e) {
+      console.warn('[VK] Bridge недоступен:', e.message);
+    }
+  }
+
+  // Загружаем сохранение
+  const hasSave = loadGame();
+  // Язык из сохранения (если игрок вручную менял) имеет приоритет только в локальном режиме
+  if (hasSave && G.lang && PLATFORM === 'local') {
+    LANG = G.lang;
+    applyLang();
+  }
+  if (hasSave) {
+    document.getElementById('saveNote').textContent = t('saveFound') + ' · ' + fmt(G.coins) + ' ' + t('coins');
+  }
+
+  // Показываем кнопку "Начать" только когда SDK готов
+  document.getElementById('sdkLoading').style.display = 'none';
+  document.getElementById('startBtn').style.display   = 'block';
+}
+
+// Запускаем инициализацию SDK сразу при загрузке страницы
+initSDK();
+
+// Страховка — если SDK завис, показываем кнопку через 1 секунду
+setTimeout(() => {
+  document.getElementById('sdkLoading').style.display = 'none';
+  document.getElementById('startBtn').style.display   = 'block';
+}, 1000);
+
+document.getElementById('startBtn').addEventListener('click', () => {
   document.getElementById('splash').classList.add('hide');
-  document.getElementById('game').style.display='flex';
+  document.getElementById('game').style.display = 'flex';
   fullRender();
-  setTimeout(()=>document.getElementById('splash').style.display='none',900);
+  initIAP();
+  initQuests();
+  checkIncomingReferral();
+  renderFriends();
 
-  // Делегирование кликов — вешается один раз, DOM не пересоздаётся в тике
-  document.getElementById('machinesGrid').addEventListener('click',e=>{
-    const card=e.target.closest('[data-mid]');
-    if(!card) return;
-    const id=parseInt(card.dataset.mid);
-    if(e.target.closest('[data-action="buy"]'))     { buyMachine(id);    return; }
-    if(e.target.closest('[data-action="upgrade"]')) { upgradeMachine(id); return; }
-    clickMachine(id, e);
+  // Офлайн доход
+  const offlineCoins = calcOfflineIncome();
+  const elapsed = Math.min(Date.now() - (G.lastSaved||0), MAX_OFFLINE_HOURS * 3600000);
+  if (offlineCoins > 0) showOfflineModal(offlineCoins, elapsed);
+
+  setTimeout(() => document.getElementById('splash').style.display = 'none', 900);
+
+  document.getElementById('machinesGrid').addEventListener('click', e => {
+    const card = e.target.closest('[data-mid]');
+    if (!card) return;
+    const id = parseInt(card.dataset.mid);
+    if (e.target.closest('[data-action="buy"]'))       { buyMachine(id);    return; }
+    if (e.target.closest('[data-action="upgrade"]'))   { upgradeMachine(id); return; }
+    if (e.target.closest('[data-action="adupgrade"]')) { adFreeUpgrade(id); return; }
+    if (e.target.closest('[data-action="adopen"]'))    { adOpenMachine(id); return; }
+    const premBtn = e.target.closest('[data-action="buypremium"]');
+    if (premBtn) { buyProduct(premBtn.dataset.product); return; }
+    // Цеха больше не кликабельны напрямую — производство полностью автоматическое
   });
 
-  document.getElementById('upgList').addEventListener('click',e=>{
-    const btn=e.target.closest('[data-uid]');
-    if(btn) buyUpgrade(btn.dataset.uid);
+  document.getElementById('upgList').addEventListener('click', e => {
+    const btn = e.target.closest('[data-uid]');
+    if (btn) { buyUpgrade(btn.dataset.uid); return; }
+    const adBtn = e.target.closest('[data-adupg]');
+    if (adBtn) adFreeShopUpg(adBtn.dataset.adupg);
   });
 
-  requestAnimationFrame(t=>{ lastTick=t; requestAnimationFrame(tick); });
+  requestAnimationFrame(t => { lastTick = t; requestAnimationFrame(tick); });
 });
 
-setInterval(saveGame,60000);
+setInterval(saveGame, 60000);
+
+// ── БЛОКИРОВКА НЕЖЕЛАТЕЛЬНОГО ПОВЕДЕНИЯ (требования Яндекс п.1.6, п.1.10) ──
+// Запрет контекстного меню (правая кнопка мыши / долгое нажатие на мобиле)
+document.addEventListener('contextmenu', e => e.preventDefault());
+
+// Запрет выделения текста мышью
+document.addEventListener('selectstart', e => e.preventDefault());
+
+// Запрет браузерной прокрутки колесом мыши и тачпадом
+document.addEventListener('wheel', e => e.preventDefault(), { passive: false });
+
+// Запрет pull-to-refresh и bounce-scroll на мобиле
+document.addEventListener('touchmove', e => {
+  if (e.touches.length > 1) e.preventDefault(); // запрет pinch-zoom
+}, { passive: false });
+
+document.addEventListener('touchstart', e => {
+  if (e.touches.length > 1) e.preventDefault();
+}, { passive: false });
 </script>
 </body>
 </html>
