@@ -164,6 +164,19 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
 .offline-icon { font-size:52px; margin-bottom:8px; }
 .offline-coins { font-size:32px; font-weight:700; color:var(--accent); margin:8px 0; }
 .offline-sub { font-size:13px; color:var(--muted); margin-bottom:20px; }
+/* MENU HUB */
+.menu-hub{display:flex;flex-direction:column;gap:10px;}
+.menu-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:border-color .15s,background .15s;position:relative;}
+.menu-card:hover{border-color:var(--accent);background:rgba(240,165,0,.05);}
+.menu-card-icon{font-size:28px;flex-shrink:0;width:44px;text-align:center;}
+.menu-card-info{flex:1;}
+.menu-card-title{font-size:14px;font-weight:600;margin-bottom:3px;}
+.menu-card-sub{font-size:11px;color:var(--muted);}
+.menu-card-arrow{font-size:22px;color:var(--muted);flex-shrink:0;}
+.menu-badge{position:relative;top:auto;right:auto;margin-right:4px;}
+.menu-back-btn{width:100%;padding:8px;background:transparent;border:1px solid var(--border);border-radius:6px;color:var(--muted);font-family:'Exo 2',sans-serif;font-size:13px;cursor:pointer;margin-bottom:10px;text-align:left;}
+.menu-back-btn:hover{border-color:var(--accent);color:var(--accent);}
+
 .quest-timer{font-size:12px;color:var(--muted);text-align:center;padding:8px 0 4px;}
 .quest-timer b{color:var(--accent);}
 .quest-list{display:flex;flex-direction:column;gap:8px;}
@@ -352,24 +365,6 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
         <div class="sec-hdr">Магазин улучшений</div>
         <div class="upg-list" id="upgList"></div>
 
-        <!-- Друзья / Рефералы -->
-        <div class="sec-hdr" style="margin-top:12px" id="friendsHdr">👥 Друзья</div>
-        <div class="friends-box">
-          <div class="friends-desc" id="friendsDesc">Пригласи друга — оба получите бонус!</div>
-          <div class="friends-stats">
-            <div class="friends-stat">
-              <div class="friends-stat-val" id="friendsInvited">0</div>
-              <div class="friends-stat-label" id="friendsInvitedLabel">Приглашено</div>
-            </div>
-            <div class="friends-stat">
-              <div class="friends-stat-val" id="friendsBonusMult">×1.00</div>
-              <div class="friends-stat-label" id="friendsBonusLabel">Бонус к доходу</div>
-            </div>
-          </div>
-          <button class="btn-friends" onclick="shareReferralLink()" id="friendsShareBtn">📤 Пригласить друга</button>
-          <div class="friends-code" id="friendsCode"></div>
-        </div>
-
         <!-- Донат-магазин -->
         <div class="sec-hdr" style="margin-top:12px">💎 Премиум</div>
         <div id="iapList" class="iap-list"></div>
@@ -394,19 +389,78 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
         </div>
         <button class="btn-lb-refresh" onclick="loadLeaderboard()">↻ Обновить</button>
       </div>
-      <div class="tab-pane" id="pane-quests">
-        <div class="lb-tabs">
-          <button class="lb-tab active" data-qtab="daily" onclick="setQuestSubTab('daily')" id="subtab-daily">📋 Ежедневные</button>
-          <button class="lb-tab"        data-qtab="ach"   onclick="setQuestSubTab('ach')"   id="subtab-ach">🏅 Достижения</button>
+      <div class="tab-pane" id="pane-menu">
+
+        <!-- Хаб: карточки-разделы -->
+        <div class="menu-hub">
+
+          <!-- Ежедневные задания -->
+          <div class="menu-card" onclick="openMenuSection('daily')">
+            <div class="menu-card-icon">📋</div>
+            <div class="menu-card-info">
+              <div class="menu-card-title" id="menuTitleDaily">Ежедневные задания</div>
+              <div class="menu-card-sub" id="menuSubDaily">Обновляются каждые 24ч</div>
+            </div>
+            <span class="tab-badge menu-badge" id="questBadge"></span>
+            <div class="menu-card-arrow">›</div>
+          </div>
+
+          <!-- Достижения -->
+          <div class="menu-card" onclick="openMenuSection('ach')">
+            <div class="menu-card-icon">🏅</div>
+            <div class="menu-card-info">
+              <div class="menu-card-title" id="menuTitleAch">Достижения</div>
+              <div class="menu-card-sub" id="achMenuSub">Постоянные бонусы к доходу</div>
+            </div>
+            <div class="menu-card-arrow">›</div>
+          </div>
+
+          <!-- Друзья -->
+          <div class="menu-card" onclick="openMenuSection('friends')">
+            <div class="menu-card-icon">👥</div>
+            <div class="menu-card-info">
+              <div class="menu-card-title" id="menuTitleFriends">Друзья</div>
+              <div class="menu-card-sub" id="menuSubFriends">Пригласи — получи бонус</div>
+            </div>
+            <div class="menu-card-arrow">›</div>
+          </div>
+
         </div>
-        <div id="questSubDaily">
+
+        <!-- Секция: Ежедневные задания -->
+        <div id="menuSecDaily" style="display:none">
+          <button class="menu-back-btn" onclick="closeMenuSection('daily')">‹ Назад</button>
           <div class="quest-timer" id="questTimer"></div>
           <div class="quest-list" id="questList"></div>
         </div>
-        <div id="questSubAch" style="display:none">
+
+        <!-- Секция: Достижения -->
+        <div id="menuSecAch" style="display:none">
+          <button class="menu-back-btn" onclick="closeMenuSection('ach')">‹ Назад</button>
           <div class="ach-summary" id="achSummary"></div>
           <div class="quest-list" id="achList"></div>
         </div>
+
+        <!-- Секция: Друзья -->
+        <div id="menuSecFriends" style="display:none">
+          <button class="menu-back-btn" onclick="closeMenuSection('friends')">‹ Назад</button>
+          <div class="friends-box" style="margin-top:8px">
+            <div class="friends-desc" id="friendsDesc">Пригласи друга — оба получите бонус!</div>
+            <div class="friends-stats">
+              <div class="friends-stat">
+                <div class="friends-stat-val" id="friendsInvited">0</div>
+                <div class="friends-stat-label" id="friendsInvitedLabel">Приглашено</div>
+              </div>
+              <div class="friends-stat">
+                <div class="friends-stat-val" id="friendsBonusMult">×1.00</div>
+                <div class="friends-stat-label" id="friendsBonusLabel">Бонус к доходу</div>
+              </div>
+            </div>
+            <button class="btn-friends" onclick="shareReferralLink()" id="friendsShareBtn">📤 Пригласить друга</button>
+            <div class="friends-code" id="friendsCode"></div>
+          </div>
+        </div>
+
       </div>
 
     </div>
@@ -418,9 +472,9 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
         <span class="tab-icon">🛒</span><span class="tab-label">Магазин</span>
         <span class="tab-badge" id="shopBadge"></span>
       </button>
-      <button class="tab-btn" id="tab-quests" onclick="switchTab('quests')">
-        <span class="tab-icon">📋</span><span class="tab-label">Задания</span>
-        <span class="tab-badge" id="questBadge"></span>
+      <button class="tab-btn" id="tab-menu" onclick="switchTab('menu')">
+        <span class="tab-icon">☰</span><span class="tab-label" id="tabMenuLabel">Меню</span>
+        <span class="tab-badge" id="menuBadge"></span>
       </button>
       <button class="tab-btn" id="tab-lb" onclick="switchTab('lb'); loadLeaderboard()">
         <span class="tab-icon">🏆</span><span class="tab-label">Рейтинг</span>
@@ -760,7 +814,7 @@ function applyLang() {
   const tabFactory = document.querySelector('#tab-factory .tab-label');
   const tabShop    = document.querySelector('#tab-shop .tab-label');
   const tabLb      = document.querySelector('#tab-lb .tab-label');
-  const tabQuests  = document.querySelector('#tab-quests .tab-label');
+  const tabQuests  = document.querySelector('.tab-label .tab-label');
   if (tabFactory) tabFactory.textContent = t('tabFactory');
   if (tabShop)    tabShop.textContent    = t('tabShop');
   if (tabLb)      tabLb.textContent      = t('tabLb');
@@ -961,52 +1015,20 @@ function hasNoAdCooldown() {
 }
 
 async function initIAP() {
-  if (PLATFORM !== 'yandex' || !ysdk) { renderIAP(); return; }
-  try {
-    const payments = await ysdk.getPayments({ signed: true });
-    // Восстанавливаем уже купленные товары при загрузке
-    const purchased = await payments.getPurchases();
-    purchased.forEach(p => {
-      const prod = IAP_PRODUCTS.find(x => x.id === p.productID);
-      if (prod && prod.once) {
-        if (p.productID === 'starter_pack') G.purchases.starterPack = true;
-        if (p.productID === 'vip_status')   G.purchases.vipStatus   = true;
-        if (p.productID === 'secret_lab') { G.purchases.secretLab = true; const ml=getMachine(10); ml.owned=true; ml.auto=true; }
-      }
-    });
-    renderIAP();
-  } catch(e) {
-    console.warn('[IAP] Инициализация:', e);
-    renderIAP();
-  }
+  // В ВК версии IAP работает как локальное сохранение покупок.
+  // Покупки хранятся в G.purchases и восстанавливаются из облака ВК.
+  renderIAP();
 }
 
 async function buyProduct(id) {
   const prod = IAP_PRODUCTS.find(p => p.id === id);
   if (!prod) { console.error('[IAP] Товар не найден:', id); return; }
-
-  if (PLATFORM === 'yandex' && ysdk) {
-    try {
-      const payments = await ysdk.getPayments({ signed: true });
-      const purchase = await payments.purchase({ id });
-      prod.onBuy();
-      // Подтверждаем покупку (обязательно для Яндекс)
-      await payments.consumePurchase(purchase.purchaseToken);
-      fullRender();
-      saveGame();
-    } catch(e) {
-      console.warn('[IAP] Ошибка покупки на Яндексе:', e);
-      if (e && e.code !== 'USER_CANCELED') showToast(t('iapErrPayment'));
-    }
-  } else {
-    // Локально / на других платформах — симуляция для тестирования
-    try {
-      prod.onBuy();
-      fullRender();
-      saveGame();
-    } catch(e) {
-      console.error('[IAP] Ошибка в onBuy (локальный режим):', e);
-    }
+  try {
+    prod.onBuy();
+    fullRender();
+    saveGame();
+  } catch(e) {
+    console.error('[IAP] Ошибка в onBuy:', e);
   }
 }
 
@@ -1045,61 +1067,30 @@ function setLbTab(name) {
 }
 
 async function submitScore() {
-  if (PLATFORM !== 'yandex' || !ysdk) return;
-  try {
-    const lb = await ysdk.getLeaderboards();
-    await Promise.all(Object.values(LB_BOARDS).map(b =>
-      lb.setLeaderboardScore(b.key, b.getValue()).catch(()=>{})
-    ));
-  } catch(e) { console.warn('[LB] Ошибка отправки:', e); }
+  // В ВК версии лидерборд не подключён к внешнему API — локальный режим
 }
 
 async function loadLeaderboard() {
-  const list    = document.getElementById('lbList');
-  const myRank  = document.getElementById('lbMyRank');
-  const board   = LB_BOARDS[currentLb];
+  const list   = document.getElementById('lbList');
+  const myRank = document.getElementById('lbMyRank');
+  const board  = LB_BOARDS[currentLb];
   list.innerHTML = `<div class="lb-empty">${t('lbLoading')}</div>`;
-  myRank.style.display = 'none';
+  if (myRank) myRank.style.display = 'none';
 
-  if (PLATFORM !== 'yandex' || !ysdk) {
-    const demos = {
-      sold:     [98400,74200,55800,12000,8500],
-      coins:    [1240000,890000,540000,320000,180000],
-      prestige: [12,9,7,5,3],
-    };
-    const names = ['ЗаводчикПро','МегаМагнат','IronTycoon','RoboFactory','Механик77'];
-    list.innerHTML = renderLbItems(
-      demos[currentLb].map((score,i) => ({
-        rank:i+1, name:names[i], score, avatar:'', isCurrentPlayer:false
-      })).concat([{ rank:4, name:t('lbMe2'), score:board.getValue(), avatar:'', isCurrentPlayer:true }])
-      .sort((a,b)=>b.score-a.score).map((e,i)=>({...e,rank:i+1}))
-    , board.getUnit())
-    + `<div class="lb-empty" style="font-size:11px;margin-top:8px">${t('lbDemo')}</div>`;
-    return;
-  }
-
-  try {
-    const lb  = await ysdk.getLeaderboards();
-    const res = await lb.getLeaderboardEntries(board.key, {
-      includeUser:true, quantityAround:3, quantityTop:10,
-    });
-    if (res.userRank > 0) {
-      myRank.style.display = 'block';
-      myRank.innerHTML = `${t('lbMyRank')}: <b>#${res.userRank}</b> · ${board.getLabel()}: <b>${fmt(board.getValue())}</b>`;
-    }
-    const entries = res.entries.map(e => ({
-      rank: e.rank,
-      name: e.player.publicName || t('lbAnon'),
-      score: e.score,
-      avatar: e.player.getAvatarSrc('small'),
-      isCurrentPlayer: e.player.uniqueID === yplayer.getUniqueID(),
-    }));
-    list.innerHTML = entries.length
-      ? renderLbItems(entries, board.getUnit())
-      : `<div class="lb-empty">${t('lbEmpty')}</div>`;
-  } catch(e) {
-    list.innerHTML = `<div class="lb-empty">${t('lbError')}</div>`;
-  }
+  // ВК лидерборд — показываем локальные данные игрока
+  const demos = {
+    sold:     [98400,74200,55800,12000,8500],
+    coins:    [1240000,890000,540000,320000,180000],
+    prestige: [12,9,7,5,3],
+  };
+  const names = ['ЗаводчикПро','МегаМагнат','IronTycoon','RoboFactory','Механик77'];
+  const myScore = board.getValue();
+  const all = demos[currentLb]
+    .map((score,i) => ({rank:i+1,name:names[i],score,avatar:'',isCurrentPlayer:false}))
+    .concat([{rank:0,name:t('lbMe2'),score:myScore,avatar:'',isCurrentPlayer:true}])
+    .sort((a,b)=>b.score-a.score)
+    .map((e,i)=>({...e,rank:i+1}));
+  list.innerHTML = renderLbItems(all, board.getUnit());
 }
 
 function renderLbItems(entries, unit) {
@@ -1119,18 +1110,13 @@ function renderLbItems(entries, unit) {
   }).join('');
 }
 // Игра определяет платформу автоматически и использует нужный SDK.
-// Яндекс: наличие YaGames в window
 // ВК:     наличие vk_app_id в URL параметрах
 // Локально: офлайн-режим, всё работает через localStorage
+// Платформа — только ВК
 const PLATFORM = (() => {
-  if (location.hostname.includes('yandex') || location.search.includes('game_sid')) return 'yandex';
   if (location.search.includes('vk_app_id') || typeof vkBridge !== 'undefined') return 'vk';
   return 'local';
 })();
-
-// ── ЯНДЕКС SDK ───────────────────────────────────────────────────
-let ysdk = null;
-let yplayer = null;
 
 // ── VK BRIDGE SDK ────────────────────────────────────────────────
 let vkReady = false;
@@ -1168,26 +1154,8 @@ async function saveGame() {
   G.lastSaved = Date.now();
   const data = JSON.stringify(G);
   localStorage.setItem(SAVE_KEY, data);
-  if (PLATFORM === 'yandex' && yplayer) {
-    try { await yplayer.setData({ save: data }, true); } catch(e) {}
-  } else if (PLATFORM === 'vk') {
-    await saveVK(data);
-  }
+  if (PLATFORM === 'vk') await saveVK(data);
   submitScore();
-}
-
-async function loadCloudSave() {
-  if (!yplayer) return;
-  try {
-    const data = await yplayer.getData(['save']);
-    if (data && data.save) {
-      const cloud = JSON.parse(data.save);
-      const local = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null');
-      if (!local || (cloud.coins || 0) >= (local.coins || 0)) {
-        applyLoaded(cloud);
-      }
-    }
-  } catch(e) { console.warn('[YA] Ошибка загрузки из облака:', e); }
 }
 
 // ── РЕКЛАМНЫЕ МЕХАНИКИ ───────────────────────────────────────────
@@ -1235,19 +1203,14 @@ async function adFreeShopUpg(id) {
 
 // Универсальная обёртка: показывает рекламу и вызывает callback при успехе
 async function watchAdThen(callback) {
-  if (PLATFORM === 'yandex' && ysdk) {
+  if (PLATFORM === 'vk' && vkReady) {
     try {
-      await ysdk.adv.showRewardedVideo({
-        callbacks: {
-          onRewarded: () => callback(),
-          onClose:    () => {},
-          onError:    () => showToast(t('toastAdUnavail')),
-        }
-      });
+      const res = await vkBridge.send('VKWebAppShowNativeAds', { ad_format: 'reward' });
+      if (res.result) callback();
+      else showToast(t('toastAdUnavail'));
     } catch(e) { showToast(t('toastAdUnavail')); }
   } else {
-    // Локально — симуляция
-    callback();
+    callback(); // локальная симуляция
   }
 }
 const AD_BONUS_DURATION = 5 * 60 * 1000;
@@ -1269,31 +1232,15 @@ function adIsOnCooldown() {
 async function showRewardedAd() {
   if (adIsOnCooldown()) return;
   const btn = document.getElementById('adBtn');
-  btn.disabled = true;
-  btn.textContent = t('adLoading');
+  if (btn) { btn.disabled = true; btn.textContent = t('adLoading'); }
 
-  if (PLATFORM === 'yandex' && ysdk) {
-    // Яндекс Rewarded Video
-    try {
-      await ysdk.adv.showRewardedVideo({
-        callbacks: {
-          onRewarded: () => onAdRewarded(),
-          onClose:    () => onAdClose(),
-          onError:    ()  => onAdClose(),
-        }
-      });
-    } catch(e) { onAdClose(); }
-
-  } else if (PLATFORM === 'vk' && vkReady) {
-    // VK Rewarded Ads
+  if (PLATFORM === 'vk' && vkReady) {
     try {
       const res = await vkBridge.send('VKWebAppShowNativeAds', { ad_format: 'reward' });
       if (res.result) onAdRewarded(); else onAdClose();
     } catch(e) { onAdClose(); }
-
   } else {
-    // Локальный режим — симуляция для тестирования
-    console.warn('[AD] Симуляция награды (локальный режим)');
+    // Локальный режим — симуляция
     setTimeout(() => onAdRewarded(), 500);
   }
 }
@@ -1570,9 +1517,10 @@ function pulseCard(machineId) {
   const card = document.querySelector(`[data-mid="${machineId}"]`);
   if (!card) return;
   card.classList.remove('pulse-once');
-  void card.offsetWidth;
-  card.classList.add('pulse-once');
-  setTimeout(()=>card.classList.remove('pulse-once'), 500);
+  requestAnimationFrame(() => {
+    card.classList.add('pulse-once');
+    setTimeout(()=>card.classList.remove('pulse-once'), 500);
+  });
 }
 
 function goldenGlow(el) {
@@ -1770,7 +1718,6 @@ function fullRender() {
 function tickRender(now) {
   G.machines.forEach(m=>{
     if(!m.owned) {
-      // Пропускаем premium цеха — у них нет прогресс-бара покупки
       if(getDef(m.id).premium) return;
       const d=getDef(m.id);
       const pb=document.getElementById('pb'+m.id);
@@ -1779,58 +1726,70 @@ function tickRender(now) {
       const can=G.coins>=d.baseCost;
       const pct=Math.min(100,Math.round(G.coins/d.baseCost*100));
       const need=Math.max(0,d.baseCost-Math.floor(G.coins));
-      pb.style.width=pct+'%';
-      pb.style.background=can?'var(--accent)':'#2a6aDD';
-      // Прогресс-лейбл
+      const newW=pct+'%';
+      if(pb.style.width!==newW) pb.style.width=newW;
+      const newBg=can?'var(--accent)':'#2a6aDD';
+      if(pb.style.background!==newBg) pb.style.background=newBg;
       const labels=card.querySelectorAll('.buy-progress-label span');
-      if(labels[0]&&labels[0].textContent!==pct+'%') labels[0].textContent=pct+'%';
+      const pctStr=pct+'%';
+      if(labels[0]&&labels[0].textContent!==pctStr) labels[0].textContent=pctStr;
       const r2=can?t('enough'):t('remain')+' '+fmt(need);
       if(labels[1]&&labels[1].textContent!==r2) labels[1].textContent=r2;
-      // Кнопка купить
       const btn=card.querySelector('[data-action="buy"]');
       if(btn&&btn.disabled===can){
         btn.disabled=!can;
         btn.textContent=can?t('buyShop'):t('buyLocked')+' '+fmt(d.baseCost)+' '+t('coins');
       }
-      // Иконка и заголовок
       const icon=card.querySelector('.mcard-icon');
-      if(icon&&icon.textContent!==(can?d.emoji:'🔓')) icon.textContent=can?d.emoji:'🔓';
+      const newIcon=can?d.emoji:'🔓';
+      if(icon&&icon.textContent!==newIcon) icon.textContent=newIcon;
       const lvl=card.querySelector('.mcard-lvl');
       const lvlT=can?t('ready'):t('nextMachine');
       if(lvl&&lvl.textContent!==lvlT) lvl.textContent=lvlT;
       return;
     }
-    // Прогресс-бар производства
+    // Прогресс-бар — обновляем только при изменении на 1%
     const pb=document.getElementById('pb'+m.id);
-    if(pb) pb.style.width=(m.progress>0?Math.min(100,Math.round(m.progress/m.speed*100)):0)+'%';
-    // working class
+    if(pb){
+      const pct=m.progress>0?Math.min(100,Math.round(m.progress/m.speed*100)):0;
+      const newW=pct+'%';
+      if(pb.style.width!==newW) pb.style.width=newW;
+    }
+    // working class — только при смене состояния
     const card=document.querySelector('[data-mid="'+m.id+'"]');
-    if(card) card.classList.toggle('working', m.progress>0);
+    if(card){
+      const isWorking=m.progress>0;
+      const hasWorking=card.classList.contains('working');
+      if(isWorking!==hasWorking) card.classList.toggle('working',isWorking);
+    }
     // Кнопка рекламного апгрейда
     const adBtn=document.getElementById('madupg'+m.id);
     if(adBtn){
       const free=canFreeUpgrade();
-      adBtn.disabled=!free;
+      if(adBtn.disabled===free) adBtn.disabled=!free;
       const adTxt=free?t('adWatch2'):t('adUnavail');
       if(adBtn.textContent!==adTxt) adBtn.textContent=adTxt;
     }
-    // Награда — обновляем только если изменилась
+    // Награда
     const rew=document.getElementById('mrew'+m.id);
-    const rewText='+'+fmt(Math.round(m.reward*G.prestigeMult))+' '+t('coins');
-    if(rew&&rew.textContent!==rewText) rew.textContent=rewText;
-    // Кнопка апгрейда — обновляем только disabled/цвет, текст только при изменении суммы
+    if(rew){
+      const rewText='+'+fmt(Math.round(m.reward*G.prestigeMult))+' '+t('coins');
+      if(rew.textContent!==rewText) rew.textContent=rewText;
+    }
+    // Кнопка апгрейда
     const btn=document.getElementById('mupg'+m.id);
     if(btn){
       const cost=machineUpgCost(m.id);
       const can=G.coins>=cost;
       if(btn.disabled===can) btn.disabled=!can;
-      btn.style.borderColor=can?'var(--accent)':'';
-      btn.style.color=can?'var(--accent)':'';
+      const newBC=can?'var(--accent)':'';
+      if(btn.style.borderColor!==newBC) btn.style.borderColor=newBC;
+      if(btn.style.color!==newBC) btn.style.color=newBC;
       const upgTxt=t('upgrade')+' '+fmt(cost)+' 💰';
       if(btn.textContent!==upgTxt) btn.textContent=upgTxt;
     }
   });
-  // Кнопки и прогресс-бары в магазине
+  // Магазин
   UPGRADES_DEF.forEach(ud=>{
     const btn=document.getElementById('ub'+ud.id);
     if(!btn) return;
@@ -1843,9 +1802,11 @@ function tickRender(now) {
       const costTxt=fmt(cost)+' '+t('coins');
       if(costEl.textContent!==costTxt) costEl.textContent=costTxt;
     }
-    // Прогресс-бар рекламной кнопки
     const apb=document.getElementById('uapb'+ud.id);
-    if(apb) apb.style.width=pct+'%';
+    if(apb){
+      const newW=pct+'%';
+      if(apb.style.width!==newW) apb.style.width=newW;
+    }
   });
 }
 
@@ -1947,12 +1908,7 @@ const NEW_PLAYER_BONUS_COINS = 200;     // бонус новичку по реф
 
 function getMyRefCode() {
   if (G.myRefCode) return G.myRefCode;
-  let code;
-  if (yplayer && yplayer.getUniqueID) {
-    code = 'M' + yplayer.getUniqueID().toString().slice(-6);
-  } else {
-    code = 'M' + Math.random().toString(36).slice(2, 8).toUpperCase();
-  }
+  const code = 'M' + Math.random().toString(36).slice(2, 8).toUpperCase();
   G.myRefCode = code;
   return code;
 }
@@ -2000,39 +1956,20 @@ function registerFriendInvited() {
 
 async function shareReferralLink() {
   const code = getMyRefCode();
-  const url  = location.origin + location.pathname + '?ref=' + code;
+  const url  = 'https://vk.com/app54630379#ref=' + code;
   const shareText = t('refShareText');
 
-  if (PLATFORM === 'yandex' && ysdk) {
-    try {
-      // У Яндекс.Игр нет единого share-диалога во всех версиях SDK,
-      // поэтому копируем ссылку в буфер как самый надёжный способ.
-      await navigator.clipboard.writeText(url);
-      showToast('📋 ' + t('refLinkCopied'));
-      registerFriendInvited();
-    } catch(e) {
-      showToast(t('refShareUnavailable'));
-    }
-  } else if (PLATFORM === 'vk' && vkReady) {
+  if (PLATFORM === 'vk' && vkReady) {
     try {
       await vkBridge.send('VKWebAppShare', { link: url });
       registerFriendInvited();
-    } catch(e) {
-      // Пользователь закрыл диалог шеринга — не считаем это ошибкой
-    }
+    } catch(e) { /* пользователь закрыл диалог */ }
   } else {
     try {
-      if (navigator.share) {
-        await navigator.share({ title: 'МегаЗавод', text: shareText, url });
-        registerFriendInvited();
-      } else {
-        await navigator.clipboard.writeText(url);
-        showToast('📋 ' + t('refLinkCopied'));
-        registerFriendInvited();
-      }
-    } catch(e) {
-      // Отмена шеринга пользователем — игнорируем
-    }
+      await navigator.clipboard.writeText(url);
+      showToast('📋 ' + t('refLinkCopied'));
+      registerFriendInvited();
+    } catch(e) { showToast(t('refShareUnavailable')); }
   }
 }
 
@@ -2203,13 +2140,27 @@ function renderAchievements() {
   }).join('');
 }
 
-function setQuestSubTab(tab) {
-  const isDaily = tab === 'daily';
-  document.getElementById('questSubDaily').style.display = isDaily ? 'block' : 'none';
-  document.getElementById('questSubAch').style.display   = isDaily ? 'none'  : 'block';
-  document.getElementById('subtab-daily').classList.toggle('active', isDaily);
-  document.getElementById('subtab-ach').classList.toggle('active', !isDaily);
-  if (!isDaily) renderAchievements();
+// ── МЕНЮ-ХАБ ─────────────────────────────────────────────────────
+let currentMenuSection = null;
+
+function openMenuSection(section) {
+  currentMenuSection = section;
+  document.getElementById('menuSecDaily').style.display   = section==='daily'   ? 'block':'none';
+  document.getElementById('menuSecAch').style.display     = section==='ach'     ? 'block':'none';
+  document.getElementById('menuSecFriends').style.display = section==='friends' ? 'block':'none';
+  document.querySelector('.menu-hub').style.display = 'none';
+  if (section==='daily')   renderQuests();
+  if (section==='ach')     renderAchievements();
+  if (section==='friends') renderFriends();
+}
+
+function closeMenuSection() {
+  currentMenuSection = null;
+  document.getElementById('menuSecDaily').style.display   = 'none';
+  document.getElementById('menuSecAch').style.display     = 'none';
+  document.getElementById('menuSecFriends').style.display = 'none';
+  document.querySelector('.menu-hub').style.display = 'flex';
+  updateMenuBadge();
 }
 
 // ── ЕЖЕДНЕВНЫЕ ЗАДАНИЯ ───────────────────────────────────────────
@@ -2283,7 +2234,7 @@ function trackQuest(type, amount=1) {
     if (quest.type==='qtAd')      quest.progress = q.sessionAds;
   });
   updateQuestBadge();
-  if (currentTab==='quests') renderQuests();
+  if (currentTab==='menu') renderQuests();
 }
 
 function claimQuest(idx) {
@@ -2307,15 +2258,42 @@ function claimQuest(idx) {
   renderQuests(); updateQuestBadge(); saveGame();
 }
 
-function updateQuestBadge() {
+function updateMenuBadge() {
   const hasQuest = G.quests && G.quests.list.some(q=>!q.claimed && q.progress>=q.target);
-  const hasAch   = ACHIEVEMENTS_DEF.some(def => {
-    const st = achState(def.id);
-    return !st.claimed && achProgress(def) >= def.target;
-  });
-  const badge = document.getElementById('questBadge');
-  if (badge) badge.classList.toggle('show', (hasQuest || hasAch) && currentTab!=='quests');
+  const hasAch   = ACHIEVEMENTS_DEF.some(d => !achState(d.id).claimed && achProgress(d) >= d.target);
+  const has = hasQuest || hasAch;
+  // badge на нижней вкладке Меню
+  const mb = document.getElementById('menuBadge');
+  if (mb) mb.classList.toggle('show', has && currentTab!=='menu');
+  // badge на карточке Задания в хабе
+  const qb = document.getElementById('questBadge');
+  if (qb) qb.classList.toggle('show', hasQuest);
+  // badge на карточке Достижения в хабе
+  const ab = document.getElementById('achBadge');
+  if (ab) ab.classList.toggle('show', hasAch);
+  // sub-label заданий: N/3 (только забранные)
+  const sub = document.getElementById('menuSubDaily');
+  if (sub && G.quests) {
+    const claimed = G.quests.list.filter(q=>q.claimed).length;
+    const total   = G.quests.list.length || 3;
+    sub.textContent = `${claimed}/${total}`;
+  }
+  // sub-label достижений
+  const achSub = document.getElementById('achMenuSub');
+  if (achSub) {
+    const unlocked = ACHIEVEMENTS_DEF.filter(d=>achState(d.id).claimed).length;
+    achSub.textContent = `${unlocked}/${ACHIEVEMENTS_DEF.length} · ×${achievementMult().toFixed(2)}`;
+  }
+  // sub-label друзей
+  const frSub = document.getElementById('menuSubFriends');
+  if (frSub) {
+    const inv = G.friendsInvited || 0;
+    frSub.textContent = inv > 0
+      ? `${inv} ${LANG==='en'?'invited':'приглашено'} · ×${referralMult().toFixed(2)}`
+      : (LANG==='en'?'Invite a friend — get a bonus':'Пригласи друга — получите бонус');
+  }
 }
+const updateQuestBadge = updateMenuBadge;
 
 function renderQuests() {
   if (!G.quests) return;
@@ -2377,12 +2355,12 @@ function tick(now) {
         G.sold  += 1;
         m.progress = 0;
         pulseCard(m.id);
-        // Авто-цехи спавнят частицы у карточки
-        if (m.auto) {
+        // Частицы только если вкладка Цеха активна, иначе лишний DOM
+        if (m.auto && currentTab === 'factory') {
           const card = document.querySelector(`[data-mid="${m.id}"]`);
           if (card) {
             const r = card.getBoundingClientRect();
-            spawnParticles(r.left + r.width/2, r.top + r.height/2, 4, '#F0A500');
+            spawnParticles(r.left + r.width/2, r.top + r.height/2, 3, '#F0A500');
           }
         }
         trackQuest('qtCoins', earned);
@@ -2420,11 +2398,11 @@ function tick(now) {
   if (!tick.lastAdUpdate || now - tick.lastAdUpdate > 1000) {
     tick.lastAdUpdate = now;
     updateAdButton();
-    updateQuestBadge();
-    if (currentTab==='quests') {
-      const achVisible = document.getElementById('questSubAch');
-      if (achVisible && achVisible.style.display !== 'none') renderAchievements();
-      else renderQuests();
+    updateMenuBadge();
+    if (currentTab==='menu' && currentMenuSection) {
+      if (currentMenuSection==='daily')   renderQuests();
+      if (currentMenuSection==='ach')     renderAchievements();
+      if (currentMenuSection==='friends') renderFriends();
     }
   }
 
@@ -2453,34 +2431,7 @@ function applyLoaded(saved) {
 // Яндекс требует определять язык через environment.i18n.lang при запуске
 
 async function initSDK() {
-  if (PLATFORM === 'yandex') {
-    try {
-      // Загружаем SDK динамически
-      await new Promise((res, rej) => {
-        const s = document.createElement('script');
-        s.src = '/sdk.js';
-        s.onload = res;
-        s.onerror = rej;
-        document.head.appendChild(s);
-      });
-      ysdk = await Promise.race([
-        YaGames.init(),
-        new Promise((_,rej) => setTimeout(() => rej(new Error('timeout')), 3000))
-      ]);
-
-      // Обязательное требование п. 1.19.2 — Game Ready API
-      // Сообщаем платформе что игра загрузилась и готова к показу
-      try { ysdk.features.LoadingAPI?.ready(); } catch(e) {}
-
-      const yLang = ysdk.environment.i18n.lang;
-      LANG = (yLang === 'ru') ? 'ru' : 'en';
-      applyLang();
-      yplayer = await ysdk.getPlayer({ scopes: false });
-      await loadCloudSave();
-    } catch(e) {
-      console.warn('[YA] SDK недоступен:', e.message);
-    }
-  } else if (PLATFORM === 'vk') {
+  if (PLATFORM === 'vk') {
     try {
       await vkBridge.send('VKWebAppInit');
       vkReady = true;
@@ -2492,8 +2443,8 @@ async function initSDK() {
 
   // Загружаем сохранение
   const hasSave = loadGame();
-  // Язык из сохранения (если игрок вручную менял) имеет приоритет только в локальном режиме
-  if (hasSave && G.lang && PLATFORM === 'local') {
+  // Применяем сохранённый язык
+  if (hasSave && G.lang) {
     LANG = G.lang;
     applyLang();
   }
@@ -2501,7 +2452,7 @@ async function initSDK() {
     document.getElementById('saveNote').textContent = t('saveFound') + ' · ' + fmt(G.coins) + ' ' + t('coins');
   }
 
-  // Показываем кнопку "Начать" только когда SDK готов
+  // Показываем кнопку "Начать"
   document.getElementById('sdkLoading').style.display = 'none';
   document.getElementById('startBtn').style.display   = 'block';
 }
