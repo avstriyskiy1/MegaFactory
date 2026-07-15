@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>МегаЗавод</title>
+<title>MegaFactory</title>
 <script src="https://unpkg.com/@vkontakte/vk-bridge/dist/browser.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Russo+One&family=Exo+2:wght@300;400;500;700&display=swap" rel="stylesheet">
@@ -63,6 +63,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
 .tab-btn.active{color:var(--accent);}.tab-btn.active::after{transform:scaleX(1);}
 .tab-btn .tab-badge{position:absolute;top:8px;right:calc(50% - 18px);width:8px;height:8px;background:var(--teal);border-radius:50%;display:none;}
 .tab-btn .tab-badge.show{display:block;}
+.menu-badge{width:10px;height:10px;background:var(--teal);border-radius:50%;display:none;flex-shrink:0;}
+.menu-badge.show{display:block;}
 
 /* SECTION HDR */
 .sec-hdr{font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--muted);padding:2px 0 6px;border-bottom:1px solid var(--border);margin-bottom:2px;}
@@ -279,7 +281,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
 
 <div id="splash">
   <svg class="splash-gear" viewBox="0 0 100 100" fill="none"><path d="M43 5h14l2 10a33 33 0 0 1 8 3l9-5 10 10-5 9a33 33 0 0 1 3 8l10 2v14l-10 2a33 33 0 0 1-3 8l5 9-10 10-9-5a33 33 0 0 1-8 3l-2 10H43l-2-10a33 33 0 0 1-8-3l-9 5-10-10 5-9a33 33 0 0 1-3-8L6 57V43l10-2a33 33 0 0 1 3-8l-5-9 10-10 9 5a33 33 0 0 1 8-3l2-10Z" stroke="#f0a500" stroke-width="3"/><circle cx="50" cy="50" r="14" stroke="#f0a500" stroke-width="3"/></svg>
-  <div class="splash-logo">МегаЗавод</div>
+  <div class="splash-logo">MegaFactory</div>
   <div class="splash-sub">Idle Factory Tycoon</div>
   <button class="splash-btn" id="startBtn" style="display:none">▶ НАЧАТЬ</button>
   <div id="sdkLoading" style="margin-top:36px;font-size:14px;color:var(--muted);letter-spacing:2px">⏳ Загрузка...</div>
@@ -325,7 +327,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
 
 <div id="game">
   <div class="header">
-    <div class="game-title">МегаЗавод</div>
+    <div class="game-title">MegaFactory</div>
     <div class="stat-pill gold">💰 <b id="hCoins">0</b></div>
     <div class="stat-pill teal">⚡ <b id="hCps">0/с</b></div>
     <div class="stat-pill">🏭 <b id="hSold">0</b></div>
@@ -473,7 +475,10 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
         <span class="tab-icon">🛒</span><span class="tab-label">Магазин</span>
         <span class="tab-badge" id="shopBadge"></span>
       </button>
-      <button class="tab-btn" id="tab-menu" onclick="switchTab('menu')">
+      <button class="tab-btn" id="tab-menu" onclick="
+        if(currentTab==='menu' && currentMenuSection){ closeMenuSection(); }
+        else { switchTab('menu'); }
+      ">
         <span class="tab-icon">☰</span><span class="tab-label" id="tabMenuLabel">Меню</span>
         <span class="tab-badge" id="menuBadge"></span>
       </button>
@@ -808,7 +813,7 @@ function applyLang() {
   set('startBtn', t('start'));
   // Хедер
   const gameTitle = document.querySelector('.game-title');
-  if (gameTitle) gameTitle.textContent = isEn ? 'MegaFactory' : 'МегаЗавод';
+  if (gameTitle) gameTitle.textContent = 'MegaFactory';
   const prestigeHdrBtn = document.getElementById('prestigeHdrBtn');
   if (prestigeHdrBtn) prestigeHdrBtn.textContent = t('prestige');
   // Вкладки
