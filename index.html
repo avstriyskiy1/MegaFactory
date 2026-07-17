@@ -384,6 +384,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
           <button class="lb-tab active" data-lb="sold"     onclick="setLbTab('sold')">🏭 Детали</button>
           <button class="lb-tab"        data-lb="coins"    onclick="setLbTab('coins')">💰 Монеты</button>
           <button class="lb-tab"        data-lb="prestige" onclick="setLbTab('prestige')">⚡ Престиж</button>
+          <button class="lb-tab"        data-lb="friends"  onclick="setLbTab('friends')">👥 Друзья</button>
         </div>
         <div id="lbMyRank" class="lb-myrank" style="display:none"></div>
         <div class="lb-wrap" id="lbList">
@@ -1063,7 +1064,17 @@ const LB_BOARDS = {
   sold:     { key:'sold',     getLabel:()=>t('lbDetails').replace(/^\S+\s/,''),  getUnit:()=>t('lbUnits').sold,     getValue:()=>Math.floor(G.sold) },
   coins:    { key:'coins',    getLabel:()=>t('lbCoins').replace(/^\S+\s/,''),    getUnit:()=>t('lbUnits').coins,    getValue:()=>Math.floor(G.coins) },
   prestige: { key:'prestige', getLabel:()=>t('lbPrestige').replace(/^\S+\s/,''), getUnit:()=>t('lbUnits').prestige, getValue:()=>Math.floor(G.prestigeCount) },
+  friends:  { key:'friends',  getLabel:()=>LANG==='en'?'Friends':'Друзья',       getUnit:()=>LANG==='en'?'inv.':'пр.',  getValue:()=>Math.floor(G.friendsInvited||0) },
 };
+
+// VK Score keys для каждой доски (userScore в VK хранится в отдельных ключах)
+const VK_SCORE_KEYS = {
+  sold:     'score_sold',
+  coins:    'score_coins',
+  prestige: 'score_prestige',
+  friends:  'score_friends',
+};
+
 let currentLb = 'sold';
 
 function setLbTab(name) {
@@ -1072,8 +1083,18 @@ function setLbTab(name) {
   loadLeaderboard();
 }
 
+// Сохраняем текущие счета в VK Storage для лидерборда
 async function submitScore() {
-  // В ВК версии лидерборд не подключён к внешнему API — локальный режим
+  if (PLATFORM !== 'vk' || !vkReady) return;
+  try {
+    const scores = {
+      score_sold:     Math.floor(G.sold),
+      score_coins:    Math.floor(G.coins),
+      score_prestige: Math.floor(G.prestigeCount),
+      score_friends:  Math.floor(G.friendsInvited||0),
+    };
+    await vkBridge.send('VKWebAppStorageSet', { key: 'megafactory_scores', value: JSON.stringify(scores) });
+  } catch(e) { console.warn('[LB] Score save error:', e); }
 }
 
 async function loadLeaderboard() {
@@ -1083,19 +1104,94 @@ async function loadLeaderboard() {
   list.innerHTML = `<div class="lb-empty">${t('lbLoading')}</div>`;
   if (myRank) myRank.style.display = 'none';
 
-  // ВК лидерборд — показываем локальные данные игрока
+  if (PLATFORM === 'vk' && vkReady) {
+    try {
+      // Получаем счета друзей через VK Storage
+      // Сначала получаем список друзей которые играют
+      const friendsRes = await vkBridge.send('VKWebAppGetFriends', { multi: false });
+      const friendIds  = (friendsRes.users || []).map(u => u.id).slice(0, 20);
+
+      if (friendIds.length === 0) {
+        list.innerHTML = `<div class="lb-empty">${LANG==='en'?'No friends playing yet. Invite them!':'Друзья ещё не играют. Пригласи их!'}</div>`;
+        return;
+      }
+
+      // Получаем счета друзей из VK Storage
+      const storageRes = await vkBridge.send('VKWebAppStorageGetItems', {
+        keys: friendIds.map(id => `megafactory_scores_${id}`),
+      });
+
+      // Получаем профили друзей
+      const profileRes = await vkBridge.send('VKWebAppGetUserInfo', {});
+      const myId = profileRes.id;
+      const myName = profileRes.first_name + ' ' + profileRes.last_name;
+
+      // Парсим результаты
+      const entries = [];
+
+      // Добавляем себя
+      entries.push({
+        name: myName,
+        score: board.getValue(),
+        avatar: profileRes.photo_100 || '',
+        isCurrentPlayer: true,
+      });
+
+      // Добавляем друзей
+      (storageRes.keys || []).forEach((item, i) => {
+        if (!item.value) return;
+        try {
+          const scores = JSON.parse(item.value);
+          const score  = scores[VK_SCORE_KEYS[currentLb]] || 0;
+          const friend = (friendsRes.users || [])[i];
+          if (!friend) return;
+          entries.push({
+            name: friend.first_name + ' ' + friend.last_name,
+            score,
+            avatar: friend.photo_100 || '',
+            isCurrentPlayer: false,
+          });
+        } catch(e) {}
+      });
+
+      // Сортируем
+      entries.sort((a,b) => b.score - a.score);
+      const ranked = entries.map((e,i) => ({...e, rank: i+1}));
+
+      if (ranked.length === 0) {
+        list.innerHTML = `<div class="lb-empty">${t('lbEmpty')}</div>`;
+        return;
+      }
+
+      // Показываем место игрока
+      const myEntry = ranked.find(e => e.isCurrentPlayer);
+      if (myEntry && myRank) {
+        myRank.style.display = 'block';
+        myRank.innerHTML = `${t('lbMyRank')}: <b>#${myEntry.rank}</b> · ${board.getLabel()}: <b>${fmt(board.getValue())}</b>`;
+      }
+
+      list.innerHTML = renderLbItems(ranked, board.getUnit());
+      return;
+    } catch(e) {
+      console.warn('[LB] VK leaderboard error:', e);
+      // Fallback на локальный демо
+    }
+  }
+
+  // Локальный демо-режим
   const demos = {
     sold:     [98400,74200,55800,12000,8500],
     coins:    [1240000,890000,540000,320000,180000],
     prestige: [12,9,7,5,3],
+    friends:  [15,10,7,4,2],
   };
   const names = ['ЗаводчикПро','МегаМагнат','IronTycoon','RoboFactory','Механик77'];
   const myScore = board.getValue();
   const all = demos[currentLb]
-    .map((score,i) => ({rank:i+1,name:names[i],score,avatar:'',isCurrentPlayer:false}))
-    .concat([{rank:0,name:t('lbMe2'),score:myScore,avatar:'',isCurrentPlayer:true}])
-    .sort((a,b)=>b.score-a.score)
-    .map((e,i)=>({...e,rank:i+1}));
+    .map((score,i) => ({rank:i+1, name:names[i], score, avatar:'', isCurrentPlayer:false}))
+    .concat([{rank:0, name:t('lbMe2'), score:myScore, avatar:'', isCurrentPlayer:true}])
+    .sort((a,b) => b.score - a.score)
+    .map((e,i) => ({...e, rank:i+1}));
   list.innerHTML = renderLbItems(all, board.getUnit());
 }
 
