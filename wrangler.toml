@@ -1,0 +1,10 @@
+name = "vk-leaderboard-worker"
+main = "worker.js"
+compatibility_date = "2024-01-01"
+
+# Секреты НЕ храним здесь. Задаются командой:
+#   wrangler secret put VK_APP_ID
+#   wrangler secret put VK_SECRET_KEY
+#   wrangler secret put VK_SERVICE_TOKEN
+#   wrangler secret put VK_ACTIVITY_ID
+# см. README.md
