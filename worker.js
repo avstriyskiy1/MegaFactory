@@ -91,6 +91,7 @@ async function handleSubmitScore(body, userId, env, corsHeaders) {
   const vkRes = await fetch(apiUrl.toString(), { method: 'POST' });
   const vkData = await vkRes.json();
   if (vkData.error) {
+    console.error('[VK secure.addAppEvent error]', JSON.stringify(vkData.error));
     return json({ error: 'vk_api_error', details: vkData.error }, 502, corsHeaders);
   }
   return json({ ok: true }, 200, corsHeaders);
