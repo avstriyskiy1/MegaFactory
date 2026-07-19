@@ -795,7 +795,7 @@ function renderIAP() {
 // ── ГЛОБАЛЬНЫЙ РЕЙТИНГ VK (среди всех игроков) ──
 // Требует бэкенд (см. /vk-leaderboard-worker/README.md), т.к. VK разрешает
 // писать очки в общий рейтинг только с сервера (secure.addAppEvent).
-const GLOBAL_LB_ENDPOINT = 'vk-leaderboard-worker.artempro2021.workers.dev/submit-score';
+const GLOBAL_LB_ENDPOINT = 'https://vk-leaderboard-worker.artempro2021.workers.dev/submit-score';
 
 let cachedLaunchParams = null;
 async function getLaunchParamsString() {
