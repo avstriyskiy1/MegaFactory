@@ -2,6 +2,13 @@ name = "vk-leaderboard-worker"
 main = "worker.js"
 compatibility_date = "2024-01-01"
 
+# KV-хранилище для честного учёта приглашений (кто кого пригласил).
+# id подставится автоматически командой из README после
+# `wrangler kv namespace create REFERRALS`.
+kv_namespaces = [
+  { binding = "REFERRALS", id = "84fc6793f05c4885813e96e180fb740e" }
+]
+
 # Секреты НЕ храним здесь. Задаются командой:
 #   wrangler secret put VK_APP_ID
 #   wrangler secret put VK_SECRET_KEY

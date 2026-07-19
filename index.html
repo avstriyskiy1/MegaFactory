@@ -1654,7 +1654,8 @@ function referralMult() {
   return 1 + (G.friendsInvited || 0) * REFERRAL_BONUS_PER_FRIEND;
 }
 
-// Проверяем URL на входящую реферальную ссылку — вызывается один раз при старте
+// Проверяем URL на входящую реферальную ссылку — вызывается один раз при старте,
+// когда игрок реально нажал "Начать" (см. обработчик startBtn ниже).
 function checkIncomingReferral() {
   const params = new URLSearchParams(location.search);
   const ref = params.get('ref');
@@ -1666,29 +1667,64 @@ function checkIncomingReferral() {
   G.coins += NEW_PLAYER_BONUS_COINS;
   showToast('🎁 ' + t('refWelcomeBonus') + ': +' + fmt(NEW_PLAYER_BONUS_COINS) + ' ' + t('coins'));
 
-  // Если это устройство реферера (тот же браузер/локальное хранилище совпадает
-  // по коду — например, человек поделился ссылкой и сам же по ней перешёл для теста),
-  // засчитываем приглашённого. В реальности обычно это будет новый игрок на новом
-  // устройстве — счётчик у реферера обновится при следующем визите по share-флоу.
-  const invitesKey = 'megafactory_invites_sent';
-  try {
-    const sentList = JSON.parse(localStorage.getItem(invitesKey) || '[]');
-    if (!sentList.includes(ref)) {
-      // отмечаем что по этому коду уже был переход — простая защита от накрутки в рамках устройства
-      sentList.push(ref);
-      localStorage.setItem(invitesKey, JSON.stringify(sentList));
-    }
-  } catch(e) {}
+  // Подтверждаем на сервере, что именно ЭТОТ пользователь (по его собственной
+  // подписи VK) реально начал играть по этой ссылке — счётчик у реферера
+  // обновится только после этого, и только один раз на каждого приглашённого.
+  confirmReferralOnServer(ref);
 }
 
-// Вызывается когда сам реферер делится ссылкой — увеличиваем его счётчик
-// сразу (оптимистично) после успешного шеринга, так как подтверждения от
-// друга у нас в реальном времени без сервера нет.
-function registerFriendInvited() {
-  G.friendsInvited = (G.friendsInvited || 0) + 1;
-  showToast('🎉 ' + t('refFriendAdded') + '! ' + t('refBonusNow') + ' ×' + referralMult().toFixed(2));
-  renderFriends();
-  saveGame();
+async function confirmReferralOnServer(code) {
+  if (!GLOBAL_LB_ENDPOINT || PLATFORM !== 'vk' || !vkReady) return;
+  const launchParams = await getLaunchParamsString();
+  if (!launchParams) return;
+  try {
+    await fetch(workerUrl('/confirm-ref'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ launchParams, code }),
+    });
+  } catch(e) { console.warn('[REF] confirm error:', e); }
+}
+
+// Подтягиваем реальное (серверное) число приглашённых — источник истины теперь сервер,
+// а не оптимистичный локальный счётчик.
+async function syncInvitedCount() {
+  if (!GLOBAL_LB_ENDPOINT || PLATFORM !== 'vk' || !vkReady) return;
+  const launchParams = await getLaunchParamsString();
+  if (!launchParams) return;
+  try {
+    const res = await fetch(workerUrl('/my-invited'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ launchParams }),
+    });
+    const data = await res.json();
+    if (data && typeof data.invited === 'number' && data.invited !== G.friendsInvited) {
+      G.friendsInvited = data.invited;
+      renderFriends();
+      saveGame();
+    }
+  } catch(e) { console.warn('[REF] sync error:', e); }
+}
+
+function workerUrl(path) {
+  return GLOBAL_LB_ENDPOINT.replace(/\/submit-score$/, '') + path;
+}
+
+// Регистрируем код на сервере (код → мой vk_user_id), чтобы когда друг перейдёт
+// по ссылке, сервер знал кому засчитать приглашение. Само приглашение здесь
+// ещё НЕ засчитывается — только когда друг реально нажмёт "Начать" у себя.
+async function registerRefCodeOnServer() {
+  if (!GLOBAL_LB_ENDPOINT || PLATFORM !== 'vk' || !vkReady) return;
+  const launchParams = await getLaunchParamsString();
+  if (!launchParams) return;
+  try {
+    await fetch(workerUrl('/register-ref'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ launchParams, code: getMyRefCode() }),
+    });
+  } catch(e) { console.warn('[REF] register error:', e); }
 }
 
 async function shareReferralLink() {
@@ -1696,16 +1732,17 @@ async function shareReferralLink() {
   const url  = 'https://vk.com/app54630379#ref=' + code;
   const shareText = t('refShareText');
 
+  registerRefCodeOnServer();
+
   if (PLATFORM === 'vk' && vkReady) {
     try {
       await vkBridge.send('VKWebAppShare', { link: url });
-      registerFriendInvited();
+      showToast('📤 Ссылка отправлена!');
     } catch(e) { /* пользователь закрыл диалог */ }
   } else {
     try {
       await navigator.clipboard.writeText(url);
       showToast('📋 ' + t('refLinkCopied'));
-      registerFriendInvited();
     } catch(e) { showToast(t('refShareUnavailable')); }
   }
 }
@@ -1888,7 +1925,7 @@ function openMenuSection(section) {
   document.querySelector('.menu-hub').style.display = 'none';
   if (section==='daily')   renderQuests();
   if (section==='ach')     renderAchievements();
-  if (section==='friends') renderFriends();
+  if (section==='friends') { renderFriends(); syncInvitedCount(); }
 }
 
 function closeMenuSection() {
@@ -2117,7 +2154,7 @@ function tick(now) {
     }
   });
 
-  if(saveTimer>30000){ saveTimer=0; saveGame(); submitScoreGlobal(); }
+  if(saveTimer>30000){ saveTimer=0; saveGame(); submitScoreGlobal(); syncInvitedCount(); }
 
   // Золотая деталь — раз в 60с случайный цех даёт ×10
   const goldenUs = G.upgrades && G.upgrades.find(u=>u.id==='sZ');
@@ -2216,6 +2253,7 @@ document.getElementById('startBtn').addEventListener('click', () => {
   initQuests();
   checkIncomingReferral();
   renderFriends();
+  syncInvitedCount();
 
   // Офлайн доход
   const offlineCoins = calcOfflineIncome();
