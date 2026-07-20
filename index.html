@@ -640,13 +640,16 @@ const MACHINES_DEF = [
   { id:7,  name:'Квантовый цех',  emoji:'⚛️',  baseCost:115000000,  baseReward:47916667, baseSpeed:75000 },
   { id:8,  name:'Мегакомплекс',       emoji:'🏗️',  baseCost:880000000,  baseReward:486315790,baseSpeed:105000},
   { id:9,  name:'Орбитальный цех',  emoji:'🛸',  baseCost:6700000000, baseReward:4857500000,baseSpeed:145000},
-  { id:10, name:'Термоядерный реактор', emoji:'☢️', baseCost:51000000000,      baseReward:48000000000,      baseSpeed:190000},
-  { id:11, name:'Сфера Дайсона',        emoji:'🌞', baseCost:390000000000,     baseReward:475000000000,     baseSpeed:245000},
-  { id:12, name:'Портал в измерение',   emoji:'🌀', baseCost:2970000000000,    baseReward:4700000000000,    baseSpeed:310000},
-  { id:13, name:'Машина времени',       emoji:'⏳', baseCost:22600000000000,   baseReward:46500000000000,   baseSpeed:385000},
-  { id:14, name:'Ядро сингулярности',   emoji:'🌌', baseCost:172000000000000,  baseReward:460000000000000,  baseSpeed:470000},
-  // Платный цех — разблокируется через IAP
-  { id:15, name:'Секретная лаборатория', emoji:'🧪', baseCost:0, baseReward:50, baseSpeed:8000, premium:true },
+  { id:11, name:'Термоядерный реактор', emoji:'☢️', baseCost:51000000000,      baseReward:48000000000,      baseSpeed:190000},
+  { id:12, name:'Сфера Дайсона',        emoji:'🌞', baseCost:390000000000,     baseReward:475000000000,     baseSpeed:245000},
+  { id:13, name:'Портал в измерение',   emoji:'🌀', baseCost:2970000000000,    baseReward:4700000000000,    baseSpeed:310000},
+  { id:14, name:'Машина времени',       emoji:'⏳', baseCost:22600000000000,   baseReward:46500000000000,   baseSpeed:385000},
+  { id:15, name:'Ядро сингулярности',   emoji:'🌌', baseCost:172000000000000,  baseReward:460000000000000,  baseSpeed:470000},
+  // Платный цех — разблокируется через IAP. ВАЖНО: id всегда 10, никогда не
+  // переиспользуй и не меняй его — в сохранениях игроков уже есть прогресс,
+  // привязанный именно к этому номеру. Место в списке (последнее) определяется
+  // порядком в этом массиве, а не значением id.
+  { id:10, name:'Секретная лаборатория', emoji:'🧪', baseCost:0, baseReward:50, baseSpeed:8000, premium:true },
 ];
 
 // cost  = базовая цена улучшения
@@ -1120,7 +1123,12 @@ function buyMachine(id) {
   m.auto  = true;
   trackQuest('qtBuy', 1);
   showToast('🏭 ' + t('toastMachineOpen') + ' ' + (d.name) + '!');
-  fullRender();
+  updateMachineCardDOM(id);
+  const nextId = nextUnlockedMachineId();
+  if (nextId !== -1) updateMachineCardDOM(nextId);
+  renderShopList();
+  renderHeader();
+  updateShopBadge();
 }
 
 function clickMachine(id, evt) {
@@ -1144,7 +1152,8 @@ function upgradeMachine(id) {
   m.reward = Math.round(m.reward * 1.20);   // +20% к награде
   m.speed  = Math.max(800, Math.round(m.speed * 0.95)); // -5% к времени
   trackQuest('qtUpgrade', 1);
-  fullRender();
+  updateMachineCardDOM(id);
+  renderHeader();
 }
 
 function buyUpgrade(id) {
@@ -1165,7 +1174,14 @@ function buyUpgrade(id) {
   else if (ud.type==='energyMax')   { G.energyMaxBonus   = (G.energyMaxBonus||0) + ud.mult; }
   else if (ud.type==='energyRegen') { G.energyRegenBonus = (G.energyRegenBonus||0) + ud.mult; }
   else if (ud.type==='clickValue')  { G.clickValueMult   = (G.clickValueMult||1) * ud.mult; }
-  fullRender();
+
+  if (ud.type==='rewardAll' || ud.type==='speedAll') {
+    renderMachinesGrid(); // затрагивает сразу все цеха — тут пересборка оправдана
+  } else if (ud.mid>=0) {
+    updateMachineCardDOM(ud.mid);
+  }
+  renderShopList();
+  renderHeader();
 }
 
 function openPrestige() {
@@ -1230,7 +1246,7 @@ function doPrestige() {
   G.friendsInvited = friendsInv;
   G.referredBy     = referredBy;
   G.energy = energyMax();
-  if (purchases.secretLab) { const ml=getMachine(15); ml.owned=true; ml.auto=true; }
+  if (purchases.secretLab) { const ml=getMachine(10); ml.owned=true; ml.auto=true; }
   closePrestige();
   fullRender();
   saveGame();
@@ -1303,15 +1319,28 @@ function switchTab(tab) {
 }
 
 // ── RENDER ───────────────────────────────────────────────────────
-// Функции разделены на два уровня:
-//   fullRender()       — пересоздаёт весь DOM (только при покупках/апгрейдах)
-//   tickRender(now)    — обновляет только числа и прогресс-бары (каждый кадр)
-// Это исключает проблему «двойного клика»: DOM не пересоздаётся во время игры.
+// Функции разделены на уровни:
+//   fullRender()          — пересоздаёт весь DOM (инициализация, престиж, IAP)
+//   updateMachineCardDOM(id) — точечно обновляет ОДНУ карточку цеха
+//                              (покупка/апгрейд конкретного цеха — не трогает соседние)
+//   tickRender(now)        — обновляет только числа и прогресс-бары (каждый кадр)
+// Это исключает и проблему «двойного клика», и повторное проигрывание
+// анимаций у соседних карточек: DOM пересоздаётся только там, где реально
+// что-то изменилось.
 
-// Следующий незакупленный цех для покупки (последовательная разблокировка)
+const NON_PREMIUM_MACHINES = MACHINES_DEF.filter(d => !d.premium);
+
 function nextUnlockedMachineId() {
   const first = G.machines.find(m => !m.owned && !getDef(m.id).premium);
   return first ? first.id : -1;
+}
+
+// Цех, который нужно купить перед этим (для подписи на закрытой карточке).
+// Определяется по порядку показа (среди обычных цехов), а не по значению id —
+// id может иметь "дыры" (например, id лаборатории стоит особняком).
+function prevMachineDef(id) {
+  const idx = NON_PREMIUM_MACHINES.findIndex(d => d.id === id);
+  return idx > 0 ? NON_PREMIUM_MACHINES[idx-1] : null;
 }
 
 function buildMachineCard(m) {
@@ -1342,7 +1371,7 @@ function buildMachineCard(m) {
     const nextId = nextUnlockedMachineId();
     // Если это не следующий по очереди — показываем замок
     if (m.id !== nextId) {
-      const prevDef = MACHINES_DEF[m.id - 1];
+      const prevDef = prevMachineDef(m.id);
       const prevName = prevDef ? (prevDef.name) : '';
       return `<div class="mcard locked" style="opacity:0.3;cursor:default;pointer-events:none">
         <div class="mcard-head">
@@ -1445,12 +1474,12 @@ function buildUpgradeItem(ud) {
   </div>`;
 }
 
-function fullRender() {
-  // Цеха
+function renderMachinesGrid() {
   const grid = document.getElementById('machinesGrid');
   grid.innerHTML = G.machines.map(m=>buildMachineCard(m)).join('');
+}
 
-  // Магазин
+function renderShopList() {
   const list = document.getElementById('upgList');
   const visible = UPGRADES_DEF.filter(ud=>{
     if(ud.type==='auto' && getUpgState(ud.id).level>=1) return false;
@@ -1460,10 +1489,25 @@ function fullRender() {
   list.innerHTML = visible.length
     ? visible.map(ud=>buildUpgradeItem(ud)).join('')
     : `<div style="font-size:12px;color:var(--muted);padding:8px">${t('allBought')}</div>`;
+}
 
-  // IAP
+// Обновляет ТОЛЬКО одну карточку цеха, не трогая остальные — иначе при
+// каждой покупке/апгрейде пересоздавался бы весь грид, у всех работающих
+// цехов заново проигрывалась анимация "вспышки" и терялась позиция прокрутки.
+function updateMachineCardDOM(id) {
+  const card = document.querySelector(`[data-mid="${id}"]`);
+  const m = getMachine(id);
+  if (!m) { if (card) card.remove(); return; }
+  const html = buildMachineCard(m);
+  if (!html) { if (card) card.remove(); return; }
+  if (card) card.outerHTML = html;
+  else renderMachinesGrid(); // карточки почему-то ещё нет в DOM — подстрахуемся
+}
+
+function fullRender() {
+  renderMachinesGrid();
+  renderShopList();
   renderIAP();
-
   renderHeader();
   updateShopBadge();
 }
@@ -2229,8 +2273,27 @@ function applyLoaded(saved) {
       G.machines.push({ id:d.id, level:1, owned:false, auto:true, progress:0, reward:d.baseReward, speed:d.baseSpeed });
     }
   });
+  // Убираем записи с id, которых больше нет в текущем списке цехов
+  // (могли остаться от промежуточной версии с другой нумерацией)
+  G.machines = G.machines.filter(m => MACHINES_DEF.some(d => d.id === m.id));
+  // На всякий случай подчищаем характеристики ещё не купленных цехов —
+  // если номер цеха когда-то временно означал что-то другое (см. историю
+  // правок нумерации), не купленный цех не должен наследовать чужие цифры:
+  // он ещё не куплен, значит ничего не потеряется, если сверить с текущим
+  // описанием заново.
+  G.machines.forEach(m => {
+    if (!m.owned) {
+      const d = getDef(m.id);
+      if (d) { m.level = 1; m.reward = d.baseReward; m.speed = d.baseSpeed; }
+    }
+  });
   // Миграция старых сохранений: все купленные цеха теперь работают автоматически
   G.machines.forEach(m => { if (m.owned) m.auto = true; });
+  // Порядок карточек должен всегда совпадать с порядком в MACHINES_DEF
+  // (лаборатория — последней), а не с порядком записей в старом сохранении —
+  // иначе новые цеха, дописанные миграцией в конец, окажутся ПОСЛЕ лаборатории.
+  G.machines.sort((a, b) =>
+    MACHINES_DEF.findIndex(d => d.id === a.id) - MACHINES_DEF.findIndex(d => d.id === b.id));
 }
 
 // ── INIT ─────────────────────────────────────────────────────────
