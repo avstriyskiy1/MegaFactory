@@ -640,8 +640,13 @@ const MACHINES_DEF = [
   { id:7,  name:'Квантовый цех',  emoji:'⚛️',  baseCost:115000000,  baseReward:47916667, baseSpeed:75000 },
   { id:8,  name:'Мегакомплекс',       emoji:'🏗️',  baseCost:880000000,  baseReward:486315790,baseSpeed:105000},
   { id:9,  name:'Орбитальный цех',  emoji:'🛸',  baseCost:6700000000, baseReward:4857500000,baseSpeed:145000},
+  { id:10, name:'Термоядерный реактор', emoji:'☢️', baseCost:51000000000,      baseReward:48000000000,      baseSpeed:190000},
+  { id:11, name:'Сфера Дайсона',        emoji:'🌞', baseCost:390000000000,     baseReward:475000000000,     baseSpeed:245000},
+  { id:12, name:'Портал в измерение',   emoji:'🌀', baseCost:2970000000000,    baseReward:4700000000000,    baseSpeed:310000},
+  { id:13, name:'Машина времени',       emoji:'⏳', baseCost:22600000000000,   baseReward:46500000000000,   baseSpeed:385000},
+  { id:14, name:'Ядро сингулярности',   emoji:'🌌', baseCost:172000000000000,  baseReward:460000000000000,  baseSpeed:470000},
   // Платный цех — разблокируется через IAP
-  { id:10, name:'Секретная лаборатория', emoji:'🧪', baseCost:0, baseReward:50, baseSpeed:8000, premium:true },
+  { id:15, name:'Секретная лаборатория', emoji:'🧪', baseCost:0, baseReward:50, baseSpeed:8000, premium:true },
 ];
 
 // cost  = базовая цена улучшения
@@ -1225,7 +1230,7 @@ function doPrestige() {
   G.friendsInvited = friendsInv;
   G.referredBy     = referredBy;
   G.energy = energyMax();
-  if (purchases.secretLab) { const ml=getMachine(10); ml.owned=true; ml.auto=true; }
+  if (purchases.secretLab) { const ml=getMachine(15); ml.owned=true; ml.auto=true; }
   closePrestige();
   fullRender();
   saveGame();
@@ -1836,8 +1841,8 @@ const ACHIEVEMENTS_DEF = [
   { id:'ach_coins_1b',   cat:'coinsTotal', target:1000000000, tier:'gold',   icon:'💰', rewardMult:1.10 },
   // Цеха куплено
   { id:'ach_machines_5', cat:'machines', target:5,  tier:'bronze', icon:'🏭', rewardMult:1.02 },
-  { id:'ach_machines_9', cat:'machines', target:9,  tier:'silver', icon:'🏭', rewardMult:1.05 },
-  { id:'ach_machines_11',cat:'machines', target:11, tier:'gold',   icon:'🏭', rewardMult:1.10 },
+  { id:'ach_machines_9', cat:'machines', target:10, tier:'silver', icon:'🏭', rewardMult:1.05 },
+  { id:'ach_machines_11',cat:'machines', target:16, tier:'gold',   icon:'🏭', rewardMult:1.10 },
   // Престиж
   { id:'ach_prestige_1', cat:'prestige', target:1,  tier:'bronze', icon:'⚡', rewardMult:1.03 },
   { id:'ach_prestige_5', cat:'prestige', target:5,  tier:'silver', icon:'⚡', rewardMult:1.06 },
@@ -2216,6 +2221,13 @@ function applyLoaded(saved) {
     if (!o) return {id:d.id,level:0};
     if (o.level!=null) return {id:d.id,level:o.level};
     return {id:d.id,level:o.bought?1:0};
+  });
+  // Миграция старых сохранений: если появились новые цеха после того как
+  // человек последний раз сохранялся — дописываем их (свежими, не купленными)
+  MACHINES_DEF.forEach(d => {
+    if (!G.machines.find(m => m.id === d.id)) {
+      G.machines.push({ id:d.id, level:1, owned:false, auto:true, progress:0, reward:d.baseReward, speed:d.baseSpeed });
+    }
   });
   // Миграция старых сохранений: все купленные цеха теперь работают автоматически
   G.machines.forEach(m => { if (m.owned) m.auto = true; });
