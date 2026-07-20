@@ -812,6 +812,17 @@ async function getLaunchParamsString() {
 }
 
 let lastGlobalSubmit = 0;
+
+// VK ограничивает value для secure.addAppEvent сверху 15000 (лимит самого
+// метода, не зависит от типа активности — "Очки" или "Уровень"). Монет у
+// игрока может быть в сотни миллионов, поэтому отправляем не сырое число,
+// а логарифмически сжатое значение 0..15000 — порядок игроков (у кого
+// больше монет) при этом сохраняется, теряется только точное число.
+function scoreForGlobalLb() {
+  const coins = Math.max(1, Math.floor(G.coins));
+  return Math.min(15000, Math.floor(Math.log10(coins) * 1000));
+}
+
 async function submitScoreGlobal() {
   if (!GLOBAL_LB_ENDPOINT || PLATFORM !== 'vk' || !vkReady) return;
   const now = Date.now();
@@ -823,7 +834,7 @@ async function submitScoreGlobal() {
     await fetch(GLOBAL_LB_ENDPOINT, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ launchParams, value: Math.floor(G.coins) }),
+      body: JSON.stringify({ launchParams, value: scoreForGlobalLb() }),
     });
   } catch(e) { console.warn('[LB] Global submit error:', e); }
 }
@@ -845,7 +856,7 @@ async function showGlobalLeaderboard() {
   }
   await submitScoreGlobal();
   try {
-    await vkBridge.send('VKWebAppShowLeaderBoardBox', { user_result: Math.floor(G.coins) });
+    await vkBridge.send('VKWebAppShowLeaderBoardBox', { user_result: scoreForGlobalLb() });
   } catch(e) { showToast(t('lbError')); }
 }
 
