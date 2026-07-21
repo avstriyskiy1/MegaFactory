@@ -207,6 +207,35 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
 .quest-card.ach-tier-silver.done{background:rgba(192,192,192,.08);}
 .quest-card.ach-tier-gold.done{background:rgba(255,215,0,.08);}
 
+/* DAILY STREAK */
+.streak-desc{font-size:12px;color:var(--muted);text-align:center;padding:4px 0 10px;}
+.streak-counter{text-align:center;font-size:13px;color:var(--muted);margin-bottom:12px;}
+.streak-counter b{color:var(--accent);font-size:16px;}
+.streak-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:6px;}
+.streak-day{background:var(--card);border:1px solid var(--border);border-radius:6px;padding:10px 4px;text-align:center;}
+.streak-day-label{font-size:10px;color:var(--muted);margin-bottom:4px;}
+.streak-day-icon{font-size:20px;margin-bottom:2px;}
+.streak-day.claimed{border-color:var(--teal);background:rgba(0,224,184,.08);opacity:.6;}
+.streak-day.current{border-color:var(--accent);background:rgba(240,165,0,.1);box-shadow:0 0 0 1px var(--accent);}
+.streak-day.locked{opacity:.4;}
+
+/* SKILL TREE */
+.skill-desc{font-size:12px;color:var(--muted);text-align:center;padding:4px 0 10px;}
+.skill-crystals-box{background:linear-gradient(135deg,rgba(160,144,255,.12),rgba(90,60,200,.08));border:1px solid rgba(160,144,255,.35);border-radius:8px;padding:10px;text-align:center;font-size:14px;color:var(--muted);margin-bottom:14px;}
+.skill-crystals-box b{color:#a090ff;font-size:17px;}
+.skill-branch{margin-bottom:16px;}
+.skill-branch-hdr{font-size:12px;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:.03em;margin-bottom:8px;padding-left:2px;}
+.skill-node{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--border);border-radius:6px;padding:10px 12px;margin-bottom:6px;}
+.skill-node.maxed{border-color:var(--teal);background:rgba(0,224,184,.06);}
+.skill-node-icon{font-size:20px;flex-shrink:0;width:28px;text-align:center;}
+.skill-node-info{flex:1;min-width:0;}
+.skill-node-name{font-size:13px;font-weight:500;}
+.skill-node-lvl{font-size:11px;color:var(--muted);font-weight:400;}
+.skill-node-desc{font-size:11px;color:var(--muted);margin-top:2px;}
+.btn-skill{padding:6px 12px;background:transparent;border:1px solid #a090ff;border-radius:4px;color:#a090ff;font-size:12px;font-weight:600;cursor:pointer;font-family:'Exo 2',sans-serif;white-space:nowrap;flex-shrink:0;transition:filter .15s;}
+.btn-skill:hover:not(:disabled){filter:brightness(1.2);}
+.btn-skill:disabled{border-color:var(--border);color:var(--muted);cursor:default;}
+
 /* IAP SHOP */
 /* FRIENDS / REFERRAL */
 .friends-box{background:linear-gradient(135deg,rgba(255,107,157,.08),rgba(180,50,120,.06));border:1px solid rgba(255,107,157,.3);border-radius:8px;padding:14px;}
@@ -315,6 +344,18 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
   </div>
 </div>
 
+<div class="modal-overlay" id="dailyModal">
+  <div class="modal offline-modal">
+    <div class="offline-icon" id="dailyModalIcon">🎁</div>
+    <h2 id="dailyModalTitle">Награда за вход!</h2>
+    <div class="offline-sub" id="dailyModalStreak"></div>
+    <div class="offline-coins" id="dailyModalReward"></div>
+    <div class="modal-btns">
+      <button class="btn-modal primary" onclick="claimDailyFromModal()">🎁 Забрать</button>
+    </div>
+  </div>
+</div>
+
 <div id="game">
   <div class="header">
     <div class="game-title">MegaFactory</div>
@@ -323,6 +364,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
     <div class="stat-pill">🏭 <b id="hSold">0</b></div>
     <div class="stat-pill">✨ x<b id="hMult">1.0</b></div>
     <div class="header-right">
+      <button class="btn-hdr" id="soundBtn" onclick="toggleSound()">🔊</button>
       <button class="btn-hdr" onclick="openPrestige()" id="prestigeHdrBtn">⚡ Престиж</button>
     </div>
   </div>
@@ -382,6 +424,17 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
         <!-- Хаб: карточки-разделы -->
         <div class="menu-hub">
 
+          <!-- Награда за вход (стрик) -->
+          <div class="menu-card" onclick="openMenuSection('streak')">
+            <div class="menu-card-icon">🎁</div>
+            <div class="menu-card-info">
+              <div class="menu-card-title" id="menuTitleStreak">Награда за вход</div>
+              <div class="menu-card-sub" id="menuSubStreak">Заходи каждый день</div>
+            </div>
+            <span class="tab-badge menu-badge" id="streakBadge"></span>
+            <div class="menu-card-arrow">›</div>
+          </div>
+
           <!-- Ежедневные задания -->
           <div class="menu-card" onclick="openMenuSection('daily')">
             <div class="menu-card-icon">📋</div>
@@ -404,6 +457,17 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
             <div class="menu-card-arrow">›</div>
           </div>
 
+          <!-- Дерево навыков -->
+          <div class="menu-card" onclick="openMenuSection('skills')">
+            <div class="menu-card-icon">🌳</div>
+            <div class="menu-card-info">
+              <div class="menu-card-title" id="menuTitleSkills">Дерево навыков</div>
+              <div class="menu-card-sub" id="menuSubSkills">За кристаллы престижа</div>
+            </div>
+            <span class="tab-badge menu-badge" id="skillsBadge"></span>
+            <div class="menu-card-arrow">›</div>
+          </div>
+
           <!-- Друзья -->
           <div class="menu-card" onclick="openMenuSection('friends')">
             <div class="menu-card-icon">👥</div>
@@ -414,6 +478,23 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
             <div class="menu-card-arrow">›</div>
           </div>
 
+        </div>
+
+        <!-- Секция: Дерево навыков -->
+        <div id="menuSecSkills" style="display:none">
+          <button class="menu-back-btn" onclick="closeMenuSection('skills')">‹ Назад</button>
+          <div class="skill-desc">Кристаллы даются за престиж и никогда не сгорают — как и уровни навыков.</div>
+          <div class="skill-crystals-box">💎 Кристаллы: <b id="skillCrystals">0</b></div>
+          <div id="skillTreeList"></div>
+        </div>
+
+        <!-- Секция: Награда за вход -->
+        <div id="menuSecStreak" style="display:none">
+          <button class="menu-back-btn" onclick="closeMenuSection('streak')">‹ Назад</button>
+          <div class="streak-desc" id="streakDesc">Заходи каждый день — награда растёт всю неделю!</div>
+          <div class="streak-counter" id="streakCounter"></div>
+          <div class="streak-grid" id="streakGrid"></div>
+          <button class="btn-claim" id="streakClaimBtn" onclick="claimDailyReward()">🎁 Забрать награду</button>
         </div>
 
         <!-- Секция: Ежедневные задания -->
@@ -772,6 +853,7 @@ async function buyProduct(id) {
   if (!prod) { console.error('[IAP] Товар не найден:', id); return; }
   try {
     prod.onBuy();
+    playSound('levelup');
     fullRender();
     saveGame();
   } catch(e) {
@@ -976,6 +1058,66 @@ const AD_COOLDOWN       = 5 * 60 * 1000;
 let adBonusEnd    = 0;
 let adCooldownEnd = 0;
 
+// ── ЗВУК ─────────────────────────────────────────────────────────
+// Короткие звуковые эффекты генерируются на лету через Web Audio API —
+// без единого внешнего аудиофайла. AudioContext создаётся лениво по
+// первому жесту пользователя (требование браузеров).
+let audioCtx = null;
+function getAudioCtx() {
+  if (!audioCtx) {
+    try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+    catch(e) { return null; }
+  }
+  if (audioCtx.state === 'suspended') audioCtx.resume().catch(()=>{});
+  return audioCtx;
+}
+
+function toggleSound() {
+  G.soundEnabled = !G.soundEnabled;
+  document.getElementById('soundBtn').textContent = G.soundEnabled ? '🔊' : '🔇';
+  if (G.soundEnabled) { getAudioCtx(); playSound('click'); }
+  saveGame();
+}
+
+// tone(частота, задержка_с, длительность_с, громкость, форма_волны, конечная_частота?)
+function playSound(type) {
+  if (!G.soundEnabled) return;
+  const ctx = getAudioCtx();
+  if (!ctx) return;
+  const now = ctx.currentTime;
+
+  function tone(freq, start, dur, vol, wave, freqEnd) {
+    const osc  = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = wave || 'sine';
+    osc.frequency.setValueAtTime(freq, now + start);
+    if (freqEnd) osc.frequency.exponentialRampToValueAtTime(freqEnd, now + start + dur);
+    gain.gain.setValueAtTime(0.0001, now + start);
+    gain.gain.linearRampToValueAtTime(vol, now + start + 0.006);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + start + dur);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(now + start);
+    osc.stop(now + start + dur + 0.03);
+  }
+
+  switch (type) {
+    case 'click':    tone(560, 0, 0.05, 0.07, 'square'); break;
+    case 'buy':       tone(420, 0, 0.09, 0.09, 'triangle', 680);
+                       tone(680, 0.07, 0.12, 0.08, 'triangle', 980); break;
+    case 'upgrade':   tone(520, 0, 0.09, 0.08, 'sawtooth', 880); break;
+    case 'levelup':   tone(520, 0, 0.09, 0.09, 'triangle');
+                       tone(780, 0.09, 0.09, 0.09, 'triangle');
+                       tone(1040, 0.18, 0.15, 0.09, 'triangle'); break;
+    case 'quest':     tone(600, 0, 0.08, 0.08, 'triangle');
+                       tone(920, 0.1, 0.12, 0.08, 'triangle'); break;
+    case 'prestige':  tone(380, 0, 0.16, 0.1, 'sawtooth', 1100);
+                       tone(600, 0.16, 0.22, 0.1, 'sawtooth', 1500); break;
+    case 'error':     tone(180, 0, 0.14, 0.09, 'square'); break;
+    default:          tone(600, 0, 0.06, 0.07, 'sine');
+  }
+}
+
 function getAdMultiplier() {
   return Date.now() < adBonusEnd ? 2 : 1;
 }
@@ -1053,6 +1195,9 @@ function defaultState() {
     energy: 100, energyMaxBonus: 0, energyRegenBonus: 0, clickValueMult: 1,
     achievements: {},
     myRefCode: null, friendsInvited: 0, referredBy: null,
+    dailyStreak: 0, lastDailyClaimDay: null,
+    soundEnabled: true,
+    crystals: 0, skills: {},
     purchases: { starterPack: false, vipStatus: false, secretLab: false },
     machines: MACHINES_DEF.map(d=>({
       id:d.id, level:1, owned:false, auto:true,
@@ -1084,7 +1229,7 @@ const getUpgState= id => G.upgrades.find(u=>u.id===id);
 
 function cps() {
   return G.machines.filter(m=>m.owned&&m.auto)
-    .reduce((s,m)=>s+m.reward*G.prestigeMult*1000/m.speed, 0);
+    .reduce((s,m)=>s+m.reward*totalPrestigeMult()*1000/m.speed, 0);
 }
 
 function fmt(n) {
@@ -1111,7 +1256,8 @@ function getUpgCost(id) {
 }
 
 function prestigeThreshold() {
-  return Math.round(350000 * Math.pow(4, G.prestigeCount));
+  const base = Math.round(350000 * Math.pow(4, G.prestigeCount));
+  return Math.round(base * (1 - skillBonus('prestige_thresh')));
 }
 
 // ── ACTIONS ─────────────────────────────────────────────────────
@@ -1123,6 +1269,7 @@ function buyMachine(id) {
   m.auto  = true;
   trackQuest('qtBuy', 1);
   showToast('🏭 ' + t('toastMachineOpen') + ' ' + (d.name) + '!');
+  playSound('buy');
   updateMachineCardDOM(id);
   const nextId = nextUnlockedMachineId();
   if (nextId !== -1) updateMachineCardDOM(nextId);
@@ -1135,6 +1282,7 @@ function clickMachine(id, evt) {
   const m = getMachine(id);
   if (!m||!m.owned||m.progress>0) return;
   m.progress = 1;
+  playSound('click');
   // Клик по карточке только запускает цикл — монеты приходят по завершении как обычно.
   // Мгновенные монеты теперь даёт отдельная кнопка "Произвести вручную" (тратит энергию).
   const card = document.querySelector('[data-mid="'+id+'"]');
@@ -1152,6 +1300,7 @@ function upgradeMachine(id) {
   m.reward = Math.round(m.reward * 1.20);   // +20% к награде
   m.speed  = Math.max(800, Math.round(m.speed * 0.95)); // -5% к времени
   trackQuest('qtUpgrade', 1);
+  playSound('upgrade');
   updateMachineCardDOM(id);
   renderHeader();
 }
@@ -1163,6 +1312,7 @@ function buyUpgrade(id) {
   if (ud.type==='auto' && us.level>=1) return;
   G.coins -= cost;
   us.level += 1;
+  playSound('upgrade');
   if      (ud.type==='auto')      { getMachine(ud.mid).auto = true; }
   else if (ud.type==='speed')     { const m=getMachine(ud.mid); m.speed=Math.max(800,Math.round(m.speed/ud.mult)); }
   else if (ud.type==='reward')    { const m=getMachine(ud.mid); m.reward=Math.round(m.reward*ud.mult); }
@@ -1202,9 +1352,10 @@ function openPrestige() {
     if (pbarL) pbarL.textContent = pct+'% — '+t('prestigeReset')+(G.prestigeCount+1);
   } else {
     const newMult = (G.prestigeMult*1.5).toFixed(1);
+    const crystalsPreview = Math.max(1, Math.floor(10 * Math.sqrt(G.coins / thr) * (1 + skillBonus('crystal_gain'))));
     const readyText = document.getElementById('prestige-ready-text');
     if (readyText) readyText.innerHTML =
-      `${t('prestigeGoal')} <b id="prestigeBonus" style="color:var(--accent)">x${newMult}</b> ${t('prestigeForever')}<br><br>${t('prestigeCurrentMult')} <b id="currentMult" style="color:var(--teal)">x${G.prestigeMult.toFixed(1)}</b>`;
+      `${t('prestigeGoal')} <b id="prestigeBonus" style="color:var(--accent)">x${newMult}</b> ${t('prestigeForever')}<br><br>${t('prestigeCurrentMult')} <b id="currentMult" style="color:var(--teal)">x${G.prestigeMult.toFixed(1)}</b><br><br>💎 Получишь: <b style="color:#a090ff">+${fmt(crystalsPreview)} кристаллов</b>`;
   }
   const modal = document.getElementById('prestigeModal');
   if (modal) modal.classList.add('show');
@@ -1214,6 +1365,10 @@ function closePrestige() {
   if (modal) modal.classList.remove('show');
 }
 function doPrestige() {
+  playSound('prestige');
+  // Кристаллы считаем ДО увеличения prestigeCount — порог должен быть тем,
+  // который действовал в этом заходе, а не следующим.
+  const crystalsEarned = Math.max(1, Math.floor(10 * Math.sqrt(G.coins / prestigeThreshold()) * (1 + skillBonus('crystal_gain'))));
   G.prestigeMult = parseFloat((G.prestigeMult*1.5).toFixed(1));
   G.prestigeCount++;
   const mult         = G.prestigeMult;
@@ -1230,6 +1385,11 @@ function doPrestige() {
   const myRefCode    = G.myRefCode;
   const friendsInv   = G.friendsInvited;
   const referredBy   = G.referredBy;
+  const crystals     = (G.crystals || 0) + crystalsEarned;
+  const skills       = G.skills;
+  const dailyStreak  = G.dailyStreak;
+  const lastDailyClaimDay = G.lastDailyClaimDay;
+  const soundEnabled = G.soundEnabled;
   G = defaultState();
   G.prestigeMult   = mult;
   G.prestigeCount  = cnt;
@@ -1245,12 +1405,17 @@ function doPrestige() {
   G.myRefCode      = myRefCode;
   G.friendsInvited = friendsInv;
   G.referredBy     = referredBy;
+  G.crystals       = crystals;
+  G.skills         = skills;
+  G.dailyStreak        = dailyStreak;
+  G.lastDailyClaimDay  = lastDailyClaimDay;
+  G.soundEnabled       = soundEnabled;
   G.energy = energyMax();
   if (purchases.secretLab) { const ml=getMachine(10); ml.owned=true; ml.auto=true; }
   closePrestige();
   fullRender();
   saveGame();
-  showToast('⚡ '+t('prestigeToast')+mult.toFixed(1));
+  showToast('⚡ '+t('prestigeToast')+mult.toFixed(1)+'  ·  +'+fmt(crystalsEarned)+' 💎');
 }
 
 // ── UI HELPERS ───────────────────────────────────────────────────
@@ -1360,7 +1525,7 @@ function buildMachineCard(m) {
           </div>
           <div style="font-size:11px;color:#a090ff;font-weight:600">199 ₽</div>
         </div>
-        <div class="mcard-reward" style="color:#a090ff">+${fmt(d.baseReward * G.prestigeMult)} ${t('coins')} ${t('perCycle')}</div>
+        <div class="mcard-reward" style="color:#a090ff">+${fmt(d.baseReward * totalPrestigeMult())} ${t('coins')} ${t('perCycle')}</div>
         <button class="btn-buy-big" data-action="buypremium" data-product="secret_lab"
           style="background:#7c5cff;margin-top:8px;pointer-events:all;cursor:pointer">
           💎 ${t('iapLab')} — 199 ₽
@@ -1417,7 +1582,7 @@ function buildMachineCard(m) {
   const canUpg  = G.coins >= upgCost;
   const upgPct  = Math.min(100, Math.round(G.coins / upgCost * 100));
   const adUpg   = !canUpg && upgPct >= 80 && canFreeUpgrade();
-  const eff     = Math.round(m.reward * G.prestigeMult);
+  const eff     = Math.round(m.reward * totalPrestigeMult());
 
   return `<div class="mcard${m.progress>0?' working':''}" data-mid="${m.id}">
     <div class="mcard-head">
@@ -1571,7 +1736,7 @@ function tickRender(now) {
     // Награда
     const rew=document.getElementById('mrew'+m.id);
     if(rew){
-      const rewText='+'+fmt(Math.round(m.reward*G.prestigeMult))+' '+t('coins');
+      const rewText='+'+fmt(Math.round(m.reward*totalPrestigeMult()))+' '+t('coins');
       if(rew.textContent!==rewText) rew.textContent=rewText;
     }
     // Кнопка апгрейда
@@ -1644,11 +1809,11 @@ function calcOfflineIncome() {
   if (elapsed < 30000) return 0; // менее 30 секунд — не считаем
 
   let total = 0;
-  const offMult = G.offlineMult || 1; // улучшение "Ночная смена" компенсирует часть штрафа
+  const offMult = (G.offlineMult || 1) * (1 + skillBonus('offline_boost')); // "Автопилот завода" компенсирует часть штрафа
   G.machines.forEach(m => {
     if (!m.owned || !m.auto) return;
     const cycles = elapsed / m.speed;
-    total += cycles * m.reward * G.prestigeMult * iapMultiplier() * achievementMult() * referralMult() * offMult * OFFLINE_EFFICIENCY;
+    total += cycles * m.reward * totalPrestigeMult() * iapMultiplier() * achievementMult() * referralMult() * offMult * OFFLINE_EFFICIENCY;
   });
   return Math.floor(total);
 }
@@ -1679,6 +1844,7 @@ function claimOffline() {
   spawnParticles(window.innerWidth/2, window.innerHeight/2, 16, '#F0A500');
   renderHeader();
   saveGame();
+  setTimeout(maybeShowDailyModal, 400);
 }
 
 async function claimOfflineAd() {
@@ -1689,6 +1855,7 @@ async function claimOfflineAd() {
     showToast('📺 Офлайн доход ×2!');
     renderHeader();
     saveGame();
+    setTimeout(maybeShowDailyModal, 400);
   });
 }
 // ── ДРУЗЬЯ И РЕФЕРАЛЬНЫЕ БОНУСЫ ───────────────────────────────────
@@ -1823,12 +1990,12 @@ function renderFriends() {
 // скорость восстановления, монет за клик.
 
 function energyMax()    { return 100 + (G.energyMaxBonus || 0); }
-function energyRegen()  { return 1 + (G.energyRegenBonus || 0); } // ед./сек
+function energyRegen()  { return 1 + (G.energyRegenBonus || 0) + skillBonus('energy_regen'); } // ед./сек
 function clickValue()   {
   // cps() уже включает prestigeMult — повторно их не умножаем, иначе двойная инфляция.
   // Берём ~30% от дохода в секунду как разовую награду за клик.
   const base = Math.max(1, Math.round(cps() * 0.3)) || 1;
-  return Math.round(base * (G.clickValueMult || 1) * iapMultiplier() * achievementMult() * referralMult());
+  return Math.round(base * (G.clickValueMult || 1) * (1 + skillBonus('click_power')) * iapMultiplier() * achievementMult() * referralMult());
 }
 
 function regenEnergy(dtMs) {
@@ -1868,6 +2035,80 @@ function updateEnergyUI() {
   if (val) val.textContent = cur + '/' + max;
   if (sub) sub.textContent = '+' + fmt(clickValue()) + ' ' + t('coins') + ' · -1 ⚡';
   if (btn) btn.disabled = (G.energy < 1);
+}
+
+// ── ДЕРЕВО НАВЫКОВ (за кристаллы престижа) ────────────────────────
+// Кристаллы начисляются при каждом престиже и НИКОГДА не сгорают — как и
+// уровни навыков, купленных за них. Это отдельный, постоянный слой
+// прогрессии поверх обычного множителя престижа.
+const SKILLS_DEF = [
+  { id:'prod_mult',      branch:'prod', name:'Оптимизация цехов',   icon:'🏭', desc:'+8% ко всему доходу',        maxLevel:12, baseCost:5,  costMult:1.35, perLevel:0.08 },
+  { id:'prestige_thresh',branch:'prestige', name:'Быстрый рестарт', icon:'⏱️', desc:'-4% к порогу престижа',       maxLevel:10, baseCost:8,  costMult:1.4,  perLevel:0.04 },
+  { id:'crystal_gain',   branch:'prestige', name:'Огранка кристаллов', icon:'💎', desc:'+15% кристаллов за престиж', maxLevel:8,  baseCost:10, costMult:1.5,  perLevel:0.15 },
+  { id:'energy_regen',   branch:'utility', name:'Второе дыхание',   icon:'🔋', desc:'+0.2 энергии/сек',            maxLevel:8,  baseCost:5,  costMult:1.35, perLevel:0.2  },
+  { id:'offline_boost',  branch:'utility', name:'Автопилот завода',  icon:'🌙', desc:'+20% офлайн-дохода',          maxLevel:6,  baseCost:6,  costMult:1.4,  perLevel:0.2  },
+  { id:'click_power',    branch:'utility', name:'Твёрдая рука',     icon:'👆', desc:'+25% силы клика',             maxLevel:8,  baseCost:5,  costMult:1.35, perLevel:0.25 },
+];
+const SKILL_BRANCHES = [
+  { id:'prod',     name:'Производство', icon:'🏭' },
+  { id:'prestige', name:'Престиж',      icon:'⚡' },
+  { id:'utility',  name:'Энергия и клики', icon:'🔋' },
+];
+
+function skillLevel(id) { return (G.skills && G.skills[id]) || 0; }
+function skillDef(id)   { return SKILLS_DEF.find(s => s.id === id); }
+function skillCost(id) {
+  const d = skillDef(id);
+  const lvl = skillLevel(id);
+  if (!d || lvl >= d.maxLevel) return null;
+  return Math.ceil(d.baseCost * Math.pow(d.costMult, lvl));
+}
+function skillBonus(id) { return skillLevel(id) * (skillDef(id)?.perLevel || 0); }
+
+// Множитель дохода от навыков — применяется везде рядом с G.prestigeMult
+function skillProdMult() { return 1 + skillBonus('prod_mult'); }
+// Комбинированный множитель дохода (базовый престиж × бонус от навыков)
+function totalPrestigeMult() { return G.prestigeMult * skillProdMult(); }
+
+function buySkill(id) {
+  const cost = skillCost(id);
+  if (cost === null || G.crystals < cost) return;
+  G.crystals -= cost;
+  G.skills[id] = (G.skills[id] || 0) + 1;
+  playSound('upgrade');
+  renderSkillTree();
+  renderHeader();
+  saveGame();
+}
+
+function renderSkillTree() {
+  const el = document.getElementById('skillTreeList');
+  const crystalsEl = document.getElementById('skillCrystals');
+  if (!el) return;
+  if (crystalsEl) crystalsEl.textContent = fmt(G.crystals);
+
+  el.innerHTML = SKILL_BRANCHES.map(branch => {
+    const nodes = SKILLS_DEF.filter(s => s.branch === branch.id).map(d => {
+      const lvl = skillLevel(d.id);
+      const cost = skillCost(d.id);
+      const maxed = cost === null;
+      const affordable = !maxed && G.crystals >= cost;
+      return `<div class="skill-node${maxed?' maxed':''}">
+        <div class="skill-node-icon">${d.icon}</div>
+        <div class="skill-node-info">
+          <div class="skill-node-name">${d.name} <span class="skill-node-lvl">Ур.${lvl}/${d.maxLevel}</span></div>
+          <div class="skill-node-desc">${d.desc}</div>
+        </div>
+        <button class="btn-skill" ${maxed||!affordable?'disabled':''} onclick="buySkill('${d.id}')">
+          ${maxed ? '✅ Макс' : '💎 '+fmt(cost)}
+        </button>
+      </div>`;
+    }).join('');
+    return `<div class="skill-branch">
+      <div class="skill-branch-hdr">${branch.icon} ${branch.name}</div>
+      ${nodes}
+    </div>`;
+  }).join('');
 }
 
 // ── ДОСТИЖЕНИЯ ───────────────────────────────────────────────────
@@ -1933,6 +2174,7 @@ function claimAchievement(id) {
   const st = achState(id);
   if (st.claimed || achProgress(def) < def.target) return;
   st.claimed = true;
+  playSound('levelup');
   showToast('🏅 ' + t('achUnlocked') + ': x' + def.rewardMult.toFixed(2));
   goldenGlow(document.getElementById('hCoins'));
   spawnParticles(window.innerWidth/2, 120, 14, def.tier==='gold'?'#FFD700':def.tier==='silver'?'#C0C0C0':'#CD7F32');
@@ -1979,10 +2221,14 @@ let currentMenuSection = null;
 
 function openMenuSection(section) {
   currentMenuSection = section;
+  document.getElementById('menuSecStreak').style.display  = section==='streak'  ? 'block':'none';
+  document.getElementById('menuSecSkills').style.display  = section==='skills'  ? 'block':'none';
   document.getElementById('menuSecDaily').style.display   = section==='daily'   ? 'block':'none';
   document.getElementById('menuSecAch').style.display     = section==='ach'     ? 'block':'none';
   document.getElementById('menuSecFriends').style.display = section==='friends' ? 'block':'none';
   document.querySelector('.menu-hub').style.display = 'none';
+  if (section==='streak')  renderDailyStreak();
+  if (section==='skills')  renderSkillTree();
   if (section==='daily')   renderQuests();
   if (section==='ach')     renderAchievements();
   if (section==='friends') { renderFriends(); syncInvitedCount(); }
@@ -1990,11 +2236,121 @@ function openMenuSection(section) {
 
 function closeMenuSection() {
   currentMenuSection = null;
+  document.getElementById('menuSecStreak').style.display  = 'none';
+  document.getElementById('menuSecSkills').style.display  = 'none';
   document.getElementById('menuSecDaily').style.display   = 'none';
   document.getElementById('menuSecAch').style.display     = 'none';
   document.getElementById('menuSecFriends').style.display = 'none';
   document.querySelector('.menu-hub').style.display = 'flex';
   updateMenuBadge();
+}
+
+// ── ЕЖЕДНЕВНАЯ НАГРАДА (СТРИК) ────────────────────────────────────
+// Награда растёт всю неделю, на 7-й день — большой бонус, дальше цикл
+// повторяется заново. Пропустил день — стрик сбрасывается на 1.
+const DAILY_REWARDS = [
+  { day:1, icon:'💰', type:'coins',  seconds:60,  min:500   },
+  { day:2, icon:'💰', type:'coins',  seconds:120, min:1200  },
+  { day:3, icon:'⚡', type:'energy', seconds:90,  min:900   },
+  { day:4, icon:'💰', type:'coins',  seconds:240, min:2500  },
+  { day:5, icon:'🚀', type:'boost',  ms:30*60*1000          },
+  { day:6, icon:'💰', type:'coins',  seconds:400, min:5000  },
+  { day:7, icon:'🏆', type:'coins',  seconds:900, min:15000 },
+];
+
+function todayStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function daysDiff(a, b) {
+  return Math.round((new Date(b+'T00:00:00') - new Date(a+'T00:00:00')) / 86400000);
+}
+function dailyAlreadyClaimedToday() {
+  return G.lastDailyClaimDay === todayStr();
+}
+// Индекс (0..6) награды, которая ждёт игрока СЕЙЧАС (ещё не забрана)
+function pendingStreakIndex() {
+  if (dailyAlreadyClaimedToday()) return ((G.dailyStreak - 1) % 7 + 7) % 7;
+  const diff = G.lastDailyClaimDay ? daysDiff(G.lastDailyClaimDay, todayStr()) : null;
+  const nextStreak = (diff === 1) ? (G.dailyStreak||0) + 1 : 1; // пропустил день — сброс
+  return ((nextStreak - 1) % 7 + 7) % 7;
+}
+
+function rewardText(r) {
+  if (r.type === 'boost')  return 'Буст ×2 на 30 мин';
+  if (r.type === 'energy') return 'Энергия + монеты';
+  return (r.day===7 ? 'Большой бонус!' : 'Монеты');
+}
+
+function claimDailyReward() {
+  if (dailyAlreadyClaimedToday()) return;
+  const diff = G.lastDailyClaimDay ? daysDiff(G.lastDailyClaimDay, todayStr()) : null;
+  G.dailyStreak = (diff === 1) ? (G.dailyStreak||0) + 1 : 1;
+  G.lastDailyClaimDay = todayStr();
+  playSound('levelup');
+
+  const idx = (G.dailyStreak - 1) % 7;
+  const r = DAILY_REWARDS[idx];
+  if (r.type === 'coins') {
+    const n = Math.max(r.min, Math.round(cps() * r.seconds));
+    G.coins += n;
+    showToast('🎁 +'+fmt(n)+' '+t('coins')+'!');
+    goldenGlow(document.getElementById('hCoins'));
+  } else if (r.type === 'energy') {
+    G.energy = energyMax();
+    const n = Math.max(r.min, Math.round(cps() * r.seconds));
+    G.coins += n;
+    showToast('⚡ Энергия восстановлена! +'+fmt(n)+' '+t('coins'));
+  } else if (r.type === 'boost') {
+    adBonusEnd = Math.max(adBonusEnd, Date.now() + r.ms);
+    showToast('🚀 Буст ×2 на 30 минут!');
+    updateAdButton();
+  }
+
+  renderDailyStreak();
+  updateMenuBadge();
+  saveGame();
+}
+
+function claimDailyFromModal() {
+  claimDailyReward();
+  document.getElementById('dailyModal').classList.remove('show');
+}
+
+// Показываем попап при заходе, если сегодняшняя награда ещё не забрана
+function maybeShowDailyModal() {
+  if (dailyAlreadyClaimedToday()) return;
+  const idx = pendingStreakIndex();
+  const r = DAILY_REWARDS[idx];
+  document.getElementById('dailyModalIcon').textContent = r.icon;
+  const streakNow = (G.lastDailyClaimDay && daysDiff(G.lastDailyClaimDay, todayStr())===1) ? (G.dailyStreak||0)+1 : 1;
+  document.getElementById('dailyModalStreak').textContent = `День ${idx+1} из 7 · Стрик: ${streakNow}`;
+  document.getElementById('dailyModalReward').textContent = rewardText(r);
+  document.getElementById('dailyModal').classList.add('show');
+}
+
+function renderDailyStreak() {
+  const grid = document.getElementById('streakGrid');
+  const counter = document.getElementById('streakCounter');
+  const btn = document.getElementById('streakClaimBtn');
+  if (!grid) return;
+
+  const pendingIdx = pendingStreakIndex();
+  const claimedToday = dailyAlreadyClaimedToday();
+
+  grid.innerHTML = DAILY_REWARDS.map((r,i) => {
+    let cls = 'locked';
+    if (i < pendingIdx || (claimedToday && i <= pendingIdx)) cls = 'claimed';
+    else if (i === pendingIdx && !claimedToday) cls = 'current';
+    return `<div class="streak-day ${cls}">
+      <div class="streak-day-label">День ${r.day}</div>
+      <div class="streak-day-icon">${cls==='claimed'?'✅':r.icon}</div>
+    </div>`;
+  }).join('');
+
+  counter.innerHTML = `Стрик: <b>${G.dailyStreak||0}</b> ${claimedToday ? '· Приходи завтра!' : ''}`;
+  btn.disabled = claimedToday;
+  btn.textContent = claimedToday ? '✅ Уже забрано сегодня' : '🎁 Забрать награду';
 }
 
 // ── ЕЖЕДНЕВНЫЕ ЗАДАНИЯ ───────────────────────────────────────────
@@ -2075,6 +2431,7 @@ function claimQuest(idx) {
   const q = G.quests.list[idx];
   if (!q||q.claimed||q.progress<q.target) return;
   q.claimed = true;
+  playSound('quest');
   const reward = QUEST_REWARDS[q.rewardIdx];
   if (reward.type==='coins') {
     const n = reward.getValue();
@@ -2093,9 +2450,11 @@ function claimQuest(idx) {
 }
 
 function updateMenuBadge() {
-  const hasQuest = G.quests && G.quests.list.some(q=>!q.claimed && q.progress>=q.target);
-  const hasAch   = ACHIEVEMENTS_DEF.some(d => !achState(d.id).claimed && achProgress(d) >= d.target);
-  const has = hasQuest || hasAch;
+  const hasQuest  = G.quests && G.quests.list.some(q=>!q.claimed && q.progress>=q.target);
+  const hasAch    = ACHIEVEMENTS_DEF.some(d => !achState(d.id).claimed && achProgress(d) >= d.target);
+  const hasStreak = !dailyAlreadyClaimedToday();
+  const hasSkill  = SKILLS_DEF.some(d => { const c = skillCost(d.id); return c!==null && G.crystals>=c; });
+  const has = hasQuest || hasAch || hasStreak || hasSkill;
   // badge на нижней вкладке Меню
   const mb = document.getElementById('menuBadge');
   if (mb) mb.classList.toggle('show', has && currentTab!=='menu');
@@ -2105,6 +2464,18 @@ function updateMenuBadge() {
   // badge на карточке Достижения в хабе
   const ab = document.getElementById('achBadge');
   if (ab) ab.classList.toggle('show', hasAch);
+  // badge на карточке Навыков — есть на что потратить кристаллы
+  const skb = document.getElementById('skillsBadge');
+  if (skb) skb.classList.toggle('show', hasSkill);
+  // sub-label навыков
+  const skillSub = document.getElementById('menuSubSkills');
+  if (skillSub) skillSub.textContent = `💎 ${fmt(G.crystals||0)}`;
+  // badge на карточке Награды за вход
+  const sb = document.getElementById('streakBadge');
+  if (sb) sb.classList.toggle('show', hasStreak);
+  // sub-label награды за вход
+  const streakSub = document.getElementById('menuSubStreak');
+  if (streakSub) streakSub.textContent = hasStreak ? 'Награда ждёт!' : `Стрик: ${G.dailyStreak||0} · заходи завтра`;
   // sub-label заданий: N/3 (только забранные)
   const sub = document.getElementById('menuSubDaily');
   if (sub && G.quests) {
@@ -2194,7 +2565,7 @@ function tick(now) {
     if(m.progress>0){
       m.progress+=dt;
       if(m.progress>=m.speed){
-        const earned = m.reward * G.prestigeMult * getAdMultiplier() * iapMultiplier() * achievementMult() * referralMult();
+        const earned = m.reward * totalPrestigeMult() * getAdMultiplier() * iapMultiplier() * achievementMult() * referralMult();
         G.coins += earned;
         G.sold  += 1;
         m.progress = 0;
@@ -2225,7 +2596,7 @@ function tick(now) {
       const owned = G.machines.filter(m=>m.owned);
       if (owned.length) {
         const m = owned[Math.floor(Math.random()*owned.length)];
-        const bonus = Math.round(m.reward * G.prestigeMult * 10);
+        const bonus = Math.round(m.reward * totalPrestigeMult() * 10);
         G.coins += bonus;
         showToast('✨ Золотая деталь! +'+fmt(bonus));
         goldenGlow(document.getElementById('hCoins'));
@@ -2244,6 +2615,7 @@ function tick(now) {
     updateAdButton();
     updateMenuBadge();
     if (currentTab==='menu' && currentMenuSection && !uiIsBusy()) {
+      if (currentMenuSection==='streak')  renderDailyStreak();
       if (currentMenuSection==='daily')   renderQuests();
       if (currentMenuSection==='ach')     renderAchievements();
       if (currentMenuSection==='friends') renderFriends();
@@ -2334,17 +2706,21 @@ setTimeout(() => {
 document.getElementById('startBtn').addEventListener('click', () => {
   document.getElementById('splash').classList.add('hide');
   document.getElementById('game').style.display = 'flex';
+  if (G.soundEnabled) getAudioCtx(); // разблокируем звук по первому жесту пользователя
+  document.getElementById('soundBtn').textContent = G.soundEnabled ? '🔊' : '🔇';
   fullRender();
   initIAP();
   initQuests();
   checkIncomingReferral();
   renderFriends();
   syncInvitedCount();
+  updateMenuBadge();
 
   // Офлайн доход
   const offlineCoins = calcOfflineIncome();
   const elapsed = Math.min(Date.now() - (G.lastSaved||0), MAX_OFFLINE_HOURS * 3600000);
   if (offlineCoins > 0) showOfflineModal(offlineCoins, elapsed);
+  else maybeShowDailyModal();
 
   setTimeout(() => document.getElementById('splash').style.display = 'none', 900);
 
