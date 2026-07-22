@@ -809,7 +809,7 @@ const IAP_PRODUCTS = [
       // Награда зависит от прогресса — на старте скромная, в эндгейме весомая,
       // но не превышает доход последнего обычного цеха (Орбитальный) больше чем на 50%.
       const ref = getMachine(9); // Орбитальный цех как ориентир силы
-      const refDps = ref.owned ? (ref.reward / ref.speed * 1000) : (cps() * 0.3 || 5);
+      const refDps = ref.owned ? (ref.reward / ref.speed * 1000) : (baseCps() * 0.3 || 5);
       m.reward = Math.max(50, Math.round(refDps * (m.speed/1000) * 1.5));
       showToast(t('iapToastLab'));
       fullRender();
@@ -1227,9 +1227,25 @@ const getDef     = id => MACHINES_DEF.find(d=>d.id===id);
 const getUpgDef  = id => UPGRADES_DEF.find(u=>u.id===id);
 const getUpgState= id => G.upgrades.find(u=>u.id===id);
 
+// Полный множитель дохода (без учёта временного рекламного буста —
+// getAdMultiplier добавляется отдельно там, где реально начисляются монеты).
+// Используется как единая точка правды и для реального начисления, и для
+// всех превью/расчётов "сколько сейчас приносит цех" — раньше эти места
+// разъезжались, и превью на карточках занижало реальный доход.
+function incomeMult() {
+  return totalPrestigeMult() * iapMultiplier() * achievementMult() * referralMult();
+}
+
 function cps() {
   return G.machines.filter(m=>m.owned&&m.auto)
-    .reduce((s,m)=>s+m.reward*totalPrestigeMult()*1000/m.speed, 0);
+    .reduce((s,m)=>s+m.reward*incomeMult()*1000/m.speed, 0);
+}
+// "Голая" скорость дохода без множителей — для сравнения БАЗОВЫХ наград
+// цехов между собой (m.reward у всех цехов хранится без incomeMult, он
+// применяется один раз в момент начисления/показа).
+function baseCps() {
+  return G.machines.filter(m=>m.owned&&m.auto)
+    .reduce((s,m)=>s+m.reward*1000/m.speed, 0);
 }
 
 function fmt(n) {
@@ -1525,7 +1541,7 @@ function buildMachineCard(m) {
           </div>
           <div style="font-size:11px;color:#a090ff;font-weight:600">199 ₽</div>
         </div>
-        <div class="mcard-reward" style="color:#a090ff">+${fmt(d.baseReward * totalPrestigeMult())} ${t('coins')} ${t('perCycle')}</div>
+        <div class="mcard-reward" style="color:#a090ff">+${fmt(d.baseReward * incomeMult())} ${t('coins')} ${t('perCycle')}</div>
         <button class="btn-buy-big" data-action="buypremium" data-product="secret_lab"
           style="background:#7c5cff;margin-top:8px;pointer-events:all;cursor:pointer">
           💎 ${t('iapLab')} — 199 ₽
@@ -1582,7 +1598,7 @@ function buildMachineCard(m) {
   const canUpg  = G.coins >= upgCost;
   const upgPct  = Math.min(100, Math.round(G.coins / upgCost * 100));
   const adUpg   = !canUpg && upgPct >= 80 && canFreeUpgrade();
-  const eff     = Math.round(m.reward * totalPrestigeMult());
+  const eff     = Math.round(m.reward * incomeMult());
 
   return `<div class="mcard${m.progress>0?' working':''}" data-mid="${m.id}">
     <div class="mcard-head">
@@ -1736,7 +1752,7 @@ function tickRender(now) {
     // Награда
     const rew=document.getElementById('mrew'+m.id);
     if(rew){
-      const rewText='+'+fmt(Math.round(m.reward*totalPrestigeMult()))+' '+t('coins');
+      const rewText='+'+fmt(Math.round(m.reward*incomeMult()))+' '+t('coins');
       if(rew.textContent!==rewText) rew.textContent=rewText;
     }
     // Кнопка апгрейда
@@ -1813,7 +1829,7 @@ function calcOfflineIncome() {
   G.machines.forEach(m => {
     if (!m.owned || !m.auto) return;
     const cycles = elapsed / m.speed;
-    total += cycles * m.reward * totalPrestigeMult() * iapMultiplier() * achievementMult() * referralMult() * offMult * OFFLINE_EFFICIENCY;
+    total += cycles * m.reward * incomeMult() * offMult * OFFLINE_EFFICIENCY;
   });
   return Math.floor(total);
 }
@@ -1992,10 +2008,11 @@ function renderFriends() {
 function energyMax()    { return 100 + (G.energyMaxBonus || 0); }
 function energyRegen()  { return 1 + (G.energyRegenBonus || 0) + skillBonus('energy_regen'); } // ед./сек
 function clickValue()   {
-  // cps() уже включает prestigeMult — повторно их не умножаем, иначе двойная инфляция.
+  // cps() уже включает totalPrestigeMult + iap/ачивки/рефералы — повторно
+  // их не умножаем здесь, иначе двойная инфляция.
   // Берём ~30% от дохода в секунду как разовую награду за клик.
   const base = Math.max(1, Math.round(cps() * 0.3)) || 1;
-  return Math.round(base * (G.clickValueMult || 1) * (1 + skillBonus('click_power')) * iapMultiplier() * achievementMult() * referralMult());
+  return Math.round(base * (G.clickValueMult || 1) * (1 + skillBonus('click_power')));
 }
 
 function regenEnergy(dtMs) {
@@ -2388,11 +2405,11 @@ function generateQuests() {
 }
 
 function initQuests() {
-  if (!G.quests) G.quests = { list:[], resetAt:0, sessionCoins:0, sessionClicks:0, sessionUpgrades:0, sessionBuys:0, sessionAds:0 };
+  if (!G.quests) G.quests = { list:[], resetAt:0, sessionProduce:0, sessionCoins:0, sessionClicks:0, sessionUpgrades:0, sessionBuys:0, sessionAds:0 };
   if (Date.now() >= G.quests.resetAt) {
     G.quests.list = generateQuests();
     G.quests.resetAt = Date.now() + 24*60*60*1000;
-    G.quests.sessionCoins=0; G.quests.sessionClicks=0;
+    G.quests.sessionProduce=0; G.quests.sessionCoins=0; G.quests.sessionClicks=0;
     G.quests.sessionUpgrades=0; G.quests.sessionBuys=0; G.quests.sessionAds=0;
     showToast(t('questNew'));
   }
@@ -2409,6 +2426,7 @@ function trackQuest(type, amount=1) {
 
   if (!G.quests) return;
   const q = G.quests;
+  if (type==='qtProduce') q.sessionProduce  = (q.sessionProduce||0)  + amount;
   if (type==='qtCoins')   q.sessionCoins    = (q.sessionCoins||0)    + amount;
   if (type==='qtClick')   q.sessionClicks   = (q.sessionClicks||0)   + amount;
   if (type==='qtUpgrade') q.sessionUpgrades = (q.sessionUpgrades||0) + amount;
@@ -2416,7 +2434,7 @@ function trackQuest(type, amount=1) {
   if (type==='qtAd')      q.sessionAds      = (q.sessionAds||0)      + amount;
   q.list.forEach(quest => {
     if (quest.claimed) return;
-    if (quest.type==='qtProduce') quest.progress = G.sold;
+    if (quest.type==='qtProduce') quest.progress = q.sessionProduce;
     if (quest.type==='qtClick')   quest.progress = q.sessionClicks;
     if (quest.type==='qtCoins')   quest.progress = q.sessionCoins;
     if (quest.type==='qtUpgrade') quest.progress = q.sessionUpgrades;
@@ -2565,7 +2583,7 @@ function tick(now) {
     if(m.progress>0){
       m.progress+=dt;
       if(m.progress>=m.speed){
-        const earned = m.reward * totalPrestigeMult() * getAdMultiplier() * iapMultiplier() * achievementMult() * referralMult();
+        const earned = m.reward * incomeMult() * getAdMultiplier();
         G.coins += earned;
         G.sold  += 1;
         m.progress = 0;
@@ -2596,7 +2614,7 @@ function tick(now) {
       const owned = G.machines.filter(m=>m.owned);
       if (owned.length) {
         const m = owned[Math.floor(Math.random()*owned.length)];
-        const bonus = Math.round(m.reward * totalPrestigeMult() * 10);
+        const bonus = Math.round(m.reward * incomeMult() * 10);
         G.coins += bonus;
         showToast('✨ Золотая деталь! +'+fmt(bonus));
         goldenGlow(document.getElementById('hCoins'));
