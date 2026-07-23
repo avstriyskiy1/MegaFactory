@@ -3,6 +3,8 @@
  *  1) приём счёта и отправка его в глобальный рейтинг VK (secure.addAppEvent)
  *  2) честный учёт приглашений друзей (засчитывается только когда
  *     приглашённый реально открыл игру и нажал "Начать" на своём устройстве)
+ *  3) промокоды — активация игроками + управление админом (создание,
+ *     удаление, лимиты активаций, срок действия, "блогерские" коды)
  *
  * Нужные секреты (задаются командой `wrangler secret put ...`, см. README):
  *   VK_APP_ID          — ID приложения (число)
@@ -12,12 +14,18 @@
  *                          (используется для вызова secure.addAppEvent)
  *   VK_ACTIVITY_ID      — ID активности рейтинга, настроенной в разделе
  *                          "Рейтинг" в настройках приложения (число, обычно 1)
+ *   ADMIN_KEY           — придуманный тобой пароль для панели администратора
+ *                          промокодов (см. admin.html). Придумай длинную
+ *                          случайную строку, никому её не показывай.
  *
  * Нужен KV-namespace, привязанный в wrangler.toml под именем REFERRALS
  * (см. README — команда `wrangler kv namespace create REFERRALS`).
+ * Промокоды хранятся в том же KV, отдельным префиксом ключей — заводить
+ * второй namespace не требуется.
  */
 
 const VK_API_VERSION = '5.199';
+const PROMO_REWARD_TYPES = ['coins', 'crystals', 'starterPack', 'vipStatus', 'secretLab'];
 
 export default {
   async fetch(request, env) {
@@ -43,7 +51,21 @@ export default {
 
     const url = new URL(request.url);
 
-    // Все маршруты требуют валидных launchParams — проверяем подпись один раз
+    // ── Админ-маршруты — своя авторизация по ключу, VK тут ни при чём ──
+    if (url.pathname.startsWith('/admin/')) {
+      if (!env.ADMIN_KEY || !body.adminKey || body.adminKey !== env.ADMIN_KEY) {
+        return json({ error: 'unauthorized' }, 401, corsHeaders);
+      }
+      switch (url.pathname) {
+        case '/admin/codes/list':   return handleAdminListCodes(env, corsHeaders);
+        case '/admin/codes/create': return handleAdminCreateCode(body, env, corsHeaders);
+        case '/admin/codes/update': return handleAdminUpdateCode(body, env, corsHeaders);
+        case '/admin/codes/delete': return handleAdminDeleteCode(body, env, corsHeaders);
+        default: return json({ error: 'not_found' }, 404, corsHeaders);
+      }
+    }
+
+    // ── Остальные маршруты — требуют валидных launchParams (подпись VK) ──
     const { launchParams } = body || {};
     if (!launchParams || typeof launchParams !== 'string') {
       return json({ error: 'missing_launch_params' }, 400, corsHeaders);
@@ -68,6 +90,8 @@ export default {
         return handleConfirmRef(body, userId, env, corsHeaders);
       case '/my-invited':
         return handleMyInvited(userId, env, corsHeaders);
+      case '/redeem-code':
+        return handleRedeemCode(body, userId, env, corsHeaders);
       default:
         return json({ error: 'not_found' }, 404, corsHeaders);
     }
@@ -98,8 +122,6 @@ async function handleSubmitScore(body, userId, env, corsHeaders) {
 }
 
 // ── /register-ref ───────────────────────────────────────────────
-// Вызывается у того, кто ДЕЛИТСЯ ссылкой — просто запоминаем какой код
-// принадлежит какому vk_user_id. Никакого приглашения тут ещё не засчитывается.
 async function handleRegisterRef(body, userId, env, corsHeaders) {
   const { code } = body;
   if (!code || typeof code !== 'string' || code.length > 32) {
@@ -114,9 +136,6 @@ async function handleRegisterRef(body, userId, env, corsHeaders) {
 }
 
 // ── /confirm-ref ─────────────────────────────────────────────────
-// Вызывается у ПРИГЛАШЁННОГО игрока, когда он реально нажал "Начать" по
-// реферальной ссылке. Засчитываем приглашение автору кода — один раз на
-// каждого приглашённого пользователя (защита от повторной накрутки).
 async function handleConfirmRef(body, userId, env, corsHeaders) {
   const { code } = body;
   if (!code || typeof code !== 'string') {
@@ -134,7 +153,6 @@ async function handleConfirmRef(body, userId, env, corsHeaders) {
   const referredKey = `referred:${userId}`;
   const already = await env.REFERRALS.get(referredKey);
   if (already) {
-    // Этот пользователь уже был кому-то засчитан раньше — второй раз не считаем
     return json({ ok: true, alreadyCounted: true }, 200, corsHeaders);
   }
 
@@ -148,10 +166,132 @@ async function handleConfirmRef(body, userId, env, corsHeaders) {
 }
 
 // ── /my-invited ──────────────────────────────────────────────────
-// Отдаёт актуальное (серверное) число приглашённых для текущего игрока.
 async function handleMyInvited(userId, env, corsHeaders) {
   const count = parseInt((await env.REFERRALS.get(`invited_count:${userId}`)) || '0', 10);
   return json({ ok: true, invited: count }, 200, corsHeaders);
+}
+
+// ── /redeem-code ─────────────────────────────────────────────────
+// Активация промокода игроком. Награда не начисляется тут напрямую (игра
+// хранит прогресс на устройстве игрока) — воркер только проверяет право на
+// активацию и возвращает описание награды, которое клиент применяет сам.
+async function handleRedeemCode(body, userId, env, corsHeaders) {
+  const { code } = body;
+  if (!code || typeof code !== 'string') {
+    return json({ error: 'invalid_code' }, 400, corsHeaders);
+  }
+  const normCode = code.trim().toUpperCase();
+  const key = `promo:${normCode}`;
+  const raw = await env.REFERRALS.get(key);
+  if (!raw) return json({ error: 'not_found' }, 404, corsHeaders);
+
+  const entry = JSON.parse(raw);
+  if (!entry.active) return json({ error: 'inactive' }, 400, corsHeaders);
+  if (entry.expiresAt && Date.now() > entry.expiresAt) {
+    return json({ error: 'expired' }, 400, corsHeaders);
+  }
+  if (entry.maxActivations != null && entry.usedCount >= entry.maxActivations) {
+    return json({ error: 'exhausted' }, 400, corsHeaders);
+  }
+
+  const usedKey = `promoused:${normCode}:${userId}`;
+  const alreadyUsedThis = await env.REFERRALS.get(usedKey);
+  if (alreadyUsedThis) return json({ error: 'already_used' }, 400, corsHeaders);
+
+  // Блогерский промокод — у одного игрока может быть активирован только
+  // ОДИН такой код за всё время, независимо от того, какой именно.
+  if (entry.youtuber) {
+    const youtuberUsedKey = `promoyoutuberused:${userId}`;
+    const alreadyYoutuber = await env.REFERRALS.get(youtuberUsedKey);
+    if (alreadyYoutuber) return json({ error: 'already_used_youtuber' }, 400, corsHeaders);
+    await env.REFERRALS.put(youtuberUsedKey, normCode);
+  }
+
+  await env.REFERRALS.put(usedKey, '1');
+  entry.usedCount = (entry.usedCount || 0) + 1;
+  await env.REFERRALS.put(key, JSON.stringify(entry));
+
+  return json({ ok: true, reward: { type: entry.rewardType, value: entry.rewardValue } }, 200, corsHeaders);
+}
+
+// ── /admin/codes/list ────────────────────────────────────────────
+async function handleAdminListCodes(env, corsHeaders) {
+  const list = await env.REFERRALS.list({ prefix: 'promo:' });
+  const codes = [];
+  for (const k of list.keys) {
+    const raw = await env.REFERRALS.get(k.name);
+    if (raw) {
+      try { codes.push(JSON.parse(raw)); } catch {}
+    }
+  }
+  codes.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+  return json({ ok: true, codes }, 200, corsHeaders);
+}
+
+// ── /admin/codes/create ──────────────────────────────────────────
+async function handleAdminCreateCode(body, env, corsHeaders) {
+  const { code, rewardType, rewardValue, maxActivations, expiresAt, youtuber } = body;
+  if (!code || typeof code !== 'string') return json({ error: 'invalid_code' }, 400, corsHeaders);
+  const normCode = code.trim().toUpperCase();
+  if (!normCode || normCode.length > 32) return json({ error: 'invalid_code' }, 400, corsHeaders);
+  if (!PROMO_REWARD_TYPES.includes(rewardType)) {
+    return json({ error: 'invalid_reward_type' }, 400, corsHeaders);
+  }
+
+  const key = `promo:${normCode}`;
+  const existing = await env.REFERRALS.get(key);
+  if (existing) return json({ error: 'code_exists' }, 409, corsHeaders);
+
+  const entry = {
+    code: normCode,
+    rewardType,
+    rewardValue: Number(rewardValue) || 0,
+    maxActivations: (maxActivations !== null && maxActivations !== undefined && maxActivations !== '')
+      ? Math.max(1, parseInt(maxActivations, 10)) : null,
+    usedCount: 0,
+    expiresAt: expiresAt ? Number(expiresAt) : null,
+    youtuber: !!youtuber,
+    active: true,
+    createdAt: Date.now(),
+  };
+  await env.REFERRALS.put(key, JSON.stringify(entry));
+  return json({ ok: true, code: entry }, 200, corsHeaders);
+}
+
+// ── /admin/codes/update ──────────────────────────────────────────
+async function handleAdminUpdateCode(body, env, corsHeaders) {
+  const { code, ...fields } = body;
+  if (!code) return json({ error: 'invalid_code' }, 400, corsHeaders);
+  const key = `promo:${String(code).trim().toUpperCase()}`;
+  const raw = await env.REFERRALS.get(key);
+  if (!raw) return json({ error: 'not_found' }, 404, corsHeaders);
+
+  const entry = JSON.parse(raw);
+  if (fields.rewardType !== undefined && PROMO_REWARD_TYPES.includes(fields.rewardType)) {
+    entry.rewardType = fields.rewardType;
+  }
+  if (fields.rewardValue !== undefined) entry.rewardValue = Number(fields.rewardValue) || 0;
+  if (fields.maxActivations !== undefined) {
+    entry.maxActivations = (fields.maxActivations === null || fields.maxActivations === '')
+      ? null : Math.max(1, parseInt(fields.maxActivations, 10));
+  }
+  if (fields.expiresAt !== undefined) {
+    entry.expiresAt = fields.expiresAt ? Number(fields.expiresAt) : null;
+  }
+  if (fields.youtuber !== undefined) entry.youtuber = !!fields.youtuber;
+  if (fields.active !== undefined) entry.active = !!fields.active;
+
+  await env.REFERRALS.put(key, JSON.stringify(entry));
+  return json({ ok: true, code: entry }, 200, corsHeaders);
+}
+
+// ── /admin/codes/delete ──────────────────────────────────────────
+async function handleAdminDeleteCode(body, env, corsHeaders) {
+  const { code } = body;
+  if (!code) return json({ error: 'invalid_code' }, 400, corsHeaders);
+  const key = `promo:${String(code).trim().toUpperCase()}`;
+  await env.REFERRALS.delete(key);
+  return json({ ok: true }, 200, corsHeaders);
 }
 
 function json(data, status, headers) {

@@ -236,6 +236,19 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
 .btn-skill:hover:not(:disabled){filter:brightness(1.2);}
 .btn-skill:disabled{border-color:var(--border);color:var(--muted);cursor:default;}
 
+/* PROMO CODES */
+.promo-desc{font-size:12px;color:var(--muted);text-align:center;padding:4px 0 14px;}
+.promo-input-row{display:flex;gap:8px;}
+.promo-input{flex:1;background:var(--card);border:1px solid var(--border);border-radius:6px;padding:10px 12px;color:var(--text);font-family:'Exo 2',sans-serif;font-size:14px;letter-spacing:.04em;text-transform:uppercase;min-width:0;}
+.promo-input:focus{outline:none;border-color:var(--accent);}
+.promo-input::placeholder{text-transform:none;letter-spacing:normal;color:var(--muted);}
+.btn-promo{padding:10px 16px;background:var(--accent);border:none;border-radius:6px;color:#000;font-family:'Exo 2',sans-serif;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0;transition:filter .15s;}
+.btn-promo:hover{filter:brightness(1.1);}
+.btn-promo:disabled{background:var(--bg3);color:var(--muted);cursor:default;filter:none;}
+.promo-status{font-size:13px;text-align:center;margin-top:12px;min-height:18px;}
+.promo-status.success{color:var(--teal);}
+.promo-status.error{color:#ff6b6b;}
+
 /* IAP SHOP */
 /* FRIENDS / REFERRAL */
 .friends-box{background:linear-gradient(135deg,rgba(255,107,157,.08),rgba(180,50,120,.06));border:1px solid rgba(255,107,157,.3);border-radius:8px;padding:14px;}
@@ -478,6 +491,27 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
             <div class="menu-card-arrow">›</div>
           </div>
 
+          <!-- Промокоды -->
+          <div class="menu-card" onclick="openMenuSection('promo')">
+            <div class="menu-card-icon">🎟️</div>
+            <div class="menu-card-info">
+              <div class="menu-card-title">Промокоды</div>
+              <div class="menu-card-sub">Введи код — получи награду</div>
+            </div>
+            <div class="menu-card-arrow">›</div>
+          </div>
+
+        </div>
+
+        <!-- Секция: Промокоды -->
+        <div id="menuSecPromo" style="display:none">
+          <button class="menu-back-btn" onclick="closeMenuSection('promo')">‹ Назад</button>
+          <div class="promo-desc">Введи промокод, чтобы получить награду</div>
+          <div class="promo-input-row">
+            <input type="text" id="promoInput" class="promo-input" placeholder="ПРОМОКОД" maxlength="32" autocapitalize="characters" autocomplete="off">
+            <button class="btn-promo" id="promoRedeemBtn" onclick="redeemPromoCode()">Активировать</button>
+          </div>
+          <div class="promo-status" id="promoStatus"></div>
         </div>
 
         <!-- Секция: Дерево навыков -->
@@ -1954,6 +1988,98 @@ function workerUrl(path) {
   return GLOBAL_LB_ENDPOINT.replace(/\/submit-score$/, '') + path;
 }
 
+// ── ПРОМОКОДЫ ────────────────────────────────────────────────────
+async function redeemPromoCode() {
+  const input    = document.getElementById('promoInput');
+  const statusEl = document.getElementById('promoStatus');
+  const btn      = document.getElementById('promoRedeemBtn');
+  const code = (input.value || '').trim().toUpperCase();
+  if (!code) return;
+
+  if (PLATFORM !== 'vk' || !vkReady) {
+    statusEl.textContent = 'Доступно только внутри VK';
+    statusEl.className = 'promo-status error';
+    return;
+  }
+  if (!GLOBAL_LB_ENDPOINT) {
+    statusEl.textContent = 'Промокоды ещё не подключены';
+    statusEl.className = 'promo-status error';
+    return;
+  }
+
+  btn.disabled = true;
+  statusEl.textContent = 'Проверяем...';
+  statusEl.className = 'promo-status';
+
+  const launchParams = await getLaunchParamsString();
+  if (!launchParams) {
+    statusEl.textContent = 'Не удалось проверить — попробуй позже';
+    statusEl.className = 'promo-status error';
+    btn.disabled = false;
+    return;
+  }
+
+  try {
+    const res = await fetch(workerUrl('/redeem-code'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ launchParams, code }),
+    });
+    const data = await res.json();
+    if (data.ok) {
+      statusEl.textContent = '✅ Промокод активирован!';
+      statusEl.className = 'promo-status success';
+      input.value = '';
+      applyPromoReward(data.reward);
+    } else {
+      const messages = {
+        not_found:              'Такого промокода не существует',
+        inactive:                'Промокод больше не активен',
+        expired:                 'Срок действия промокода истёк',
+        exhausted:                'Промокод исчерпал лимит активаций',
+        already_used:            'Ты уже использовал этот промокод',
+        already_used_youtuber:   'Можно активировать только один блогерский промокод',
+        invalid_sign:            'Ошибка проверки — попробуй позже',
+      };
+      statusEl.textContent = messages[data.error] || 'Не удалось активировать промокод';
+      statusEl.className = 'promo-status error';
+    }
+  } catch (e) {
+    statusEl.textContent = 'Ошибка сети — попробуй позже';
+    statusEl.className = 'promo-status error';
+  }
+  btn.disabled = false;
+}
+
+function applyPromoReward(reward) {
+  const { type, value } = reward;
+  if (type === 'coins') {
+    G.coins += value;
+    showToast('🎉 +' + fmt(value) + ' ' + t('coins') + '!');
+  } else if (type === 'crystals') {
+    G.crystals = (G.crystals || 0) + value;
+    showToast('🎉 +' + fmt(value) + ' 💎!');
+  } else if (type === 'starterPack') {
+    if (!G.purchases.starterPack) { G.purchases.starterPack = true; showToast('🎉 Стартовый набор активирован!'); }
+  } else if (type === 'vipStatus') {
+    if (!G.purchases.vipStatus) { G.purchases.vipStatus = true; showToast('🎉 VIP-статус активирован!'); }
+  } else if (type === 'secretLab') {
+    if (!G.purchases.secretLab) {
+      G.purchases.secretLab = true;
+      const m = getMachine(10);
+      m.owned = true; m.auto = true;
+      const ref = getMachine(9);
+      const refDps = ref.owned ? (ref.reward / ref.speed * 1000) : (baseCps() * 0.3 || 5);
+      m.reward = Math.max(50, Math.round(refDps * (m.speed / 1000) * 1.5));
+      showToast('🎉 Секретная лаборатория разблокирована!');
+    }
+  }
+  playSound('levelup');
+  goldenGlow(document.getElementById('hCoins'));
+  fullRender();
+  saveGame();
+}
+
 // Регистрируем код на сервере (код → мой vk_user_id), чтобы когда друг перейдёт
 // по ссылке, сервер знал кому засчитать приглашение. Само приглашение здесь
 // ещё НЕ засчитывается — только когда друг реально нажмёт "Начать" у себя.
@@ -2240,6 +2366,7 @@ function openMenuSection(section) {
   currentMenuSection = section;
   document.getElementById('menuSecStreak').style.display  = section==='streak'  ? 'block':'none';
   document.getElementById('menuSecSkills').style.display  = section==='skills'  ? 'block':'none';
+  document.getElementById('menuSecPromo').style.display   = section==='promo'   ? 'block':'none';
   document.getElementById('menuSecDaily').style.display   = section==='daily'   ? 'block':'none';
   document.getElementById('menuSecAch').style.display     = section==='ach'     ? 'block':'none';
   document.getElementById('menuSecFriends').style.display = section==='friends' ? 'block':'none';
@@ -2255,6 +2382,7 @@ function closeMenuSection() {
   currentMenuSection = null;
   document.getElementById('menuSecStreak').style.display  = 'none';
   document.getElementById('menuSecSkills').style.display  = 'none';
+  document.getElementById('menuSecPromo').style.display   = 'none';
   document.getElementById('menuSecDaily').style.display   = 'none';
   document.getElementById('menuSecAch').style.display     = 'none';
   document.getElementById('menuSecFriends').style.display = 'none';
