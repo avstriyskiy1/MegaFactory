@@ -245,7 +245,11 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
 .skill-node-lvl{font-size:11px;color:var(--muted);font-weight:400;}
 .skill-node-desc{font-size:11px;color:var(--muted);margin-top:2px;}
 .btn-skill{padding:6px 12px;background:transparent;border:1px solid #a090ff;border-radius:4px;color:#a090ff;font-size:12px;font-weight:600;cursor:pointer;font-family:'Exo 2',sans-serif;white-space:nowrap;flex-shrink:0;transition:filter .15s;}
+<<<<<<< HEAD
 
+=======
+.btn-skill:hover:not(:disabled){filter:brightness(1.2);}
+>>>>>>> 3e4169081af0475fce8d5db8a97d6f3269acf944
 .btn-skill:disabled{border-color:var(--border);color:var(--muted);cursor:default;}
 
 /* PROMO CODES */
@@ -255,12 +259,17 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
 .promo-input:focus{outline:none;border-color:var(--accent);}
 .promo-input::placeholder{text-transform:none;letter-spacing:normal;color:var(--muted);}
 .btn-promo{padding:10px 16px;background:var(--accent);border:none;border-radius:6px;color:#000;font-family:'Exo 2',sans-serif;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0;transition:filter .15s;}
+<<<<<<< HEAD
 
+=======
+.btn-promo:hover{filter:brightness(1.1);}
+>>>>>>> 3e4169081af0475fce8d5db8a97d6f3269acf944
 .btn-promo:disabled{background:var(--bg3);color:var(--muted);cursor:default;filter:none;}
 .promo-status{font-size:13px;text-align:center;margin-top:12px;min-height:18px;}
 .promo-status.success{color:var(--teal);}
 .promo-status.error{color:#ff6b6b;}
 
+<<<<<<< HEAD
 /* STATS */
 .stats-row{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--border);border-radius:6px;padding:11px 14px;margin-bottom:6px;}
 .stats-icon{font-size:16px;flex-shrink:0;width:22px;text-align:center;}
@@ -301,6 +310,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
 .trophy-tier-label{font-size:11px;color:var(--muted);margin-bottom:2px;}
 .trophy-tier-count{font-size:14px;font-weight:700;color:var(--accent);}
 
+=======
+>>>>>>> 3e4169081af0475fce8d5db8a97d6f3269acf944
 /* IAP SHOP */
 /* FRIENDS / REFERRAL */
 .friends-box{background:linear-gradient(135deg,rgba(255,107,157,.08),rgba(180,50,120,.06));border:1px solid rgba(255,107,157,.3);border-radius:8px;padding:14px;}
@@ -460,6 +471,23 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
     <div class="offline-coins" id="dailyModalReward"></div>
     <div class="modal-btns">
       <button class="btn-modal primary" onclick="claimDailyFromModal()">🎁 Забрать</button>
+<<<<<<< HEAD
+=======
+    </div>
+  </div>
+</div>
+
+<div id="game">
+  <div class="header">
+    <div class="game-title">MegaFactory</div>
+    <div class="stat-pill gold">💰 <b id="hCoins">0</b></div>
+    <div class="stat-pill teal">⚡ <b id="hCps">0/с</b></div>
+    <div class="stat-pill">🏭 <b id="hSold">0</b></div>
+    <div class="stat-pill">✨ x<b id="hMult">1.0</b></div>
+    <div class="header-right">
+      <button class="btn-hdr" id="soundBtn" onclick="toggleSound()">🔊</button>
+      <button class="btn-hdr" onclick="openPrestige()" id="prestigeHdrBtn">⚡ Престиж</button>
+>>>>>>> 3e4169081af0475fce8d5db8a97d6f3269acf944
     </div>
   </div>
 </div>
@@ -551,8 +579,13 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
         <!-- Хаб: карточки-разделы -->
         <div class="menu-hub">
 
+<<<<<<< HEAD
           <!-- Награда за вход (стрик) — открывается после покупки первого цеха -->
           <div class="menu-card" id="streakMenuCard" onclick="openMenuSection('streak')" style="display:none">
+=======
+          <!-- Награда за вход (стрик) -->
+          <div class="menu-card" onclick="openMenuSection('streak')">
+>>>>>>> 3e4169081af0475fce8d5db8a97d6f3269acf944
             <div class="menu-card-icon">🎁</div>
             <div class="menu-card-info">
               <div class="menu-card-title" id="menuTitleStreak">Награда за вход</div>
@@ -626,6 +659,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
             <div class="menu-card-arrow">›</div>
           </div>
 
+<<<<<<< HEAD
           <!-- Статистика -->
           <div class="menu-card" onclick="openMenuSection('stats')">
             <div class="menu-card-icon">📊</div>
@@ -698,6 +732,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
         <div id="menuSecStats" style="display:none">
           <button class="menu-back-btn" onclick="closeMenuSection('stats')">‹ Назад</button>
           <div id="statsList"></div>
+=======
+>>>>>>> 3e4169081af0475fce8d5db8a97d6f3269acf944
         </div>
 
         <!-- Секция: Промокоды -->
@@ -1110,6 +1146,7 @@ async function buyProduct(id) {
   }
 
   try {
+<<<<<<< HEAD
     // Открываем настоящее платёжное окно VK — деньги реально списываются
     // тут, награда же выдаётся только после подтверждения от сервера ниже
     // (сервер получает независимое уведомление напрямую от VK).
@@ -1117,6 +1154,12 @@ async function buyProduct(id) {
     if (!result || result.success !== true) return; // отменил или ошибка
     showToast('⏳ Обрабатываем платёж...');
     await syncPurchases(true);
+=======
+    prod.onBuy();
+    playSound('levelup');
+    fullRender();
+    saveGame();
+>>>>>>> 3e4169081af0475fce8d5db8a97d6f3269acf944
   } catch(e) {
     console.warn('[IAP] Покупка отменена или не удалась:', e);
   }
@@ -1226,7 +1269,11 @@ async function submitScoreGlobal() {
     await fetch(GLOBAL_LB_ENDPOINT, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+<<<<<<< HEAD
       body: JSON.stringify({ launchParams, value: scoreForGlobalLb(), rawCoins: Math.floor(G.coins) }),
+=======
+      body: JSON.stringify({ launchParams, value: scoreForGlobalLb() }),
+>>>>>>> 3e4169081af0475fce8d5db8a97d6f3269acf944
     });
   } catch(e) { console.warn('[LB] Global submit error:', e); }
 }
@@ -1414,10 +1461,15 @@ function getAudioCtx() {
 
 function toggleSound() {
   G.soundEnabled = !G.soundEnabled;
+<<<<<<< HEAD
+=======
+  document.getElementById('soundBtn').textContent = G.soundEnabled ? '🔊' : '🔇';
+>>>>>>> 3e4169081af0475fce8d5db8a97d6f3269acf944
   if (G.soundEnabled) { getAudioCtx(); playSound('click'); }
   saveGame();
 }
 
+<<<<<<< HEAD
 function toggleHaptic() {
   G.hapticEnabled = !G.hapticEnabled;
   if (G.hapticEnabled) triggerHaptic('click');
@@ -1443,6 +1495,10 @@ function triggerHaptic(type) {
 
 function playSound(type) {
   triggerHaptic(type);
+=======
+// tone(частота, задержка_с, длительность_с, громкость, форма_волны, конечная_частота?)
+function playSound(type) {
+>>>>>>> 3e4169081af0475fce8d5db8a97d6f3269acf944
   if (!G.soundEnabled) return;
   const ctx = getAudioCtx();
   if (!ctx) return;
@@ -1480,6 +1536,7 @@ function playSound(type) {
   }
 }
 
+<<<<<<< HEAD
 // ── СЛУЧАЙНОЕ СОБЫТИЕ: ЧАС ПИК ────────────────────────────────────
 // Раз в некоторое время, пока игра открыта, есть небольшой шанс, что
 // начнётся "час пик" — временный ×2 к доходу. Даёт повод не просто держать
@@ -1517,6 +1574,8 @@ function updateRushBanner() {
   document.getElementById('rushTimer').textContent = `${m}:${String(s).padStart(2,'0')}`;
 }
 
+=======
+>>>>>>> 3e4169081af0475fce8d5db8a97d6f3269acf944
 function getAdMultiplier() {
   return Date.now() < adBonusEnd ? 2 : 1;
 }
@@ -1594,12 +1653,18 @@ function defaultState() {
     energy: 100, energyMaxBonus: 0, energyRegenBonus: 0, clickValueMult: 1,
     achievements: {},
     myRefCode: null, friendsInvited: 0, referredBy: null,
+<<<<<<< HEAD
     dailyStreak: 0, lastDailyClaimDay: null, bestStreak: 0,
     soundEnabled: true,
     crystals: 0, lifetimeCrystals: 0, skills: {}, promoCodesRedeemed: 0, questsCompleted: 0,
     tutorialSeen: false, seenStreakFeature: false, seenSkillsFeature: false, theme: 'classic',
     weekly: null, notifAllowed: false, hapticEnabled: true,
     firstPlayedAt: Date.now(),
+=======
+    dailyStreak: 0, lastDailyClaimDay: null,
+    soundEnabled: true,
+    crystals: 0, skills: {},
+>>>>>>> 3e4169081af0475fce8d5db8a97d6f3269acf944
     purchases: { starterPack: false, vipStatus: false, secretLab: false },
     machines: MACHINES_DEF.map(d=>({
       id:d.id, level:1, owned:false, auto:true,
@@ -1676,6 +1741,7 @@ function getUpgCost(id) {
 function prestigeThreshold() {
   const base = Math.round(350000 * Math.pow(4, G.prestigeCount));
   return Math.round(base * (1 - skillBonus('prestige_thresh')));
+<<<<<<< HEAD
 }
 
 // Кристаллы за престиж: база растёт вместе с числом уже сделанных престижей
@@ -1690,6 +1756,8 @@ function calcPrestigeCrystals() {
   // сотни тысяч кристаллов за один престиж.
   const waitBonus = Math.min(5, Math.sqrt(G.coins / prestigeThreshold()));
   return Math.max(1, Math.floor(base * waitBonus * (1 + skillBonus('crystal_gain'))));
+=======
+>>>>>>> 3e4169081af0475fce8d5db8a97d6f3269acf944
 }
 
 // ── ACTIONS ─────────────────────────────────────────────────────
@@ -1708,7 +1776,10 @@ function buyMachine(id) {
   renderShopList();
   renderHeader();
   updateShopBadge();
+<<<<<<< HEAD
   updateMenuBadge();
+=======
+>>>>>>> 3e4169081af0475fce8d5db8a97d6f3269acf944
 }
 
 function clickMachine(id, evt) {
@@ -1756,7 +1827,13 @@ function buyUpgrade(id) {
   else if (ud.type==='energyRegen') { G.energyRegenBonus = (G.energyRegenBonus||0) + ud.mult; }
   else if (ud.type==='clickValue')  { G.clickValueMult   = (G.clickValueMult||1) * ud.mult; }
 
+<<<<<<< HEAD
   if (ud.mid>=0) {
+=======
+  if (ud.type==='rewardAll' || ud.type==='speedAll') {
+    renderMachinesGrid(); // затрагивает сразу все цеха — тут пересборка оправдана
+  } else if (ud.mid>=0) {
+>>>>>>> 3e4169081af0475fce8d5db8a97d6f3269acf944
     updateMachineCardDOM(ud.mid);
   }
   renderShopList();
@@ -1781,7 +1858,11 @@ function openPrestige() {
     if (pbarL) pbarL.textContent = pct+'% — '+t('prestigeReset')+(G.prestigeCount+1);
   } else {
     const newMult = (G.prestigeMult*1.5).toFixed(1);
+<<<<<<< HEAD
     const crystalsPreview = calcPrestigeCrystals();
+=======
+    const crystalsPreview = Math.max(1, Math.floor(10 * Math.sqrt(G.coins / thr) * (1 + skillBonus('crystal_gain'))));
+>>>>>>> 3e4169081af0475fce8d5db8a97d6f3269acf944
     const readyText = document.getElementById('prestige-ready-text');
     if (readyText) readyText.innerHTML =
       `${t('prestigeGoal')} <b id="prestigeBonus" style="color:var(--accent)">x${newMult}</b> ${t('prestigeForever')}<br><br>${t('prestigeCurrentMult')} <b id="currentMult" style="color:var(--teal)">x${G.prestigeMult.toFixed(1)}</b><br><br>💎 Получишь: <b style="color:#a090ff">+${fmt(crystalsPreview)} кристаллов</b>`;
@@ -1797,7 +1878,11 @@ function doPrestige() {
   playSound('prestige');
   // Кристаллы считаем ДО увеличения prestigeCount — порог должен быть тем,
   // который действовал в этом заходе, а не следующим.
+<<<<<<< HEAD
   const crystalsEarned = calcPrestigeCrystals();
+=======
+  const crystalsEarned = Math.max(1, Math.floor(10 * Math.sqrt(G.coins / prestigeThreshold()) * (1 + skillBonus('crystal_gain'))));
+>>>>>>> 3e4169081af0475fce8d5db8a97d6f3269acf944
   G.prestigeMult = parseFloat((G.prestigeMult*1.5).toFixed(1));
   G.prestigeCount++;
   const mult         = G.prestigeMult;
@@ -1815,6 +1900,7 @@ function doPrestige() {
   const friendsInv   = G.friendsInvited;
   const referredBy   = G.referredBy;
   const crystals     = (G.crystals || 0) + crystalsEarned;
+<<<<<<< HEAD
   const lifeCrystals = (G.lifetimeCrystals || 0) + crystalsEarned;
   const skills       = G.skills;
   const dailyStreak  = G.dailyStreak;
@@ -1831,6 +1917,12 @@ function doPrestige() {
   const weekly = G.weekly;
   const notifAllowed = G.notifAllowed;
   const hapticEnabled = G.hapticEnabled;
+=======
+  const skills       = G.skills;
+  const dailyStreak  = G.dailyStreak;
+  const lastDailyClaimDay = G.lastDailyClaimDay;
+  const soundEnabled = G.soundEnabled;
+>>>>>>> 3e4169081af0475fce8d5db8a97d6f3269acf944
   G = defaultState();
   G.prestigeMult   = mult;
   G.prestigeCount  = cnt;
@@ -1847,6 +1939,7 @@ function doPrestige() {
   G.friendsInvited = friendsInv;
   G.referredBy     = referredBy;
   G.crystals       = crystals;
+<<<<<<< HEAD
   G.lifetimeCrystals = lifeCrystals;
   G.skills         = skills;
   G.dailyStreak        = dailyStreak;
@@ -1863,6 +1956,12 @@ function doPrestige() {
   G.weekly              = weekly;
   G.notifAllowed        = notifAllowed;
   G.hapticEnabled       = hapticEnabled;
+=======
+  G.skills         = skills;
+  G.dailyStreak        = dailyStreak;
+  G.lastDailyClaimDay  = lastDailyClaimDay;
+  G.soundEnabled       = soundEnabled;
+>>>>>>> 3e4169081af0475fce8d5db8a97d6f3269acf944
   G.energy = energyMax();
   if (purchases.secretLab) { const ml=getMachine(10); ml.owned=true; ml.auto=true; }
   closePrestige();
@@ -2463,7 +2562,10 @@ async function redeemPromoCode() {
       statusEl.textContent = '✅ Промокод активирован!';
       statusEl.className = 'promo-status success';
       input.value = '';
+<<<<<<< HEAD
       G.promoCodesRedeemed = (G.promoCodesRedeemed || 0) + 1;
+=======
+>>>>>>> 3e4169081af0475fce8d5db8a97d6f3269acf944
       applyPromoReward(data.reward);
     } else {
       const messages = {
@@ -2492,7 +2594,10 @@ function applyPromoReward(reward) {
     showToast('🎉 +' + fmt(value) + ' ' + t('coins') + '!');
   } else if (type === 'crystals') {
     G.crystals = (G.crystals || 0) + value;
+<<<<<<< HEAD
     G.lifetimeCrystals = (G.lifetimeCrystals || 0) + value;
+=======
+>>>>>>> 3e4169081af0475fce8d5db8a97d6f3269acf944
     showToast('🎉 +' + fmt(value) + ' 💎!');
   } else if (type === 'starterPack') {
     if (!G.purchases.starterPack) { G.purchases.starterPack = true; showToast('🎉 Стартовый набор активирован!'); }
@@ -2637,10 +2742,15 @@ function energyRegen()  { return 1 + (G.energyRegenBonus || 0) + skillBonus('ene
 function clickValue()   {
   // cps() уже включает totalPrestigeMult + iap/ачивки/рефералы — повторно
   // их не умножаем здесь, иначе двойная инфляция.
+<<<<<<< HEAD
   // Берём ~10% от дохода в секунду как разовую награду за клик — раньше было
   // 30%, из-за чего очередь кликов на полный запас энергии перекрывала
   // больше половины стоимости следующего цеха.
   const base = Math.max(1, Math.round(cps() * 0.1)) || 1;
+=======
+  // Берём ~30% от дохода в секунду как разовую награду за клик.
+  const base = Math.max(1, Math.round(cps() * 0.3)) || 1;
+>>>>>>> 3e4169081af0475fce8d5db8a97d6f3269acf944
   return Math.round(base * (G.clickValueMult || 1) * (1 + skillBonus('click_power')));
 }
 
@@ -2715,6 +2825,7 @@ function updateEnergyUI() {
   if (btn) btn.disabled = (G.energy < 1);
 }
 
+<<<<<<< HEAD
 // ── ТЕМА ОФОРМЛЕНИЯ ────────────────────────────────────────────────
 // Чисто косметическое — не влияет на баланс. Часть тем открывается
 // прогрессом, чтобы это тоже ощущалось как награда.
@@ -2843,6 +2954,8 @@ function renderSettingsPanel() {
   }
 }
 
+=======
+>>>>>>> 3e4169081af0475fce8d5db8a97d6f3269acf944
 // ── ДЕРЕВО НАВЫКОВ (за кристаллы престижа) ────────────────────────
 // Кристаллы начисляются при каждом престиже и НИКОГДА не сгорают — как и
 // уровни навыков, купленных за них. Это отдельный, постоянный слой
@@ -3120,19 +3233,27 @@ function openMenuSection(section) {
   document.getElementById('menuSecStreak').style.display  = section==='streak'  ? 'block':'none';
   document.getElementById('menuSecSkills').style.display  = section==='skills'  ? 'block':'none';
   document.getElementById('menuSecPromo').style.display   = section==='promo'   ? 'block':'none';
+<<<<<<< HEAD
   document.getElementById('menuSecStats').style.display   = section==='stats'   ? 'block':'none';
   document.getElementById('menuSecTrophy').style.display  = section==='trophy'  ? 'block':'none';
   document.getElementById('menuSecTheme').style.display   = section==='theme'   ? 'block':'none';
+=======
+>>>>>>> 3e4169081af0475fce8d5db8a97d6f3269acf944
   document.getElementById('menuSecDaily').style.display   = section==='daily'   ? 'block':'none';
   document.getElementById('menuSecWeekly').style.display  = section==='weekly'  ? 'block':'none';
   document.getElementById('menuSecAch').style.display     = section==='ach'     ? 'block':'none';
   document.getElementById('menuSecFriends').style.display = section==='friends' ? 'block':'none';
   document.querySelector('.menu-hub').style.display = 'none';
+<<<<<<< HEAD
   if (section==='streak')  { renderDailyStreak(); if (!G.seenStreakFeature) { G.seenStreakFeature = true; updateMenuBadge(); saveGame(); } }
   if (section==='skills')  { renderSkillTree();   if (!G.seenSkillsFeature) { G.seenSkillsFeature = true; updateMenuBadge(); saveGame(); } }
   if (section==='stats')   renderStats();
   if (section==='trophy')  renderTrophyRoom();
   if (section==='theme')   { renderThemePicker(); renderSettingsPanel(); }
+=======
+  if (section==='streak')  renderDailyStreak();
+  if (section==='skills')  renderSkillTree();
+>>>>>>> 3e4169081af0475fce8d5db8a97d6f3269acf944
   if (section==='daily')   renderQuests();
   if (section==='weekly')  renderWeeklyChallenge();
   if (section==='ach')     renderAchievements();
@@ -3144,9 +3265,12 @@ function closeMenuSection() {
   document.getElementById('menuSecStreak').style.display  = 'none';
   document.getElementById('menuSecSkills').style.display  = 'none';
   document.getElementById('menuSecPromo').style.display   = 'none';
+<<<<<<< HEAD
   document.getElementById('menuSecStats').style.display   = 'none';
   document.getElementById('menuSecTrophy').style.display  = 'none';
   document.getElementById('menuSecTheme').style.display   = 'none';
+=======
+>>>>>>> 3e4169081af0475fce8d5db8a97d6f3269acf944
   document.getElementById('menuSecDaily').style.display   = 'none';
   document.getElementById('menuSecWeekly').style.display  = 'none';
   document.getElementById('menuSecAch').style.display     = 'none';
@@ -3159,6 +3283,7 @@ function closeMenuSection() {
 // Награда растёт всю неделю, на 7-й день — большой бонус, дальше цикл
 // повторяется заново. Пропустил день — стрик сбрасывается на 1.
 const DAILY_REWARDS = [
+<<<<<<< HEAD
   { day:1, icon:'💰', type:'coins',  seconds:8,  min:100  },
   { day:2, icon:'💰', type:'coins',  seconds:15, min:250  },
   { day:3, icon:'⚡', type:'energy', seconds:12, min:200  },
@@ -3166,6 +3291,15 @@ const DAILY_REWARDS = [
   { day:5, icon:'🚀', type:'boost',  ms:30*60*1000        },
   { day:6, icon:'💰', type:'coins',  seconds:45, min:800  },
   { day:7, icon:'🏆', type:'coins',  seconds:80, min:2000 },
+=======
+  { day:1, icon:'💰', type:'coins',  seconds:60,  min:500   },
+  { day:2, icon:'💰', type:'coins',  seconds:120, min:1200  },
+  { day:3, icon:'⚡', type:'energy', seconds:90,  min:900   },
+  { day:4, icon:'💰', type:'coins',  seconds:240, min:2500  },
+  { day:5, icon:'🚀', type:'boost',  ms:30*60*1000          },
+  { day:6, icon:'💰', type:'coins',  seconds:400, min:5000  },
+  { day:7, icon:'🏆', type:'coins',  seconds:900, min:15000 },
+>>>>>>> 3e4169081af0475fce8d5db8a97d6f3269acf944
 ];
 
 function todayStr() {
@@ -3178,6 +3312,7 @@ function daysDiff(a, b) {
 function dailyAlreadyClaimedToday() {
   return G.lastDailyClaimDay === todayStr();
 }
+<<<<<<< HEAD
 // Стрик открывается только после того как новичок сам купит первый цех —
 // не должен быть доступен/выпадать попапом ещё до того как игрок вообще
 // что-то сделал в игре.
@@ -3185,6 +3320,8 @@ function streakUnlocked() {
   const m = getMachine(0);
   return !!(m && m.owned);
 }
+=======
+>>>>>>> 3e4169081af0475fce8d5db8a97d6f3269acf944
 // Индекс (0..6) награды, которая ждёт игрока СЕЙЧАС (ещё не забрана)
 function pendingStreakIndex() {
   if (dailyAlreadyClaimedToday()) return ((G.dailyStreak - 1) % 7 + 7) % 7;
@@ -3204,7 +3341,10 @@ function claimDailyReward() {
   const diff = G.lastDailyClaimDay ? daysDiff(G.lastDailyClaimDay, todayStr()) : null;
   G.dailyStreak = (diff === 1) ? (G.dailyStreak||0) + 1 : 1;
   G.lastDailyClaimDay = todayStr();
+<<<<<<< HEAD
   G.bestStreak = Math.max(G.bestStreak||0, G.dailyStreak);
+=======
+>>>>>>> 3e4169081af0475fce8d5db8a97d6f3269acf944
   playSound('levelup');
 
   const idx = (G.dailyStreak - 1) % 7;
@@ -3230,6 +3370,7 @@ function claimDailyReward() {
   saveGame();
 }
 
+<<<<<<< HEAD
 // ── ОБУЧЕНИЕ ДЛЯ НОВИЧКОВ ─────────────────────────────────────────
 const TUTORIAL_SLIDES = [
   { icon:'👆', title:'Добро пожаловать на завод!', text:'Нажимай на цех, чтобы запустить его вручную и сразу получить монеты. Цеха с пометкой «АВТО» работают сами, даже пока ты не в игре.' },
@@ -3273,6 +3414,8 @@ function skipTutorial() {
   saveGame();
 }
 
+=======
+>>>>>>> 3e4169081af0475fce8d5db8a97d6f3269acf944
 function claimDailyFromModal() {
   claimDailyReward();
   document.getElementById('dailyModal').classList.remove('show');
@@ -3280,7 +3423,10 @@ function claimDailyFromModal() {
 
 // Показываем попап при заходе, если сегодняшняя награда ещё не забрана
 function maybeShowDailyModal() {
+<<<<<<< HEAD
   if (!streakUnlocked()) return; // ещё не куплен первый цех
+=======
+>>>>>>> 3e4169081af0475fce8d5db8a97d6f3269acf944
   if (dailyAlreadyClaimedToday()) return;
   const idx = pendingStreakIndex();
   const r = DAILY_REWARDS[idx];
@@ -3315,6 +3461,7 @@ function renderDailyStreak() {
   btn.textContent = claimedToday ? '✅ Уже забрано сегодня' : '🎁 Забрать награду';
 }
 
+<<<<<<< HEAD
 // ── НЕДЕЛЬНОЕ ИСПЫТАНИЕ ────────────────────────────────────────────
 // Одна крупная цель на 7 дней — заработать N монет (считаются и клики, и
 // авто-производство). Награда весомее ежедневных заданий, но всё ещё в
@@ -3375,6 +3522,8 @@ function renderWeeklyChallenge() {
     </button>`;
 }
 
+=======
+>>>>>>> 3e4169081af0475fce8d5db8a97d6f3269acf944
 // ── ЕЖЕДНЕВНЫЕ ЗАДАНИЯ ───────────────────────────────────────────
 const QUEST_TYPES = ['qtProduce','qtClick','qtCoins','qtUpgrade','qtBuy','qtAd'];
 
@@ -3454,7 +3603,10 @@ function claimQuest(idx) {
   const q = G.quests.list[idx];
   if (!q||q.claimed||q.progress<q.target) return;
   q.claimed = true;
+<<<<<<< HEAD
   G.questsCompleted = (G.questsCompleted || 0) + 1;
+=======
+>>>>>>> 3e4169081af0475fce8d5db8a97d6f3269acf944
   playSound('quest');
   const reward = QUEST_REWARDS[q.rewardIdx];
   if (reward.type==='coins') {
@@ -3474,6 +3626,7 @@ function claimQuest(idx) {
 }
 
 function updateMenuBadge() {
+<<<<<<< HEAD
   const unlocked  = streakUnlocked();
   const hasQuest  = G.quests && G.quests.list.some(q=>!q.claimed && q.progress>=q.target);
   const hasAch    = ACHIEVEMENTS_DEF.some(d => !achState(d.id).claimed && achProgress(d) >= d.target);
@@ -3488,6 +3641,13 @@ function updateMenuBadge() {
   // Карточка "Награда за вход" — появляется только после покупки первого цеха
   const streakCard = document.getElementById('streakMenuCard');
   if (streakCard) streakCard.style.display = unlocked ? 'flex' : 'none';
+=======
+  const hasQuest  = G.quests && G.quests.list.some(q=>!q.claimed && q.progress>=q.target);
+  const hasAch    = ACHIEVEMENTS_DEF.some(d => !achState(d.id).claimed && achProgress(d) >= d.target);
+  const hasStreak = !dailyAlreadyClaimedToday();
+  const hasSkill  = SKILLS_DEF.some(d => { const c = skillCost(d.id); return c!==null && G.crystals>=c; });
+  const has = hasQuest || hasAch || hasStreak || hasSkill;
+>>>>>>> 3e4169081af0475fce8d5db8a97d6f3269acf944
   // badge на нижней вкладке Меню
   const mb = document.getElementById('menuBadge');
   if (mb) mb.classList.toggle('show', has && currentTab!=='menu');
@@ -3500,6 +3660,7 @@ function updateMenuBadge() {
   // badge на карточке Достижения в хабе
   const ab = document.getElementById('achBadge');
   if (ab) ab.classList.toggle('show', hasAch);
+<<<<<<< HEAD
   // badge на карточке Навыков — есть на что потратить кристаллы, или раздел открылся впервые
   const skb = document.getElementById('skillsBadge');
   if (skb) skb.classList.toggle('show', hasSkill || skillsIsNew);
@@ -3509,6 +3670,17 @@ function updateMenuBadge() {
   // badge на карточке Награды за вход — есть награда, или раздел открылся впервые
   const sb = document.getElementById('streakBadge');
   if (sb) sb.classList.toggle('show', hasStreak || streakIsNew);
+=======
+  // badge на карточке Навыков — есть на что потратить кристаллы
+  const skb = document.getElementById('skillsBadge');
+  if (skb) skb.classList.toggle('show', hasSkill);
+  // sub-label навыков
+  const skillSub = document.getElementById('menuSubSkills');
+  if (skillSub) skillSub.textContent = `💎 ${fmt(G.crystals||0)}`;
+  // badge на карточке Награды за вход
+  const sb = document.getElementById('streakBadge');
+  if (sb) sb.classList.toggle('show', hasStreak);
+>>>>>>> 3e4169081af0475fce8d5db8a97d6f3269acf944
   // sub-label награды за вход
   const streakSub = document.getElementById('menuSubStreak');
   if (streakSub) streakSub.textContent = hasStreak ? 'Награда ждёт!' : `Стрик: ${G.dailyStreak||0} · заходи завтра`;
@@ -3601,7 +3773,11 @@ function tick(now) {
     if(m.progress>0){
       m.progress+=dt;
       if(m.progress>=m.speed){
+<<<<<<< HEAD
         const earned = m.reward * incomeMult() * getAdMultiplier() * getRushMultiplier();
+=======
+        const earned = m.reward * incomeMult() * getAdMultiplier();
+>>>>>>> 3e4169081af0475fce8d5db8a97d6f3269acf944
         G.coins += earned;
         G.sold  += 1;
         m.progress = 0;
@@ -3659,7 +3835,10 @@ function tick(now) {
     }
     if (currentTab==='menu' && currentMenuSection && !uiIsBusy()) {
       if (currentMenuSection==='streak')  renderDailyStreak();
+<<<<<<< HEAD
       if (currentMenuSection==='stats')   renderStats();
+=======
+>>>>>>> 3e4169081af0475fce8d5db8a97d6f3269acf944
       if (currentMenuSection==='daily')   renderQuests();
       if (currentMenuSection==='weekly')  renderWeeklyChallenge();
       if (currentMenuSection==='ach')     renderAchievements();
@@ -3711,6 +3890,7 @@ function applyLoaded(saved) {
   // иначе новые цеха, дописанные миграцией в конец, окажутся ПОСЛЕ лаборатории.
   G.machines.sort((a, b) =>
     MACHINES_DEF.findIndex(d => d.id === a.id) - MACHINES_DEF.findIndex(d => d.id === b.id));
+<<<<<<< HEAD
   // Миграция: у уже играющих (в сохранении есть реальный прогресс) не должен
   // всплывать туториал для новичков и метки "НОВОЕ" на уже знакомых разделах —
   // помечаем всё как "уже видел", раз это явно не первый запуск.
@@ -3729,6 +3909,8 @@ function applyLoaded(saved) {
   maxHonestCrystals = Math.ceil(maxHonestCrystals);
   if (G.crystals > maxHonestCrystals)         G.crystals = maxHonestCrystals;
   if (G.lifetimeCrystals > maxHonestCrystals) G.lifetimeCrystals = maxHonestCrystals;
+=======
+>>>>>>> 3e4169081af0475fce8d5db8a97d6f3269acf944
 }
 
 // ── INIT ─────────────────────────────────────────────────────────
@@ -3774,6 +3956,10 @@ document.getElementById('startBtn').addEventListener('click', () => {
   document.getElementById('splash').classList.add('hide');
   document.getElementById('game').style.display = 'flex';
   if (G.soundEnabled) getAudioCtx(); // разблокируем звук по первому жесту пользователя
+<<<<<<< HEAD
+=======
+  document.getElementById('soundBtn').textContent = G.soundEnabled ? '🔊' : '🔇';
+>>>>>>> 3e4169081af0475fce8d5db8a97d6f3269acf944
   fullRender();
   initIAP();
   initQuests();
@@ -3781,14 +3967,21 @@ document.getElementById('startBtn').addEventListener('click', () => {
   checkIncomingReferral();
   renderFriends();
   syncInvitedCount();
+<<<<<<< HEAD
   syncPurchases();
+=======
+>>>>>>> 3e4169081af0475fce8d5db8a97d6f3269acf944
   updateMenuBadge();
 
   // Офлайн доход
   const offlineCoins = calcOfflineIncome();
   const elapsed = Math.min(Date.now() - (G.lastSaved||0), MAX_OFFLINE_HOURS * 3600000);
+<<<<<<< HEAD
   if (!G.tutorialSeen) showTutorial();
   else if (offlineCoins > 0) showOfflineModal(offlineCoins, elapsed);
+=======
+  if (offlineCoins > 0) showOfflineModal(offlineCoins, elapsed);
+>>>>>>> 3e4169081af0475fce8d5db8a97d6f3269acf944
   else maybeShowDailyModal();
 
   setTimeout(() => document.getElementById('splash').style.display = 'none', 900);

@@ -5,8 +5,11 @@
  *     приглашённый реально открыл игру и нажал "Начать" на своём устройстве)
  *  3) промокоды — активация игроками + управление админом (создание,
  *     удаление, лимиты активаций, срок действия, "блогерские" коды)
+<<<<<<< HEAD
  *  4) настоящие покупки через VK Pay (VKWebAppShowOrderBox) — приём
  *     платёжных уведомлений VK и выдача награды только после реальной оплаты
+=======
+>>>>>>> 3e4169081af0475fce8d5db8a97d6f3269acf944
  *
  * Нужные секреты (задаются командой `wrangler secret put ...`, см. README):
  *   VK_APP_ID          — ID приложения (число)
@@ -19,6 +22,7 @@
  *   ADMIN_KEY           — придуманный тобой пароль для панели администратора
  *                          промокодов (см. admin.html). Придумай длинную
  *                          случайную строку, никому её не показывай.
+<<<<<<< HEAD
  *   VK_PAYMENTS_SECRET  — "Секретный ключ" именно из раздела "Платежи"
  *                          настроек приложения (это ДРУГОЙ ключ, не
  *                          VK_SECRET_KEY! См. PAYMENTS-SETUP.md).
@@ -27,10 +31,18 @@
  * (см. README — команда `wrangler kv namespace create REFERRALS`).
  * Промокоды и покупки хранятся в том же KV, отдельными префиксами ключей —
  * заводить второй namespace не требуется.
+=======
+ *
+ * Нужен KV-namespace, привязанный в wrangler.toml под именем REFERRALS
+ * (см. README — команда `wrangler kv namespace create REFERRALS`).
+ * Промокоды хранятся в том же KV, отдельным префиксом ключей — заводить
+ * второй namespace не требуется.
+>>>>>>> 3e4169081af0475fce8d5db8a97d6f3269acf944
  */
 
 const VK_API_VERSION = '5.199';
 const PROMO_REWARD_TYPES = ['coins', 'crystals', 'starterPack', 'vipStatus', 'secretLab'];
+<<<<<<< HEAD
 
 // ── Каталог платных предметов ────────────────────────────────────
 // ВАЖНО: price указан в внутренней валюте VK ("голоса"), а не в рублях!
@@ -45,6 +57,8 @@ const PAYMENT_CATALOG = {
   secret_lab:   { title: 'Секретная лаборатория', price: 80,  permanent: true  },
   coin_pack:    { title: 'Мешок монет',           price: 25,  permanent: false },
 };
+=======
+>>>>>>> 3e4169081af0475fce8d5db8a97d6f3269acf944
 
 export default {
   async fetch(request, env, ctx) {
@@ -92,6 +106,23 @@ export default {
       }
     }
 
+<<<<<<< HEAD
+=======
+    // ── Админ-маршруты — своя авторизация по ключу, VK тут ни при чём ──
+    if (url.pathname.startsWith('/admin/')) {
+      if (!env.ADMIN_KEY || !body.adminKey || body.adminKey !== env.ADMIN_KEY) {
+        return json({ error: 'unauthorized' }, 401, corsHeaders);
+      }
+      switch (url.pathname) {
+        case '/admin/codes/list':   return handleAdminListCodes(env, corsHeaders);
+        case '/admin/codes/create': return handleAdminCreateCode(body, env, corsHeaders);
+        case '/admin/codes/update': return handleAdminUpdateCode(body, env, corsHeaders);
+        case '/admin/codes/delete': return handleAdminDeleteCode(body, env, corsHeaders);
+        default: return json({ error: 'not_found' }, 404, corsHeaders);
+      }
+    }
+
+>>>>>>> 3e4169081af0475fce8d5db8a97d6f3269acf944
     // ── Остальные маршруты — требуют валидных launchParams (подпись VK) ──
     const { launchParams } = body || {};
     if (!launchParams || typeof launchParams !== 'string') {
@@ -122,6 +153,7 @@ export default {
         return handleMyInvited(userId, env, corsHeaders);
       case '/redeem-code':
         return handleRedeemCode(body, userId, env, corsHeaders);
+<<<<<<< HEAD
       case '/save-game':
         return handleSaveGame(body, userId, env, corsHeaders);
       case '/load-game':
@@ -132,6 +164,8 @@ export default {
         return handleFriendsScores(body, userId, env, corsHeaders);
       case '/register-notifications':
         return handleRegisterNotifications(body, userId, env, corsHeaders);
+=======
+>>>>>>> 3e4169081af0475fce8d5db8a97d6f3269acf944
       default:
         return json({ error: 'not_found' }, 404, corsHeaders);
     }
@@ -432,6 +466,7 @@ async function handleAdminDeleteCode(body, env, corsHeaders) {
   return json({ ok: true }, 200, corsHeaders);
 }
 
+<<<<<<< HEAD
 // ── /save-game ───────────────────────────────────────────────────
 // Настоящее облачное сохранение (VKWebAppStorageSet для этого не годится —
 // у него лимит 4096 байт, а сохранение игры весит намного больше).
@@ -557,6 +592,8 @@ async function handleMyPurchases(userId, env, corsHeaders) {
   return json({ ok: true, purchases, pending }, 200, corsHeaders);
 }
 
+=======
+>>>>>>> 3e4169081af0475fce8d5db8a97d6f3269acf944
 function json(data, status, headers) {
   return new Response(JSON.stringify(data), {
     status,
