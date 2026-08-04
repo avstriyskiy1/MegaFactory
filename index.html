@@ -37,17 +37,22 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
 .splash-gear{width:90px;height:90px;margin-bottom:24px;animation:spin 4s linear infinite;opacity:.18;}
 @keyframes spin{to{transform:rotate(360deg)}}
 .splash-btn{margin-top:36px;padding:14px 48px;background:var(--accent);color:#000;font-family:'Russo One',sans-serif;font-size:18px;border:none;border-radius:4px;cursor:pointer;letter-spacing:1px;transition:transform .1s,filter .1s;}
-.splash-btn:hover{filter:brightness(1.15)}.splash-btn:active{transform:scale(.97)}
+.splash-btn:active{transform:scale(.97)}
 .splash-save-note{font-size:12px;color:var(--muted);margin-top:12px;}
 
 /* HEADER */
-.header{background:var(--bg2);border-bottom:1px solid var(--border);padding:10px 16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
-.game-title{font-family:'Russo One',sans-serif;font-size:20px;color:var(--accent);letter-spacing:1px;margin-right:8px;}
-.stat-pill{background:var(--bg3);border:1px solid var(--border);border-radius:20px;padding:5px 14px;font-size:13px;color:var(--muted);display:flex;align-items:center;gap:6px;}
+.header{background:var(--bg2);border-bottom:1px solid var(--border);padding:10px 16px;display:flex;flex-direction:column;gap:8px;}
+.header-top{display:flex;align-items:center;justify-content:space-between;gap:12px;}
+.header-stats{display:flex;align-items:center;gap:6px;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none;}
+.header-stats::-webkit-scrollbar{display:none;}
+.rush-banner{background:linear-gradient(90deg,#ff2e6b,#ff8a00);color:#fff;text-align:center;padding:7px 10px;font-size:12px;font-weight:700;letter-spacing:.02em;animation:rushPulse 1.2s ease-in-out infinite;}
+@keyframes rushPulse{0%,100%{filter:brightness(1);}50%{filter:brightness(1.25);}}
+.game-title{font-family:'Russo One',sans-serif;font-size:20px;color:var(--accent);letter-spacing:1px;}
+.stat-pill{background:var(--bg3);border:1px solid var(--border);border-radius:20px;padding:5px 10px;font-size:12px;color:var(--muted);display:flex;align-items:center;gap:4px;flex-shrink:0;white-space:nowrap;}
 .stat-pill b{color:var(--text);font-weight:500;}.stat-pill.gold b{color:var(--accent);}.stat-pill.teal b{color:var(--teal);}
-.header-right{margin-left:auto;display:flex;gap:8px;}
+.header-right{display:flex;gap:8px;flex-shrink:0;}
 .btn-hdr{padding:6px 14px;background:transparent;border:1px solid var(--border);border-radius:4px;color:var(--muted);font-size:12px;cursor:pointer;font-family:'Exo 2',sans-serif;transition:all .15s;}
-.btn-hdr:hover{border-color:var(--accent);color:var(--accent);}
+
 
 /* LAYOUT */
 .layout{display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden;}
@@ -72,7 +77,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
 /* MACHINE CARD */
 .machines-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:8px;}
 .mcard{background:var(--card);border:1px solid var(--border);border-radius:6px;padding:12px;transition:border-color .2s,transform .1s;position:relative;overflow:hidden;}
-.mcard:hover{border-color:#3a4060;}.mcard:active{transform:scale(.98);}
+.mcard:active{transform:scale(.98);}
 .mcard.working{border-color:var(--teal);}
 .mcard.working::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--teal);animation:scanline .3s ease-out;}
 @keyframes scanline{from{transform:scaleX(0);transform-origin:left}to{transform:scaleX(1)}}
@@ -85,17 +90,17 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
 .pbar{height:100%;background:var(--teal);border-radius:3px;width:0%;}
 .mcard-footer{display:flex;gap:6px;margin-top:8px;}
 .btn-upg{flex:1;padding:5px 0;font-size:11px;background:transparent;border:1px solid var(--border);border-radius:3px;color:var(--muted);cursor:pointer;font-family:'Exo 2',sans-serif;transition:all .15s;}
-.btn-upg:hover:not(:disabled){border-color:var(--accent);color:var(--accent);}.btn-upg:disabled{opacity:.3;cursor:not-allowed;}
+.btn-upg:disabled{opacity:.3;cursor:not-allowed;}
 .btn-upg.ad{border-color:rgba(0,201,167,.4);color:var(--teal);}
-.btn-upg.ad:hover:not(:disabled){border-color:var(--teal);background:rgba(0,201,167,.08);}
+
 .btn-upg.ad:disabled{opacity:.3;cursor:not-allowed;}
 .mcard-auto-badge{font-size:10px;padding:2px 7px;border-radius:10px;background:rgba(0,201,167,.12);color:var(--teal);border:1px solid rgba(0,201,167,.3);align-self:center;}
 /* BUYABLE CARD — следующий цех для покупки */
 .mcard.buyable{border-color:#2a6aDD;background:linear-gradient(135deg,rgba(30,70,180,.12),rgba(5,10,30,.7));cursor:default;}
-.mcard.buyable:hover{border-color:#4477FF;}
+
 .mcard.buyable .mcard-icon{border-color:#2a6aDD;background:rgba(30,70,200,.18);}
 .btn-buy-big{width:100%;padding:9px 0;font-size:13px;font-weight:600;background:var(--accent);border:none;border-radius:4px;color:#000;cursor:pointer;font-family:'Exo 2',sans-serif;transition:filter .15s;margin-top:2px;}
-.btn-buy-big:hover{filter:brightness(1.12);}
+
 .btn-buy-big:disabled{opacity:.35;cursor:not-allowed;filter:none;background:var(--bg3);color:var(--muted);border:1px solid var(--border);}
 .buy-progress-label{font-size:11px;color:var(--muted);margin-bottom:4px;display:flex;justify-content:space-between;}
 .buy-progress-label span{color:var(--teal);}
@@ -106,7 +111,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
 .upg-item.upg-item-ad{border-color:#2a6aDD;background:linear-gradient(135deg,rgba(30,70,180,.08),rgba(5,10,30,.6));align-items:flex-start;}
 .upg-info{flex:1;}.upg-name{font-size:13px;font-weight:500;}.upg-desc{font-size:11px;color:var(--muted);margin-top:2px;}.upg-cost{font-size:12px;color:var(--accent);margin-top:3px;}
 .btn-buy{padding:6px 14px;background:transparent;border:1px solid var(--accent);border-radius:4px;color:var(--accent);font-size:12px;cursor:pointer;font-family:'Exo 2',sans-serif;white-space:nowrap;transition:all .15s;flex-shrink:0;}
-.btn-buy:hover:not(:disabled){background:var(--accent);color:#000;}
+
 .btn-buy:disabled{opacity:.28;cursor:not-allowed;border-color:var(--border);color:var(--muted);}
 
 /* PRESTIGE */
@@ -114,7 +119,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
 .prestige-title{font-family:'Russo One',sans-serif;font-size:14px;color:var(--accent);margin-bottom:4px;}
 .prestige-desc{font-size:12px;color:var(--muted);margin-bottom:10px;line-height:1.5;}
 .btn-prestige{padding:8px 20px;background:transparent;border:1px solid var(--accent);border-radius:4px;color:var(--accent);font-family:'Russo One',sans-serif;font-size:13px;cursor:pointer;transition:all .15s;}
-.btn-prestige:hover:not(:disabled){background:var(--accent);color:#000;}
+
 
 /* TOAST */
 .milestone-toast{position:fixed;top:60px;left:50%;transform:translateX(-50%) translateY(-10px);background:var(--card);border:1px solid var(--accent);border-radius:8px;padding:10px 24px;font-size:14px;color:var(--accent);font-weight:500;opacity:0;transition:opacity .3s,transform .3s;pointer-events:none;z-index:50;white-space:nowrap;}
@@ -159,17 +164,21 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
 .modal p{font-size:14px;color:var(--muted);line-height:1.6;margin-bottom:20px;}
 .modal-btns{display:flex;gap:10px;justify-content:center;}
 .btn-modal{padding:10px 28px;border-radius:4px;font-family:'Exo 2',sans-serif;font-size:14px;cursor:pointer;transition:all .15s;}
-.btn-modal.primary{background:var(--accent);border:none;color:#000;font-weight:700;}.btn-modal.primary:hover{filter:brightness(1.1);}
-.btn-modal.secondary{background:transparent;border:1px solid var(--border);color:var(--muted);}.btn-modal.secondary:hover{border-color:var(--text);color:var(--text);}
+.btn-modal.primary{background:var(--accent);border:none;color:#000;font-weight:700;}
+.btn-modal.secondary{background:transparent;border:1px solid var(--border);color:var(--muted);}
 /* OFFLINE MODAL */
 .offline-modal { text-align:center; }
 .offline-icon { font-size:52px; margin-bottom:8px; }
 .offline-coins { font-size:32px; font-weight:700; color:var(--accent); margin:8px 0; }
 .offline-sub { font-size:13px; color:var(--muted); margin-bottom:20px; }
+.tut-text{font-size:14px;color:var(--text);line-height:1.5;margin:12px 0 18px;min-height:60px;}
+.tut-dots{display:flex;justify-content:center;gap:6px;margin-bottom:6px;}
+.tut-dot{width:6px;height:6px;border-radius:50%;background:var(--border);transition:background .2s;}
+.tut-dot.active{background:var(--accent);}
 /* MENU HUB */
 .menu-hub{display:flex;flex-direction:column;gap:10px;}
 .menu-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:border-color .15s,background .15s;position:relative;}
-.menu-card:hover{border-color:var(--accent);background:rgba(240,165,0,.05);}
+
 .menu-card-icon{font-size:28px;flex-shrink:0;width:44px;text-align:center;}
 .menu-card-info{flex:1;}
 .menu-card-title{font-size:14px;font-weight:600;margin-bottom:3px;}
@@ -177,7 +186,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
 .menu-card-arrow{font-size:22px;color:var(--muted);flex-shrink:0;}
 .menu-badge{position:relative;top:auto;right:auto;margin-right:4px;}
 .menu-back-btn{width:100%;padding:8px;background:transparent;border:1px solid var(--border);border-radius:6px;color:var(--muted);font-family:'Exo 2',sans-serif;font-size:13px;cursor:pointer;margin-bottom:10px;text-align:left;}
-.menu-back-btn:hover{border-color:var(--accent);color:var(--accent);}
+
 
 .quest-timer{font-size:12px;color:var(--muted);text-align:center;padding:8px 0 4px;}
 .quest-timer b{color:var(--accent);}
@@ -193,10 +202,13 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
 .quest-reward{font-size:12px;color:var(--accent);margin-top:4px;word-break:break-word;}
 .quest-progress{display:flex;align-items:center;gap:8px;}
 .quest-pbar-wrap{flex:1;height:6px;background:var(--bg3);border-radius:3px;overflow:hidden;}
+.weekly-hdr{font-size:15px;font-weight:600;margin-bottom:4px;}
+.weekly-sub{font-size:12px;color:var(--muted);margin-bottom:12px;}
+.weekly-progress{font-size:12px;color:var(--muted);text-align:center;margin-top:6px;}
 .quest-pbar{height:100%;background:var(--teal);border-radius:3px;transition:width .3s;}
 .quest-pct{font-size:10px;color:var(--muted);min-width:60px;max-width:90px;text-align:right;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .btn-claim{margin-top:10px;width:100%;padding:8px;background:var(--teal);border:none;border-radius:4px;color:#000;font-family:'Exo 2',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:filter .15s;}
-.btn-claim:hover{filter:brightness(1.1);}
+
 .btn-claim:disabled{background:var(--bg3);color:var(--muted);cursor:default;filter:none;border:1px solid var(--border);}
 .ach-summary{font-size:12px;color:var(--muted);text-align:center;padding:8px 0 4px;}
 .ach-summary b{color:var(--accent);}
@@ -207,6 +219,88 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
 .quest-card.ach-tier-silver.done{background:rgba(192,192,192,.08);}
 .quest-card.ach-tier-gold.done{background:rgba(255,215,0,.08);}
 
+/* DAILY STREAK */
+.streak-desc{font-size:12px;color:var(--muted);text-align:center;padding:4px 0 10px;}
+.streak-counter{text-align:center;font-size:13px;color:var(--muted);margin-bottom:12px;}
+.streak-counter b{color:var(--accent);font-size:16px;}
+.streak-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:6px;}
+.streak-day{background:var(--card);border:1px solid var(--border);border-radius:6px;padding:10px 4px;text-align:center;}
+.streak-day-label{font-size:10px;color:var(--muted);margin-bottom:4px;}
+.streak-day-icon{font-size:20px;margin-bottom:2px;}
+.streak-day.claimed{border-color:var(--teal);background:rgba(0,224,184,.08);opacity:.6;}
+.streak-day.current{border-color:var(--accent);background:rgba(240,165,0,.1);box-shadow:0 0 0 1px var(--accent);}
+.streak-day.locked{opacity:.4;}
+
+/* SKILL TREE */
+.skill-desc{font-size:12px;color:var(--muted);text-align:center;padding:4px 0 10px;}
+.skill-crystals-box{background:linear-gradient(135deg,rgba(160,144,255,.12),rgba(90,60,200,.08));border:1px solid rgba(160,144,255,.35);border-radius:8px;padding:10px;text-align:center;font-size:14px;color:var(--muted);margin-bottom:14px;}
+.skill-crystals-box b{color:#a090ff;font-size:17px;}
+.skill-branch{margin-bottom:16px;}
+.skill-branch-hdr{font-size:12px;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:.03em;margin-bottom:8px;padding-left:2px;}
+.skill-node{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--border);border-radius:6px;padding:10px 12px;margin-bottom:6px;}
+.skill-node.maxed{border-color:var(--teal);background:rgba(0,224,184,.06);}
+.skill-node-icon{font-size:20px;flex-shrink:0;width:28px;text-align:center;}
+.skill-node-info{flex:1;min-width:0;}
+.skill-node-name{font-size:13px;font-weight:500;}
+.skill-node-lvl{font-size:11px;color:var(--muted);font-weight:400;}
+.skill-node-desc{font-size:11px;color:var(--muted);margin-top:2px;}
+.btn-skill{padding:6px 12px;background:transparent;border:1px solid #a090ff;border-radius:4px;color:#a090ff;font-size:12px;font-weight:600;cursor:pointer;font-family:'Exo 2',sans-serif;white-space:nowrap;flex-shrink:0;transition:filter .15s;}
+
+.btn-skill:disabled{border-color:var(--border);color:var(--muted);cursor:default;}
+
+/* PROMO CODES */
+.promo-desc{font-size:12px;color:var(--muted);text-align:center;padding:4px 0 14px;}
+.promo-input-row{display:flex;gap:8px;}
+.promo-input{flex:1;background:var(--card);border:1px solid var(--border);border-radius:6px;padding:10px 12px;color:var(--text);font-family:'Exo 2',sans-serif;font-size:14px;letter-spacing:.04em;text-transform:uppercase;min-width:0;}
+.promo-input:focus{outline:none;border-color:var(--accent);}
+.promo-input::placeholder{text-transform:none;letter-spacing:normal;color:var(--muted);}
+.btn-promo{padding:10px 16px;background:var(--accent);border:none;border-radius:6px;color:#000;font-family:'Exo 2',sans-serif;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0;transition:filter .15s;}
+
+.btn-promo:disabled{background:var(--bg3);color:var(--muted);cursor:default;filter:none;}
+.promo-status{font-size:13px;text-align:center;margin-top:12px;min-height:18px;}
+.promo-status.success{color:var(--teal);}
+.promo-status.error{color:#ff6b6b;}
+
+/* STATS */
+.stats-row{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--border);border-radius:6px;padding:11px 14px;margin-bottom:6px;}
+.stats-icon{font-size:16px;flex-shrink:0;width:22px;text-align:center;}
+.stats-label{flex:1;font-size:13px;color:var(--muted);}
+.stats-value{font-size:13px;font-weight:600;color:var(--accent);white-space:nowrap;}
+
+/* THEME PICKER */
+.theme-swatch{display:flex;align-items:center;gap:12px;background:var(--card);border:2px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:8px;cursor:pointer;transition:border-color .15s;}
+.theme-swatch.active{border-color:var(--sw);}
+.theme-swatch.locked{cursor:default;opacity:.55;}
+.theme-swatch-dot{width:34px;height:34px;border-radius:50%;background:var(--sw);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;}
+.theme-swatch.locked .theme-swatch-dot{background:var(--bg3);}
+.theme-swatch-name{flex:1;font-size:14px;font-weight:500;}
+.theme-swatch-hint{font-size:11px;color:var(--muted);}
+
+/* SETTINGS */
+.settings-block{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:8px;}
+.settings-row{display:flex;align-items:center;justify-content:space-between;padding:6px 0;}
+.settings-row-label{font-size:14px;}
+.settings-toggle{padding:6px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:20px;color:var(--muted);font-size:12px;font-weight:600;cursor:pointer;font-family:'Exo 2',sans-serif;transition:all .15s;}
+.settings-toggle.on{background:rgba(0,224,184,.15);border-color:var(--teal);color:var(--teal);}
+.settings-hint{font-size:11px;color:var(--muted);padding:0 0 4px;}
+.settings-block-title{font-size:13px;font-weight:600;color:var(--accent);margin:16px 0 8px;}
+.settings-save-info{font-size:12px;color:var(--muted);text-align:center;margin-bottom:10px;}
+
+/* TROPHY ROOM */
+.trophy-section-title{font-size:13px;font-weight:600;color:var(--accent);margin:16px 0 8px;}
+.trophy-section-title:first-child{margin-top:0;}
+.trophy-machines-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
+.trophy-item{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:10px 4px;text-align:center;opacity:.4;}
+.trophy-item.owned{opacity:1;border-color:var(--teal);background:rgba(0,224,184,.06);}
+.trophy-icon{font-size:22px;margin-bottom:4px;}
+.trophy-name{font-size:9px;color:var(--muted);line-height:1.2;}
+.trophy-item.owned .trophy-name{color:var(--text);}
+.trophy-tiers{display:flex;gap:8px;}
+.trophy-tier{flex:1;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px 6px;text-align:center;}
+.trophy-tier-icon{font-size:22px;margin-bottom:4px;}
+.trophy-tier-label{font-size:11px;color:var(--muted);margin-bottom:2px;}
+.trophy-tier-count{font-size:14px;font-weight:700;color:var(--accent);}
+
 /* IAP SHOP */
 /* FRIENDS / REFERRAL */
 .friends-box{background:linear-gradient(135deg,rgba(255,107,157,.08),rgba(180,50,120,.06));border:1px solid rgba(255,107,157,.3);border-radius:8px;padding:14px;}
@@ -216,8 +310,19 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
 .friends-stat-val{font-size:18px;font-weight:700;color:#ff6b9d;}
 .friends-stat-label{font-size:10px;color:var(--muted);margin-top:2px;}
 .btn-friends{width:100%;padding:10px;background:linear-gradient(135deg,#ff6b9d,#c2387a);border:none;border-radius:6px;color:#fff;font-family:'Exo 2',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:filter .15s;}
-.btn-friends:hover{filter:brightness(1.1);}
+
 .friends-code{font-size:10px;color:var(--muted);text-align:center;margin-top:8px;word-break:break-all;}
+.friends-rank-hdr{font-size:13px;font-weight:600;color:var(--accent);margin:18px 0 8px;}
+.friends-rank-empty{font-size:12px;color:var(--muted);text-align:center;padding:16px;}
+.friends-rank-item{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--border);border-radius:6px;padding:9px 12px;margin-bottom:6px;}
+.friends-rank-item.me{border-color:var(--accent);background:rgba(240,165,0,.06);}
+.friends-rank-pos{font-size:13px;font-weight:600;color:var(--muted);width:20px;text-align:center;flex-shrink:0;}
+.friends-rank-item:nth-child(1) .friends-rank-pos{color:#FFD700;}
+.friends-rank-item:nth-child(2) .friends-rank-pos{color:#C0C0C0;}
+.friends-rank-item:nth-child(3) .friends-rank-pos{color:#CD7F32;}
+.friends-rank-avatar{width:30px;height:30px;border-radius:50%;flex-shrink:0;object-fit:cover;background:var(--bg3);}
+.friends-rank-name{flex:1;font-size:13px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.friends-rank-score{font-size:12px;color:var(--accent);font-weight:600;white-space:nowrap;}
 
 .iap-list { display:flex; flex-direction:column; gap:8px; }
 .iap-item { background:var(--card); border-radius:8px; padding:14px; display:flex; align-items:center; gap:12px; position:relative; overflow:hidden; }
@@ -232,14 +337,14 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
 .iap-badge { position:absolute; top:8px; right:90px; font-size:10px; padding:2px 8px; border-radius:10px; background:rgba(0,201,167,.15); color:var(--teal); border:1px solid rgba(0,201,167,.3); }
 .btn-iap { padding:8px 14px; border-radius:6px; font-family:'Exo 2',sans-serif; font-size:13px; font-weight:500; cursor:pointer; transition:all .15s; flex-shrink:0; text-align:center; min-width:72px; }
 .btn-iap.starter { background:#4a9eff22; border:1px solid #4a9eff; color:#4a9eff; }
-.btn-iap.starter:hover { background:#4a9eff; color:#000; }
+
 .btn-iap.vip     { background:var(--accent); border:1px solid var(--accent); color:#000; font-weight:700; }
-.btn-iap.vip:hover { filter:brightness(1.1); }
+
 .btn-iap.coins   { background:#7c5cff22; border:1px solid #7c5cff; color:#a090ff; }
-.btn-iap.coins:hover { background:#7c5cff; color:#fff; }
+
 .btn-iap:disabled { opacity:.4; cursor:not-allowed; filter:none; }
 .btn-lb-refresh { width:100%; padding:10px; background:transparent; border:1px solid var(--border); border-radius:4px; color:var(--muted); font-family:'Exo 2',sans-serif; font-size:14px; cursor:pointer; transition:all .15s; margin-top:4px; }
-.btn-lb-refresh:hover { border-color:var(--accent); color:var(--accent); }
+
 .lb-global-box { display:flex; flex-direction:column; align-items:center; text-align:center; gap:6px; background:var(--card); border:1px solid var(--border); border-radius:8px; padding:32px 20px; margin-top:8px; }
 .lb-global-icon { font-size:40px; margin-bottom:4px; }
 .lb-global-title { font-family:'Russo One',sans-serif; font-size:16px; color:var(--accent); }
@@ -253,18 +358,49 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
 .energy-label{font-size:13px;font-weight:500;color:#4ad9ff;}
 .energy-val{font-size:12px;color:var(--muted);}
 .btn-manual{width:100%;padding:14px;background:linear-gradient(135deg,#4ad9ff,#2a9fd6);border:none;border-radius:6px;color:#001a26;font-family:'Russo One',sans-serif;font-size:15px;cursor:pointer;transition:filter .1s,transform .05s;display:flex;align-items:center;justify-content:center;gap:8px;}
-.btn-manual:hover{filter:brightness(1.08);}
+
 .btn-manual:active{transform:scale(0.97);}
 .btn-manual:disabled{background:var(--bg3);color:var(--muted);cursor:not-allowed;filter:none;}
 .manual-icon{font-size:20px;}
 .manual-sub{font-size:11px;color:var(--muted);text-align:center;margin-top:6px;}
+.combo-badge{margin-top:8px;text-align:center;font-size:13px;font-weight:700;color:#ff8a00;animation:comboPulse .25s ease-out;}
+@keyframes comboPulse{0%{transform:scale(1.3);}100%{transform:scale(1);}}
 
 .ad-box{background:linear-gradient(135deg,rgba(0,201,167,.08),rgba(0,150,100,.08));border:1px solid rgba(0,201,167,.3);border-radius:6px;padding:12px;text-align:center;margin-top:8px;}
 .ad-title{font-size:13px;font-weight:500;color:var(--teal);margin-bottom:4px;}
 .ad-desc{font-size:11px;color:var(--muted);margin-bottom:10px;line-height:1.5;}
 .btn-ad{padding:8px 20px;background:var(--teal);border:none;border-radius:4px;color:#000;font-family:'Russo One',sans-serif;font-size:13px;cursor:pointer;transition:filter .15s;width:100%;}
-.btn-ad:hover{filter:brightness(1.1);}.btn-ad:disabled{opacity:.4;cursor:not-allowed;filter:none;}
+.btn-ad:disabled{opacity:.4;cursor:not-allowed;filter:none;}
 .ad-cooldown{font-size:11px;color:var(--muted);margin-top:6px;min-height:16px;}
+
+/* :hover-эффекты — только на устройствах с настоящей мышью/трекпадом.
+   На сенсорных экранах :hover эмулируется тапом и залипает до следующего
+   тапа по другому элементу — поэтому здесь, а не в общих правилах. */
+@media (hover:hover) and (pointer:fine) {
+  .btn-iap.starter:hover { background:#4a9eff; color:#000; }
+  .btn-iap.vip:hover { filter:brightness(1.1); }
+  .btn-iap.coins:hover { background:#7c5cff; color:#fff; }
+  .btn-lb-refresh:hover { border-color:var(--accent); color:var(--accent); }
+  .splash-btn:hover{filter:brightness(1.15)}
+  .btn-hdr:hover{border-color:var(--accent);color:var(--accent);}
+  .mcard:hover{border-color:#3a4060;}
+  .btn-upg:hover:not(:disabled){border-color:var(--accent);color:var(--accent);}
+  .btn-upg.ad:hover:not(:disabled){border-color:var(--teal);background:rgba(0,201,167,.08);}
+  .mcard.buyable:hover{border-color:#4477FF;}
+  .btn-buy-big:hover{filter:brightness(1.12);}
+  .btn-buy:hover:not(:disabled){background:var(--accent);color:#000;}
+  .btn-prestige:hover:not(:disabled){background:var(--accent);color:#000;}
+  .btn-modal.primary:hover{filter:brightness(1.1);}
+  .btn-modal.secondary:hover{border-color:var(--text);color:var(--text);}
+  .menu-card:hover{border-color:var(--accent);background:rgba(240,165,0,.05);}
+  .menu-back-btn:hover{border-color:var(--accent);color:var(--accent);}
+  .btn-claim:hover{filter:brightness(1.1);}
+  .btn-skill:hover:not(:disabled){filter:brightness(1.2);}
+  .btn-promo:hover{filter:brightness(1.1);}
+  .btn-friends:hover{filter:brightness(1.1);}
+  .btn-manual:hover{filter:brightness(1.08);}
+  .btn-ad:hover{filter:brightness(1.1);}
+}
 </style>
 </head>
 <body>
@@ -276,6 +412,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
   <button class="splash-btn" id="startBtn" style="display:none">▶ НАЧАТЬ</button>
   <div id="sdkLoading" style="margin-top:36px;font-size:14px;color:var(--muted);letter-spacing:2px">⏳ Загрузка...</div>
   <div class="splash-save-note" id="saveNote"></div>
+  <a href="[ВСТАВЬ_ССЫЛКУ_НА_PRIVACY.HTML]" target="_blank" rel="noopener" style="margin-top:20px;font-size:11px;color:var(--muted);text-decoration:underline">Политика конфиденциальности</a>
 </div>
 
 <div class="milestone-toast" id="toast"></div>
@@ -315,17 +452,48 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
   </div>
 </div>
 
-<div id="game">
-  <div class="header">
-    <div class="game-title">MegaFactory</div>
-    <div class="stat-pill gold">💰 <b id="hCoins">0</b></div>
-    <div class="stat-pill teal">⚡ <b id="hCps">0/с</b></div>
-    <div class="stat-pill">🏭 <b id="hSold">0</b></div>
-    <div class="stat-pill">✨ x<b id="hMult">1.0</b></div>
-    <div class="header-right">
-      <button class="btn-hdr" onclick="openPrestige()" id="prestigeHdrBtn">⚡ Престиж</button>
+<div class="modal-overlay" id="dailyModal">
+  <div class="modal offline-modal">
+    <div class="offline-icon" id="dailyModalIcon">🎁</div>
+    <h2 id="dailyModalTitle">Награда за вход!</h2>
+    <div class="offline-sub" id="dailyModalStreak"></div>
+    <div class="offline-coins" id="dailyModalReward"></div>
+    <div class="modal-btns">
+      <button class="btn-modal primary" onclick="claimDailyFromModal()">🎁 Забрать</button>
     </div>
   </div>
+</div>
+
+<div class="modal-overlay" id="tutorialModal">
+  <div class="modal offline-modal">
+    <div class="offline-icon" id="tutIcon">🏭</div>
+    <h2 id="tutTitle">Добро пожаловать на завод!</h2>
+    <div class="tut-text" id="tutText"></div>
+    <div class="tut-dots" id="tutDots"></div>
+    <div class="modal-btns">
+      <button class="btn-modal secondary" onclick="skipTutorial()">Пропустить</button>
+      <button class="btn-modal primary" id="tutNextBtn" onclick="nextTutorialSlide()">Дальше</button>
+    </div>
+  </div>
+</div>
+
+<div id="game">
+  <div class="header">
+    <div class="header-top">
+      <div class="game-title">MegaFactory</div>
+      <div class="header-right">
+        <button class="btn-hdr" id="settingsHdrBtn" onclick="openSettingsFromHeader()">⚙️</button>
+        <button class="btn-hdr" onclick="openPrestige()" id="prestigeHdrBtn">⚡ Престиж</button>
+      </div>
+    </div>
+    <div class="header-stats">
+      <div class="stat-pill gold">💰 <b id="hCoins">0</b></div>
+      <div class="stat-pill teal">⚡ <b id="hCps">0/с</b></div>
+      <div class="stat-pill">🏭 <b id="hSold">0</b></div>
+      <div class="stat-pill">✨ x<b id="hMult">1.0</b></div>
+    </div>
+  </div>
+  <div class="rush-banner" id="rushBanner" style="display:none">🚨 Час пик! Доход ×2 — осталось <b id="rushTimer">0:00</b></div>
   <div class="layout">
     <div class="tab-content">
       <div class="tab-pane active" id="pane-factory">
@@ -342,6 +510,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
             <span id="manualLabel">Произвести вручную</span>
           </button>
           <div class="manual-sub" id="manualSub">+0 монет за клик · -1 ⚡</div>
+          <div class="combo-badge" id="comboBadge" style="display:none">🔥 Комбо ×<span id="comboMultVal">1.0</span></div>
         </div>
 
         <div class="ad-box">
@@ -382,6 +551,17 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
         <!-- Хаб: карточки-разделы -->
         <div class="menu-hub">
 
+          <!-- Награда за вход (стрик) — открывается после покупки первого цеха -->
+          <div class="menu-card" id="streakMenuCard" onclick="openMenuSection('streak')" style="display:none">
+            <div class="menu-card-icon">🎁</div>
+            <div class="menu-card-info">
+              <div class="menu-card-title" id="menuTitleStreak">Награда за вход</div>
+              <div class="menu-card-sub" id="menuSubStreak">Заходи каждый день</div>
+            </div>
+            <span class="tab-badge menu-badge" id="streakBadge"></span>
+            <div class="menu-card-arrow">›</div>
+          </div>
+
           <!-- Ежедневные задания -->
           <div class="menu-card" onclick="openMenuSection('daily')">
             <div class="menu-card-icon">📋</div>
@@ -390,6 +570,17 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
               <div class="menu-card-sub" id="menuSubDaily">Обновляются каждые 24ч</div>
             </div>
             <span class="tab-badge menu-badge" id="questBadge"></span>
+            <div class="menu-card-arrow">›</div>
+          </div>
+
+          <!-- Недельное испытание -->
+          <div class="menu-card" onclick="openMenuSection('weekly')">
+            <div class="menu-card-icon">📅</div>
+            <div class="menu-card-info">
+              <div class="menu-card-title">Недельное испытание</div>
+              <div class="menu-card-sub">Большая цель на 7 дней</div>
+            </div>
+            <span class="tab-badge menu-badge" id="weeklyBadge"></span>
             <div class="menu-card-arrow">›</div>
           </div>
 
@@ -404,6 +595,17 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
             <div class="menu-card-arrow">›</div>
           </div>
 
+          <!-- Дерево навыков -->
+          <div class="menu-card" onclick="openMenuSection('skills')">
+            <div class="menu-card-icon">🌳</div>
+            <div class="menu-card-info">
+              <div class="menu-card-title" id="menuTitleSkills">Дерево навыков</div>
+              <div class="menu-card-sub" id="menuSubSkills">За кристаллы престижа</div>
+            </div>
+            <span class="tab-badge menu-badge" id="skillsBadge"></span>
+            <div class="menu-card-arrow">›</div>
+          </div>
+
           <!-- Друзья -->
           <div class="menu-card" onclick="openMenuSection('friends')">
             <div class="menu-card-icon">👥</div>
@@ -414,6 +616,116 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
             <div class="menu-card-arrow">›</div>
           </div>
 
+          <!-- Промокоды -->
+          <div class="menu-card" onclick="openMenuSection('promo')">
+            <div class="menu-card-icon">🎟️</div>
+            <div class="menu-card-info">
+              <div class="menu-card-title">Промокоды</div>
+              <div class="menu-card-sub">Введи код — получи награду</div>
+            </div>
+            <div class="menu-card-arrow">›</div>
+          </div>
+
+          <!-- Статистика -->
+          <div class="menu-card" onclick="openMenuSection('stats')">
+            <div class="menu-card-icon">📊</div>
+            <div class="menu-card-info">
+              <div class="menu-card-title">Статистика</div>
+              <div class="menu-card-sub">Твой прогресс целиком</div>
+            </div>
+            <div class="menu-card-arrow">›</div>
+          </div>
+
+          <!-- Коллекция -->
+          <div class="menu-card" onclick="openMenuSection('trophy')">
+            <div class="menu-card-icon">🏆</div>
+            <div class="menu-card-info">
+              <div class="menu-card-title">Коллекция</div>
+              <div class="menu-card-sub">Витрина открытых цехов и наград</div>
+            </div>
+            <div class="menu-card-arrow">›</div>
+          </div>
+
+          <!-- Настройки -->
+          <div class="menu-card" onclick="openMenuSection('theme')">
+            <div class="menu-card-icon">⚙️</div>
+            <div class="menu-card-info">
+              <div class="menu-card-title">Настройки</div>
+              <div class="menu-card-sub">Звук, уведомления, тема, сохранение</div>
+            </div>
+            <div class="menu-card-arrow">›</div>
+          </div>
+
+        </div>
+
+        <!-- Секция: Коллекция -->
+        <div id="menuSecTrophy" style="display:none">
+          <button class="menu-back-btn" onclick="closeMenuSection('trophy')">‹ Назад</button>
+          <div id="trophyGrid"></div>
+        </div>
+
+        <!-- Секция: Настройки -->
+        <div id="menuSecTheme" style="display:none">
+          <button class="menu-back-btn" onclick="closeSettings()">‹ Назад</button>
+
+          <div class="settings-block">
+            <div class="settings-row">
+              <div class="settings-row-label">🔊 Звук</div>
+              <button class="settings-toggle" id="settingsSoundBtn" onclick="toggleSound(); renderSettingsPanel();"></button>
+            </div>
+            <div class="settings-row">
+              <div class="settings-row-label">📳 Вибрация</div>
+              <button class="settings-toggle" id="settingsHapticBtn" onclick="toggleHaptic(); renderSettingsPanel();"></button>
+            </div>
+            <div class="settings-row">
+              <div class="settings-row-label">🔔 Уведомления</div>
+              <button class="settings-toggle" id="settingsNotifBtn" onclick="toggleNotifications()"></button>
+            </div>
+            <div class="settings-hint" id="settingsNotifHint"></div>
+          </div>
+
+          <div class="settings-block-title">🎨 Тема оформления</div>
+          <div id="themeList"></div>
+
+          <div class="settings-block-title">💾 Сохранение</div>
+          <div class="settings-block">
+            <div class="settings-save-info" id="settingsSaveInfo"></div>
+            <button class="btn-claim" onclick="manualSave()">Сохранить сейчас</button>
+          </div>
+        </div>
+
+        <!-- Секция: Статистика -->
+        <div id="menuSecStats" style="display:none">
+          <button class="menu-back-btn" onclick="closeMenuSection('stats')">‹ Назад</button>
+          <div id="statsList"></div>
+        </div>
+
+        <!-- Секция: Промокоды -->
+        <div id="menuSecPromo" style="display:none">
+          <button class="menu-back-btn" onclick="closeMenuSection('promo')">‹ Назад</button>
+          <div class="promo-desc">Введи промокод, чтобы получить награду</div>
+          <div class="promo-input-row">
+            <input type="text" id="promoInput" class="promo-input" placeholder="ПРОМОКОД" maxlength="32" autocapitalize="characters" autocomplete="off">
+            <button class="btn-promo" id="promoRedeemBtn" onclick="redeemPromoCode()">Активировать</button>
+          </div>
+          <div class="promo-status" id="promoStatus"></div>
+        </div>
+
+        <!-- Секция: Дерево навыков -->
+        <div id="menuSecSkills" style="display:none">
+          <button class="menu-back-btn" onclick="closeMenuSection('skills')">‹ Назад</button>
+          <div class="skill-desc">Кристаллы даются за престиж и никогда не сгорают — как и уровни навыков.</div>
+          <div class="skill-crystals-box">💎 Кристаллы: <b id="skillCrystals">0</b></div>
+          <div id="skillTreeList"></div>
+        </div>
+
+        <!-- Секция: Награда за вход -->
+        <div id="menuSecStreak" style="display:none">
+          <button class="menu-back-btn" onclick="closeMenuSection('streak')">‹ Назад</button>
+          <div class="streak-desc" id="streakDesc">Заходи каждый день — награда растёт всю неделю!</div>
+          <div class="streak-counter" id="streakCounter"></div>
+          <div class="streak-grid" id="streakGrid"></div>
+          <button class="btn-claim" id="streakClaimBtn" onclick="claimDailyReward()">🎁 Забрать награду</button>
         </div>
 
         <!-- Секция: Ежедневные задания -->
@@ -421,6 +733,12 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
           <button class="menu-back-btn" onclick="closeMenuSection('daily')">‹ Назад</button>
           <div class="quest-timer" id="questTimer"></div>
           <div class="quest-list" id="questList"></div>
+        </div>
+
+        <!-- Секция: Недельное испытание -->
+        <div id="menuSecWeekly" style="display:none">
+          <button class="menu-back-btn" onclick="closeMenuSection('weekly')">‹ Назад</button>
+          <div id="weeklyChallengeBox"></div>
         </div>
 
         <!-- Секция: Достижения -->
@@ -448,6 +766,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
             <button class="btn-friends" onclick="shareReferralLink()" id="friendsShareBtn">📤 Пригласить друга</button>
             <div class="friends-code" id="friendsCode"></div>
           </div>
+          <div class="friends-rank-hdr">🏆 Рейтинг среди друзей</div>
+          <div id="friendsRankingList"><div class="friends-rank-empty">Загрузка...</div></div>
         </div>
 
       </div>
@@ -608,6 +928,17 @@ const I18N = {
     ach_clicks_5000_n:'Неутомимый', ach_clicks_5000_d:'Нажми на цеха 5 000 раз',
     ach_ads_10_n:'Зритель', ach_ads_10_d:'Посмотри 10 рекламных роликов',
     ach_ads_50_n:'Постоянный зритель', ach_ads_50_d:'Посмотри 50 рекламных роликов',
+    ach_streak_7_n:'Неделя подряд', ach_streak_7_d:'Держи стрик ежедневных наград 7 дней',
+    ach_streak_30_n:'Месяц без пропусков', ach_streak_30_d:'Держи стрик ежедневных наград 30 дней',
+    ach_streak_100_n:'Железная привычка', ach_streak_100_d:'Держи стрик ежедневных наград 100 дней',
+    ach_crystals_50_n:'Первые кристаллы', ach_crystals_50_d:'Заработай 50 кристаллов за всё время',
+    ach_crystals_500_n:'Коллекционер кристаллов', ach_crystals_500_d:'Заработай 500 кристаллов за всё время',
+    ach_crystals_2000_n:'Кристальная империя', ach_crystals_2000_d:'Заработай 2 000 кристаллов за всё время',
+    ach_friends_1_n:'Не один в поле', ach_friends_1_d:'Пригласи 1 друга',
+    ach_friends_5_n:'Душа компании', ach_friends_5_d:'Пригласи 5 друзей',
+    ach_friends_20_n:'Народный магнат', ach_friends_20_d:'Пригласи 20 друзей',
+    ach_promo_1_n:'Счастливый код', ach_promo_1_d:'Активируй 1 промокод',
+    ach_promo_5_n:'Охотник за кодами', ach_promo_5_d:'Активируй 5 промокодов',
     // Задания
     questTitle:'Ежедневные задания', questTimer:'Обновление через',
     questClaim:'🎁 Забрать награду', questDone:'✅ Выполнено',
@@ -640,7 +971,15 @@ const MACHINES_DEF = [
   { id:7,  name:'Квантовый цех',  emoji:'⚛️',  baseCost:115000000,  baseReward:47916667, baseSpeed:75000 },
   { id:8,  name:'Мегакомплекс',       emoji:'🏗️',  baseCost:880000000,  baseReward:486315790,baseSpeed:105000},
   { id:9,  name:'Орбитальный цех',  emoji:'🛸',  baseCost:6700000000, baseReward:4857500000,baseSpeed:145000},
-  // Платный цех — разблокируется через IAP
+  { id:11, name:'Термоядерный реактор', emoji:'☢️', baseCost:51000000000,      baseReward:48000000000,      baseSpeed:190000},
+  { id:12, name:'Сфера Дайсона',        emoji:'🌞', baseCost:390000000000,     baseReward:475000000000,     baseSpeed:245000},
+  { id:13, name:'Портал в измерение',   emoji:'🌀', baseCost:2970000000000,    baseReward:4700000000000,    baseSpeed:310000},
+  { id:14, name:'Машина времени',       emoji:'⏳', baseCost:22600000000000,   baseReward:46500000000000,   baseSpeed:385000},
+  { id:15, name:'Ядро сингулярности',   emoji:'🌌', baseCost:172000000000000,  baseReward:460000000000000,  baseSpeed:470000},
+  // Платный цех — разблокируется через IAP. ВАЖНО: id всегда 10, никогда не
+  // переиспользуй и не меняй его — в сохранениях игроков уже есть прогресс,
+  // привязанный именно к этому номеру. Место в списке (последнее) определяется
+  // порядком в этом массиве, а не значением id.
   { id:10, name:'Секретная лаборатория', emoji:'🧪', baseCost:0, baseReward:50, baseSpeed:8000, premium:true },
 ];
 
@@ -648,22 +987,14 @@ const MACHINES_DEF = [
 // mult  = множитель за покупку (применяется 1 раз к цеху)
 // scale = во сколько раз дорожает каждая следующая покупка
 const UPGRADES_DEF = [
-  // ── Глобальные усилители (уникально — влияют на всё сразу) ──
-  { id:'gA', name:'Синхронизация цехов',       desc:'Все цеха производят одновременно — скорость каждого ×1.3',      cost:400000,     mid:-1, type:'speedAll',  mult:1.3, scale:8  },
-  { id:'gB', name:'Мегапроизводство',      desc:'Выручка со всех цехов ×2 навсегда',  cost:3500000,    mid:-1, type:'rewardAll', mult:2.0, scale:10 },
-  { id:'gC', name:'Хронодвигатель',       desc:'Все цеха работают вдвое быстрее',     cost:28000000,   mid:-1, type:'speedAll',  mult:2.0, scale:12 },
-  { id:'gD', name:'Квантовый синтез',   desc:'Выручка со всех цехов ×3',          cost:400000000,  mid:-1, type:'rewardAll', mult:3.0, scale:15 },
-
   // ── Энергия и ручное производство (прокачка отдельного клика) ──
-  { id:'eA', name:'Бутылка с энергетиком',        desc:'Максимум энергии +50',                  cost:300,        mid:-1, type:'energyMax',   mult:50,  scale:4 },
-  { id:'eB', name:'Кофе-машина',      desc:'Энергия восстанавливается на +1 быстрее',          cost:1500,       mid:-1, type:'energyRegen', mult:1,   scale:6 },
-  { id:'eC', name:'Рабочие перчатки',         desc:'Монет за ручной клик ×1.5',         cost:2500,       mid:-1, type:'clickValue',  mult:1.5, scale:5 },
-  { id:'eD', name:'Энергетический модуль',       desc:'Максимум энергии +200',                 cost:260000,     mid:-1, type:'energyMax',   mult:200, scale:6 },
-  { id:'eE', name:'Экзоскелет',         desc:'Монет за ручной клик ×2',           cost:1800000,    mid:-1, type:'clickValue',  mult:2.0, scale:7 },
+  { id:'eA', name:'Бутылка с энергетиком',        desc:'Максимум энергии +50',                  cost:300,        mid:-1, type:'energyMax',   mult:50,  scale:2.4 },
+  { id:'eB', name:'Кофе-машина',      desc:'Энергия восстанавливается на +1 быстрее',          cost:1500,       mid:-1, type:'energyRegen', mult:1,   scale:2.8 },
+  { id:'eC', name:'Рабочие перчатки',         desc:'Монет за ручной клик ×1.5',         cost:2500,       mid:-1, type:'clickValue',  mult:1.5, scale:2.6 },
 
   // ── Специальные эффекты (уникально — нельзя получить апгрейдом) ──
-  { id:'sY', name:'Ночная смена',         desc:'Авто-цеха дают +50% пока не играешь', cost:180000,    mid:-1, type:'offline',   mult:1.5, scale:7  },
-  { id:'sZ', name:'Золотая деталь',         desc:'Каждые 60с случайный цех выдаёт ×10', cost:900000, mid:-1, type:'golden',   mult:10,  scale:9  },
+  { id:'sY', name:'Ночная смена',         desc:'Авто-цеха дают +50% пока не играешь', cost:180000,    mid:-1, type:'offline',   mult:1.5, scale:3.0 },
+  { id:'sZ', name:'Золотая деталь',         desc:'Каждые 60с случайный цех выдаёт ×10', cost:900000, mid:-1, type:'golden',   mult:10,  scale:3.3 },
 ];
 
 const MILESTONES = [
@@ -720,7 +1051,7 @@ const IAP_PRODUCTS = [
       // Награда зависит от прогресса — на старте скромная, в эндгейме весомая,
       // но не превышает доход последнего обычного цеха (Орбитальный) больше чем на 50%.
       const ref = getMachine(9); // Орбитальный цех как ориентир силы
-      const refDps = ref.owned ? (ref.reward / ref.speed * 1000) : (cps() * 0.3 || 5);
+      const refDps = ref.owned ? (ref.reward / ref.speed * 1000) : (baseCps() * 0.3 || 5);
       m.reward = Math.max(50, Math.round(refDps * (m.speed/1000) * 1.5));
       showToast(t('iapToastLab'));
       fullRender();
@@ -754,20 +1085,81 @@ function hasNoAdCooldown() {
 }
 
 async function initIAP() {
-  // В ВК версии IAP работает как локальное сохранение покупок.
-  // Покупки хранятся в G.purchases и восстанавливаются из облака ВК.
+  // Покупки подтверждаются сервером (см. syncPurchases) на основе настоящей
+  // оплаты через VK Pay — G.purchases лишь отражает то, что сервер уже
+  // подтвердил, и синхронизируется с ним при каждом старте игры.
   renderIAP();
 }
 
 async function buyProduct(id) {
   const prod = IAP_PRODUCTS.find(p => p.id === id);
   if (!prod) { console.error('[IAP] Товар не найден:', id); return; }
+  if (prod.once && G.purchases && (
+    (id==='starter_pack' && G.purchases.starterPack) ||
+    (id==='vip_status'   && G.purchases.vipStatus)   ||
+    (id==='secret_lab'   && G.purchases.secretLab)
+  )) return; // уже куплено
+
+  if (PLATFORM !== 'vk' || !vkReady) {
+    showToast('Покупки доступны только внутри VK');
+    return;
+  }
+  if (!GLOBAL_LB_ENDPOINT) {
+    showToast('Платежи ещё не подключены');
+    return;
+  }
+
   try {
-    prod.onBuy();
-    fullRender();
-    saveGame();
+    // Открываем настоящее платёжное окно VK — деньги реально списываются
+    // тут, награда же выдаётся только после подтверждения от сервера ниже
+    // (сервер получает независимое уведомление напрямую от VK).
+    const result = await vkBridge.send('VKWebAppShowOrderBox', { type: 'item', item: id });
+    if (!result || result.success !== true) return; // отменил или ошибка
+    showToast('⏳ Обрабатываем платёж...');
+    await syncPurchases(true);
   } catch(e) {
-    console.error('[IAP] Ошибка в onBuy:', e);
+    console.warn('[IAP] Покупка отменена или не удалась:', e);
+  }
+}
+
+// Спрашивает у сервера что реально куплено (после настоящей оплаты) и
+// применяет награду локально. retryHard — при только что совершённой
+// покупке уведомление от VK может дойти до сервера с небольшой задержкой,
+// поэтому пробуем несколько раз с паузами вместо одного мгновенного запроса.
+async function syncPurchases(retryHard) {
+  if (PLATFORM !== 'vk' || !vkReady || !GLOBAL_LB_ENDPOINT) return;
+  const launchParams = await getLaunchParamsString();
+  if (!launchParams) return;
+
+  const delays = retryHard ? [0, 1500, 3000, 5000] : [0];
+  for (const delay of delays) {
+    if (delay) await new Promise(r => setTimeout(r, delay));
+    try {
+      const res = await fetch(workerUrl('/my-purchases'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ launchParams }),
+      });
+      const data = await res.json();
+      if (!data.ok) continue;
+
+      let changed = false;
+      const idByFlag = { starter_pack: 'starterPack', vip_status: 'vipStatus', secret_lab: 'secretLab' };
+      Object.keys(idByFlag).forEach(prodId => {
+        const flag = idByFlag[prodId];
+        if (data.purchases[prodId] && !G.purchases[flag]) {
+          const prod = IAP_PRODUCTS.find(p => p.id === prodId);
+          if (prod) { prod.onBuy(); changed = true; }
+        }
+      });
+      (data.pending || []).forEach(p => {
+        const prod = IAP_PRODUCTS.find(pp => pp.id === p.item);
+        if (prod) { prod.onBuy(); changed = true; }
+      });
+
+      if (changed) { playSound('levelup'); fullRender(); saveGame(); }
+      if (changed || !retryHard) return;
+    } catch(e) { console.warn('[IAP] Ошибка синхронизации покупок:', e); }
   }
 }
 
@@ -812,6 +1204,17 @@ async function getLaunchParamsString() {
 }
 
 let lastGlobalSubmit = 0;
+
+// VK ограничивает value для secure.addAppEvent сверху 15000 (лимит самого
+// метода, не зависит от типа активности — "Очки" или "Уровень"). Монет у
+// игрока может быть в сотни миллионов, поэтому отправляем не сырое число,
+// а логарифмически сжатое значение 0..15000 — порядок игроков (у кого
+// больше монет) при этом сохраняется, теряется только точное число.
+function scoreForGlobalLb() {
+  const coins = Math.max(1, Math.floor(G.coins));
+  return Math.min(15000, Math.floor(Math.log10(coins) * 1000));
+}
+
 async function submitScoreGlobal() {
   if (!GLOBAL_LB_ENDPOINT || PLATFORM !== 'vk' || !vkReady) return;
   const now = Date.now();
@@ -823,7 +1226,7 @@ async function submitScoreGlobal() {
     await fetch(GLOBAL_LB_ENDPOINT, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ launchParams, value: Math.floor(G.coins) }),
+      body: JSON.stringify({ launchParams, value: scoreForGlobalLb(), rawCoins: Math.floor(G.coins) }),
     });
   } catch(e) { console.warn('[LB] Global submit error:', e); }
 }
@@ -845,7 +1248,7 @@ async function showGlobalLeaderboard() {
   }
   await submitScoreGlobal();
   try {
-    await vkBridge.send('VKWebAppShowLeaderBoardBox', { user_result: Math.floor(G.coins) });
+    await vkBridge.send('VKWebAppShowLeaderBoardBox', { user_result: scoreForGlobalLb() });
   } catch(e) { showToast(t('lbError')); }
 }
 
@@ -861,32 +1264,50 @@ const PLATFORM = (() => {
 // ── VK BRIDGE SDK ────────────────────────────────────────────────
 let vkReady = false;
 
+// ── ОБЛАЧНОЕ СОХРАНЕНИЕ ──────────────────────────────────────────
+// ВАЖНО: VKWebAppStorageSet тут не годится — у него лимит 4096 байт на
+// значение, а сохранение игры весит намного больше (это и было причиной
+// того, что синхронизация между устройствами никогда по-настоящему не
+// работала). Используем тот же воркер, что и для рейтинга/промокодов —
+// там лимитов по размеру практически нет.
+let lastCloudSaveAt = 0;
 async function saveVK(data) {
-  if (!vkReady) return;
+  if (!vkReady || PLATFORM !== 'vk' || !GLOBAL_LB_ENDPOINT) return;
   try {
-    // VK хранит данные как строки в key-value
-    await vkBridge.send('VKWebAppStorageSet', {
-      key: 'megafactory_save',
-      value: data,
+    const launchParams = await getLaunchParamsString();
+    if (!launchParams) return;
+    await fetch(workerUrl('/save-game'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ launchParams, data }),
     });
-  } catch(e) { console.warn('[VK] Ошибка сохранения:', e); }
+  } catch(e) { console.warn('[VK] Ошибка облачного сохранения:', e); }
 }
 
 async function loadVKSave() {
-  if (!vkReady) return;
+  if (!vkReady || PLATFORM !== 'vk' || !GLOBAL_LB_ENDPOINT) return false;
   try {
-    const res = await vkBridge.send('VKWebAppStorageGet', {
-      keys: ['megafactory_save']
+    const launchParams = await getLaunchParamsString();
+    if (!launchParams) return false;
+    const res = await fetch(workerUrl('/load-game'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ launchParams }),
     });
-    const raw = res.keys[0]?.value;
-    if (!raw) return;
-    const cloud = JSON.parse(raw);
+    const data = await res.json();
+    if (!data.ok || !data.save) return false;
+    const cloud = JSON.parse(data.save);
     const local = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null');
-    if (!local || (cloud.coins || 0) >= (local.coins || 0)) {
+    // Сравниваем по времени последнего сохранения, а не по количеству монет —
+    // после престижа монет становится меньше, старое сравнение выбирало бы
+    // менее свежее (но "богатое" по монетам) сохранение.
+    if (!local || (cloud.lastSaved||0) >= (local.lastSaved||0)) {
       applyLoaded(cloud);
       console.log('[VK] Загружено облачное сохранение');
+      return true;
     }
-  } catch(e) { console.warn('[VK] Ошибка загрузки:', e); }
+    return false;
+  } catch(e) { console.warn('[VK] Ошибка загрузки облака:', e); return false; }
 }
 
 // ── ОБЛАЧНЫЕ СОХРАНЕНИЯ — единая точка ──────────────────────────
@@ -894,8 +1315,28 @@ async function saveGame() {
   G.lastSaved = Date.now();
   const data = JSON.stringify(G);
   localStorage.setItem(SAVE_KEY, data);
-  if (PLATFORM === 'vk') await saveVK(data);
+  if (PLATFORM === 'vk') {
+    // В облако шлём не чаще раза в ~20с — локально сохраняется каждый раз
+    // мгновенно, а частые сетевые запросы ни к чему.
+    const now = Date.now();
+    if (now - lastCloudSaveAt > 20000) {
+      lastCloudSaveAt = now;
+      saveVK(data);
+    }
+  }
 }
+
+// Форс-сохранение в облако при сворачивании/закрытии приложения — иначе
+// прогресс за последние секунды может не успеть попасть в облако из-за
+// троттлинга выше.
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden' && PLATFORM === 'vk' && vkReady && GLOBAL_LB_ENDPOINT) {
+    lastCloudSaveAt = Date.now();
+    G.lastSaved = Date.now();
+    localStorage.setItem(SAVE_KEY, JSON.stringify(G));
+    saveVK(JSON.stringify(G));
+  }
+});
 
 // ── РЕКЛАМНЫЕ МЕХАНИКИ ───────────────────────────────────────────
 // 1. Бесплатный апгрейд цеха раз в 10 минут
@@ -956,6 +1397,125 @@ const AD_BONUS_DURATION = 5 * 60 * 1000;
 const AD_COOLDOWN       = 5 * 60 * 1000;
 let adBonusEnd    = 0;
 let adCooldownEnd = 0;
+
+// ── ЗВУК ─────────────────────────────────────────────────────────
+// Короткие звуковые эффекты генерируются на лету через Web Audio API —
+// без единого внешнего аудиофайла. AudioContext создаётся лениво по
+// первому жесту пользователя (требование браузеров).
+let audioCtx = null;
+function getAudioCtx() {
+  if (!audioCtx) {
+    try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+    catch(e) { return null; }
+  }
+  if (audioCtx.state === 'suspended') audioCtx.resume().catch(()=>{});
+  return audioCtx;
+}
+
+function toggleSound() {
+  G.soundEnabled = !G.soundEnabled;
+  if (G.soundEnabled) { getAudioCtx(); playSound('click'); }
+  saveGame();
+}
+
+function toggleHaptic() {
+  G.hapticEnabled = !G.hapticEnabled;
+  if (G.hapticEnabled) triggerHaptic('click');
+  saveGame();
+}
+
+// tone(частота, задержка_с, длительность_с, громкость, форма_волны, конечная_частота?)
+// Тактильная отдача — работает независимо от звука (это разные ощущения),
+// поэтому дёргаем её ДО проверки G.soundEnabled. Молча ничего не делает
+// вне VK или на платформах без поддержки — try/catch на всякий случай.
+function triggerHaptic(type) {
+  if (!G.hapticEnabled || PLATFORM !== 'vk' || !vkReady) return;
+  try {
+    const notifTypes = { levelup:'success', quest:'success', prestige:'success', error:'error' };
+    if (notifTypes[type]) {
+      vkBridge.send('VKWebAppTapticNotificationOccurred', { type: notifTypes[type] });
+    } else {
+      const impactStyle = { click:'light', buy:'medium', upgrade:'light' }[type] || 'light';
+      vkBridge.send('VKWebAppTapticImpactOccurred', { style: impactStyle });
+    }
+  } catch(e) {}
+}
+
+function playSound(type) {
+  triggerHaptic(type);
+  if (!G.soundEnabled) return;
+  const ctx = getAudioCtx();
+  if (!ctx) return;
+  const now = ctx.currentTime;
+
+  function tone(freq, start, dur, vol, wave, freqEnd) {
+    const osc  = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = wave || 'sine';
+    osc.frequency.setValueAtTime(freq, now + start);
+    if (freqEnd) osc.frequency.exponentialRampToValueAtTime(freqEnd, now + start + dur);
+    gain.gain.setValueAtTime(0.0001, now + start);
+    gain.gain.linearRampToValueAtTime(vol, now + start + 0.006);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + start + dur);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(now + start);
+    osc.stop(now + start + dur + 0.03);
+  }
+
+  switch (type) {
+    case 'click':    tone(560, 0, 0.05, 0.07, 'square'); break;
+    case 'buy':       tone(420, 0, 0.09, 0.09, 'triangle', 680);
+                       tone(680, 0.07, 0.12, 0.08, 'triangle', 980); break;
+    case 'upgrade':   tone(520, 0, 0.09, 0.08, 'sawtooth', 880); break;
+    case 'levelup':   tone(520, 0, 0.09, 0.09, 'triangle');
+                       tone(780, 0.09, 0.09, 0.09, 'triangle');
+                       tone(1040, 0.18, 0.15, 0.09, 'triangle'); break;
+    case 'quest':     tone(600, 0, 0.08, 0.08, 'triangle');
+                       tone(920, 0.1, 0.12, 0.08, 'triangle'); break;
+    case 'prestige':  tone(380, 0, 0.16, 0.1, 'sawtooth', 1100);
+                       tone(600, 0.16, 0.22, 0.1, 'sawtooth', 1500); break;
+    case 'error':     tone(180, 0, 0.14, 0.09, 'square'); break;
+    default:          tone(600, 0, 0.06, 0.07, 'sine');
+  }
+}
+
+// ── СЛУЧАЙНОЕ СОБЫТИЕ: ЧАС ПИК ────────────────────────────────────
+// Раз в некоторое время, пока игра открыта, есть небольшой шанс, что
+// начнётся "час пик" — временный ×2 к доходу. Даёт повод не просто держать
+// вкладку открытой, а периодически проверять, не началось ли что-то.
+let rushHourEnd = 0;
+const RUSH_HOUR_DURATION = 4 * 60 * 1000;   // 4 минуты буста
+const RUSH_HOUR_CHECK_EVERY = 5 * 60 * 1000; // проверяем шанс раз в 5 минут
+const RUSH_HOUR_CHANCE = 0.12;               // ~12% на каждую проверку
+
+function maybeTriggerRushHour(now) {
+  if (now < rushHourEnd) return; // уже идёт
+  if (!tick.lastRushCheck) tick.lastRushCheck = now; // не триггерим в первые секунды сессии
+  if (now - tick.lastRushCheck < RUSH_HOUR_CHECK_EVERY) return;
+  tick.lastRushCheck = now;
+  if (Math.random() < RUSH_HOUR_CHANCE) {
+    rushHourEnd = now + RUSH_HOUR_DURATION;
+    showToast('🚨 Час пик! Доход ×2 на 4 минуты!');
+    playSound('prestige');
+    updateRushBanner();
+  }
+}
+
+function getRushMultiplier() {
+  return Date.now() < rushHourEnd ? 2 : 1;
+}
+
+function updateRushBanner() {
+  const banner = document.getElementById('rushBanner');
+  if (!banner) return;
+  const left = rushHourEnd - Date.now();
+  if (left <= 0) { banner.style.display = 'none'; return; }
+  banner.style.display = 'block';
+  const m = Math.floor(left / 60000);
+  const s = Math.floor((left % 60000) / 1000);
+  document.getElementById('rushTimer').textContent = `${m}:${String(s).padStart(2,'0')}`;
+}
 
 function getAdMultiplier() {
   return Date.now() < adBonusEnd ? 2 : 1;
@@ -1034,6 +1594,12 @@ function defaultState() {
     energy: 100, energyMaxBonus: 0, energyRegenBonus: 0, clickValueMult: 1,
     achievements: {},
     myRefCode: null, friendsInvited: 0, referredBy: null,
+    dailyStreak: 0, lastDailyClaimDay: null, bestStreak: 0,
+    soundEnabled: true,
+    crystals: 0, lifetimeCrystals: 0, skills: {}, promoCodesRedeemed: 0, questsCompleted: 0,
+    tutorialSeen: false, seenStreakFeature: false, seenSkillsFeature: false, theme: 'classic',
+    weekly: null, notifAllowed: false, hapticEnabled: true,
+    firstPlayedAt: Date.now(),
     purchases: { starterPack: false, vipStatus: false, secretLab: false },
     machines: MACHINES_DEF.map(d=>({
       id:d.id, level:1, owned:false, auto:true,
@@ -1063,17 +1629,33 @@ const getDef     = id => MACHINES_DEF.find(d=>d.id===id);
 const getUpgDef  = id => UPGRADES_DEF.find(u=>u.id===id);
 const getUpgState= id => G.upgrades.find(u=>u.id===id);
 
+// Полный множитель дохода (без учёта временного рекламного буста —
+// getAdMultiplier добавляется отдельно там, где реально начисляются монеты).
+// Используется как единая точка правды и для реального начисления, и для
+// всех превью/расчётов "сколько сейчас приносит цех" — раньше эти места
+// разъезжались, и превью на карточках занижало реальный доход.
+function incomeMult() {
+  return totalPrestigeMult() * iapMultiplier() * achievementMult() * referralMult();
+}
+
 function cps() {
   return G.machines.filter(m=>m.owned&&m.auto)
-    .reduce((s,m)=>s+m.reward*G.prestigeMult*1000/m.speed, 0);
+    .reduce((s,m)=>s+m.reward*incomeMult()*1000/m.speed, 0);
+}
+// "Голая" скорость дохода без множителей — для сравнения БАЗОВЫХ наград
+// цехов между собой (m.reward у всех цехов хранится без incomeMult, он
+// применяется один раз в момент начисления/показа).
+function baseCps() {
+  return G.machines.filter(m=>m.owned&&m.auto)
+    .reduce((s,m)=>s+m.reward*1000/m.speed, 0);
 }
 
 function fmt(n) {
   n = Math.floor(n);
-  if(n>=1e9) return (n/1e9).toFixed(2)+'B';
-  if(n>=1e6) return (n/1e6).toFixed(2)+'M';
-  if(n>=1e3) return (n/1e3).toFixed(1)+'K';
-  return String(n);
+  const suffixes = ['','K','M','B','T','Qa','Qi','Sx','Sp','Oc','No','Dc'];
+  if (n < 1000) return String(n);
+  const tier = Math.min(suffixes.length - 1, Math.floor(Math.log10(n) / 3));
+  return (n / Math.pow(1000, tier)).toFixed(2) + suffixes[tier];
 }
 
 // Стоимость апгрейда цеха: растёт ×2.2 за каждый уровень
@@ -1092,7 +1674,22 @@ function getUpgCost(id) {
 }
 
 function prestigeThreshold() {
-  return Math.round(350000 * Math.pow(4, G.prestigeCount));
+  const base = Math.round(350000 * Math.pow(4, G.prestigeCount));
+  return Math.round(base * (1 - skillBonus('prestige_thresh')));
+}
+
+// Кристаллы за престиж: база растёт вместе с числом уже сделанных престижей
+// (2 + 1.5×номер), а не выдаётся сразу пачкой с первого раза — иначе первый
+// же престиж (ещё без вложений в навыки) ощущается слишком щедрым.
+// sqrt(coins/thr) — бонус за то, что подождал сверх минимального порога.
+function calcPrestigeCrystals() {
+  const base = 2 + G.prestigeCount * 1.5;
+  // Бонус за то, что подождал сверх порога — но с потолком! Без него, если
+  // накопить монет намного больше порога (офлайн-доход, поздние цеха,
+  // промокоды), sqrt всё равно даёт огромное число — баг, который давал
+  // сотни тысяч кристаллов за один престиж.
+  const waitBonus = Math.min(5, Math.sqrt(G.coins / prestigeThreshold()));
+  return Math.max(1, Math.floor(base * waitBonus * (1 + skillBonus('crystal_gain'))));
 }
 
 // ── ACTIONS ─────────────────────────────────────────────────────
@@ -1104,13 +1701,21 @@ function buyMachine(id) {
   m.auto  = true;
   trackQuest('qtBuy', 1);
   showToast('🏭 ' + t('toastMachineOpen') + ' ' + (d.name) + '!');
-  fullRender();
+  playSound('buy');
+  updateMachineCardDOM(id);
+  const nextId = nextUnlockedMachineId();
+  if (nextId !== -1) updateMachineCardDOM(nextId);
+  renderShopList();
+  renderHeader();
+  updateShopBadge();
+  updateMenuBadge();
 }
 
 function clickMachine(id, evt) {
   const m = getMachine(id);
   if (!m||!m.owned||m.progress>0) return;
   m.progress = 1;
+  playSound('click');
   // Клик по карточке только запускает цикл — монеты приходят по завершении как обычно.
   // Мгновенные монеты теперь даёт отдельная кнопка "Произвести вручную" (тратит энергию).
   const card = document.querySelector('[data-mid="'+id+'"]');
@@ -1128,7 +1733,9 @@ function upgradeMachine(id) {
   m.reward = Math.round(m.reward * 1.20);   // +20% к награде
   m.speed  = Math.max(800, Math.round(m.speed * 0.95)); // -5% к времени
   trackQuest('qtUpgrade', 1);
-  fullRender();
+  playSound('upgrade');
+  updateMachineCardDOM(id);
+  renderHeader();
 }
 
 function buyUpgrade(id) {
@@ -1138,18 +1745,22 @@ function buyUpgrade(id) {
   if (ud.type==='auto' && us.level>=1) return;
   G.coins -= cost;
   us.level += 1;
+  playSound('upgrade');
   if      (ud.type==='auto')      { getMachine(ud.mid).auto = true; }
   else if (ud.type==='speed')     { const m=getMachine(ud.mid); m.speed=Math.max(800,Math.round(m.speed/ud.mult)); }
   else if (ud.type==='reward')    { const m=getMachine(ud.mid); m.reward=Math.round(m.reward*ud.mult); }
-  else if (ud.type==='rewardAll') { G.machines.forEach(m=>{ if(m.owned) m.reward=Math.round(m.reward*ud.mult); }); }
-  else if (ud.type==='speedAll')  { G.machines.forEach(m=>{ if(m.owned) m.speed=Math.max(800,Math.round(m.speed/ud.mult)); }); }
   else if (ud.type==='clickMult') { G.clickMult = (G.clickMult||1) * ud.mult; }
   else if (ud.type==='offline')   { G.offlineMult = (G.offlineMult||1) * ud.mult; }
   else if (ud.type==='golden')    { /* активируется в тике */ }
   else if (ud.type==='energyMax')   { G.energyMaxBonus   = (G.energyMaxBonus||0) + ud.mult; }
   else if (ud.type==='energyRegen') { G.energyRegenBonus = (G.energyRegenBonus||0) + ud.mult; }
   else if (ud.type==='clickValue')  { G.clickValueMult   = (G.clickValueMult||1) * ud.mult; }
-  fullRender();
+
+  if (ud.mid>=0) {
+    updateMachineCardDOM(ud.mid);
+  }
+  renderShopList();
+  renderHeader();
 }
 
 function openPrestige() {
@@ -1170,9 +1781,10 @@ function openPrestige() {
     if (pbarL) pbarL.textContent = pct+'% — '+t('prestigeReset')+(G.prestigeCount+1);
   } else {
     const newMult = (G.prestigeMult*1.5).toFixed(1);
+    const crystalsPreview = calcPrestigeCrystals();
     const readyText = document.getElementById('prestige-ready-text');
     if (readyText) readyText.innerHTML =
-      `${t('prestigeGoal')} <b id="prestigeBonus" style="color:var(--accent)">x${newMult}</b> ${t('prestigeForever')}<br><br>${t('prestigeCurrentMult')} <b id="currentMult" style="color:var(--teal)">x${G.prestigeMult.toFixed(1)}</b>`;
+      `${t('prestigeGoal')} <b id="prestigeBonus" style="color:var(--accent)">x${newMult}</b> ${t('prestigeForever')}<br><br>${t('prestigeCurrentMult')} <b id="currentMult" style="color:var(--teal)">x${G.prestigeMult.toFixed(1)}</b><br><br>💎 Получишь: <b style="color:#a090ff">+${fmt(crystalsPreview)} кристаллов</b>`;
   }
   const modal = document.getElementById('prestigeModal');
   if (modal) modal.classList.add('show');
@@ -1182,6 +1794,10 @@ function closePrestige() {
   if (modal) modal.classList.remove('show');
 }
 function doPrestige() {
+  playSound('prestige');
+  // Кристаллы считаем ДО увеличения prestigeCount — порог должен быть тем,
+  // который действовал в этом заходе, а не следующим.
+  const crystalsEarned = calcPrestigeCrystals();
   G.prestigeMult = parseFloat((G.prestigeMult*1.5).toFixed(1));
   G.prestigeCount++;
   const mult         = G.prestigeMult;
@@ -1198,6 +1814,23 @@ function doPrestige() {
   const myRefCode    = G.myRefCode;
   const friendsInv   = G.friendsInvited;
   const referredBy   = G.referredBy;
+  const crystals     = (G.crystals || 0) + crystalsEarned;
+  const lifeCrystals = (G.lifetimeCrystals || 0) + crystalsEarned;
+  const skills       = G.skills;
+  const dailyStreak  = G.dailyStreak;
+  const lastDailyClaimDay = G.lastDailyClaimDay;
+  const bestStreak   = G.bestStreak;
+  const firstPlayedAt = G.firstPlayedAt;
+  const soundEnabled = G.soundEnabled;
+  const promoCodesRedeemed = G.promoCodesRedeemed;
+  const questsCompleted = G.questsCompleted;
+  const theme = G.theme;
+  const tutorialSeen = G.tutorialSeen;
+  const seenStreakFeature = G.seenStreakFeature;
+  const seenSkillsFeature = G.seenSkillsFeature;
+  const weekly = G.weekly;
+  const notifAllowed = G.notifAllowed;
+  const hapticEnabled = G.hapticEnabled;
   G = defaultState();
   G.prestigeMult   = mult;
   G.prestigeCount  = cnt;
@@ -1213,12 +1846,29 @@ function doPrestige() {
   G.myRefCode      = myRefCode;
   G.friendsInvited = friendsInv;
   G.referredBy     = referredBy;
+  G.crystals       = crystals;
+  G.lifetimeCrystals = lifeCrystals;
+  G.skills         = skills;
+  G.dailyStreak        = dailyStreak;
+  G.lastDailyClaimDay  = lastDailyClaimDay;
+  G.bestStreak         = bestStreak;
+  G.firstPlayedAt      = firstPlayedAt;
+  G.soundEnabled       = soundEnabled;
+  G.promoCodesRedeemed = promoCodesRedeemed;
+  G.questsCompleted    = questsCompleted;
+  G.theme              = theme;
+  G.tutorialSeen        = tutorialSeen;
+  G.seenStreakFeature   = seenStreakFeature;
+  G.seenSkillsFeature   = seenSkillsFeature;
+  G.weekly              = weekly;
+  G.notifAllowed        = notifAllowed;
+  G.hapticEnabled       = hapticEnabled;
   G.energy = energyMax();
   if (purchases.secretLab) { const ml=getMachine(10); ml.owned=true; ml.auto=true; }
   closePrestige();
   fullRender();
   saveGame();
-  showToast('⚡ '+t('prestigeToast')+mult.toFixed(1));
+  showToast('⚡ '+t('prestigeToast')+mult.toFixed(1)+'  ·  +'+fmt(crystalsEarned)+' 💎');
 }
 
 // ── UI HELPERS ───────────────────────────────────────────────────
@@ -1286,16 +1936,59 @@ function switchTab(tab) {
   document.getElementById('tab-'+tab).classList.add('active');
 }
 
-// ── RENDER ───────────────────────────────────────────────────────
-// Функции разделены на два уровня:
-//   fullRender()       — пересоздаёт весь DOM (только при покупках/апгрейдах)
-//   tickRender(now)    — обновляет только числа и прогресс-бары (каждый кадр)
-// Это исключает проблему «двойного клика»: DOM не пересоздаётся во время игры.
+// Кнопка ⚙️ в шапке — быстрый переход в Настройки, минуя хаб меню
+// Кнопка ⚙️ в шапке — быстрый переход в Настройки. Запоминает откуда
+// зашли (вкладка + открытый раздел меню, если был), чтобы вернуться туда
+// же — повторным нажатием на ⚙️ или кнопкой "Назад" внутри настроек.
+let preSettingsState = null;
 
-// Следующий незакупленный цех для покупки (последовательная разблокировка)
+function openSettingsFromHeader() {
+  if (currentTab === 'menu' && currentMenuSection === 'theme') {
+    closeSettings(); // уже в настройках — второе нажатие возвращает назад
+    return;
+  }
+  preSettingsState = { tab: currentTab, menuSection: currentTab === 'menu' ? currentMenuSection : null };
+  switchTab('menu');
+  openMenuSection('theme');
+}
+
+function closeSettings() {
+  if (preSettingsState) {
+    const prev = preSettingsState;
+    preSettingsState = null;
+    switchTab(prev.tab);
+    if (prev.tab === 'menu') {
+      if (prev.menuSection) openMenuSection(prev.menuSection);
+      else closeMenuSection();
+    }
+  } else {
+    closeMenuSection();
+  }
+}
+
+// ── RENDER ───────────────────────────────────────────────────────
+// Функции разделены на уровни:
+//   fullRender()          — пересоздаёт весь DOM (инициализация, престиж, IAP)
+//   updateMachineCardDOM(id) — точечно обновляет ОДНУ карточку цеха
+//                              (покупка/апгрейд конкретного цеха — не трогает соседние)
+//   tickRender(now)        — обновляет только числа и прогресс-бары (каждый кадр)
+// Это исключает и проблему «двойного клика», и повторное проигрывание
+// анимаций у соседних карточек: DOM пересоздаётся только там, где реально
+// что-то изменилось.
+
+const NON_PREMIUM_MACHINES = MACHINES_DEF.filter(d => !d.premium);
+
 function nextUnlockedMachineId() {
   const first = G.machines.find(m => !m.owned && !getDef(m.id).premium);
   return first ? first.id : -1;
+}
+
+// Цех, который нужно купить перед этим (для подписи на закрытой карточке).
+// Определяется по порядку показа (среди обычных цехов), а не по значению id —
+// id может иметь "дыры" (например, id лаборатории стоит особняком).
+function prevMachineDef(id) {
+  const idx = NON_PREMIUM_MACHINES.findIndex(d => d.id === id);
+  return idx > 0 ? NON_PREMIUM_MACHINES[idx-1] : null;
 }
 
 function buildMachineCard(m) {
@@ -1315,7 +2008,7 @@ function buildMachineCard(m) {
           </div>
           <div style="font-size:11px;color:#a090ff;font-weight:600">199 ₽</div>
         </div>
-        <div class="mcard-reward" style="color:#a090ff">+${fmt(d.baseReward * G.prestigeMult)} ${t('coins')} ${t('perCycle')}</div>
+        <div class="mcard-reward" style="color:#a090ff">+${fmt(d.baseReward * incomeMult())} ${t('coins')} ${t('perCycle')}</div>
         <button class="btn-buy-big" data-action="buypremium" data-product="secret_lab"
           style="background:#7c5cff;margin-top:8px;pointer-events:all;cursor:pointer">
           💎 ${t('iapLab')} — 199 ₽
@@ -1326,7 +2019,7 @@ function buildMachineCard(m) {
     const nextId = nextUnlockedMachineId();
     // Если это не следующий по очереди — показываем замок
     if (m.id !== nextId) {
-      const prevDef = MACHINES_DEF[m.id - 1];
+      const prevDef = prevMachineDef(m.id);
       const prevName = prevDef ? (prevDef.name) : '';
       return `<div class="mcard locked" style="opacity:0.3;cursor:default;pointer-events:none">
         <div class="mcard-head">
@@ -1372,7 +2065,7 @@ function buildMachineCard(m) {
   const canUpg  = G.coins >= upgCost;
   const upgPct  = Math.min(100, Math.round(G.coins / upgCost * 100));
   const adUpg   = !canUpg && upgPct >= 80 && canFreeUpgrade();
-  const eff     = Math.round(m.reward * G.prestigeMult);
+  const eff     = Math.round(m.reward * incomeMult());
 
   return `<div class="mcard${m.progress>0?' working':''}" data-mid="${m.id}">
     <div class="mcard-head">
@@ -1429,12 +2122,12 @@ function buildUpgradeItem(ud) {
   </div>`;
 }
 
-function fullRender() {
-  // Цеха
+function renderMachinesGrid() {
   const grid = document.getElementById('machinesGrid');
   grid.innerHTML = G.machines.map(m=>buildMachineCard(m)).join('');
+}
 
-  // Магазин
+function renderShopList() {
   const list = document.getElementById('upgList');
   const visible = UPGRADES_DEF.filter(ud=>{
     if(ud.type==='auto' && getUpgState(ud.id).level>=1) return false;
@@ -1444,10 +2137,25 @@ function fullRender() {
   list.innerHTML = visible.length
     ? visible.map(ud=>buildUpgradeItem(ud)).join('')
     : `<div style="font-size:12px;color:var(--muted);padding:8px">${t('allBought')}</div>`;
+}
 
-  // IAP
+// Обновляет ТОЛЬКО одну карточку цеха, не трогая остальные — иначе при
+// каждой покупке/апгрейде пересоздавался бы весь грид, у всех работающих
+// цехов заново проигрывалась анимация "вспышки" и терялась позиция прокрутки.
+function updateMachineCardDOM(id) {
+  const card = document.querySelector(`[data-mid="${id}"]`);
+  const m = getMachine(id);
+  if (!m) { if (card) card.remove(); return; }
+  const html = buildMachineCard(m);
+  if (!html) { if (card) card.remove(); return; }
+  if (card) card.outerHTML = html;
+  else renderMachinesGrid(); // карточки почему-то ещё нет в DOM — подстрахуемся
+}
+
+function fullRender() {
+  renderMachinesGrid();
+  renderShopList();
   renderIAP();
-
   renderHeader();
   updateShopBadge();
 }
@@ -1511,7 +2219,7 @@ function tickRender(now) {
     // Награда
     const rew=document.getElementById('mrew'+m.id);
     if(rew){
-      const rewText='+'+fmt(Math.round(m.reward*G.prestigeMult))+' '+t('coins');
+      const rewText='+'+fmt(Math.round(m.reward*incomeMult()))+' '+t('coins');
       if(rew.textContent!==rewText) rew.textContent=rewText;
     }
     // Кнопка апгрейда
@@ -1551,7 +2259,7 @@ function tickRender(now) {
 function renderHeader() {
   document.getElementById('hCoins').textContent = fmt(G.coins);
   updateGlobalLbStat();
-  document.getElementById('hCps').textContent   = cps().toFixed(1)+t('cpsUnit');
+  document.getElementById('hCps').textContent   = fmt(cps())+t('cpsUnit');
   document.getElementById('hSold').textContent  = fmt(G.sold);
   document.getElementById('hMult').textContent  = G.prestigeMult.toFixed(1);
   const thr=prestigeThreshold();
@@ -1584,11 +2292,11 @@ function calcOfflineIncome() {
   if (elapsed < 30000) return 0; // менее 30 секунд — не считаем
 
   let total = 0;
-  const offMult = G.offlineMult || 1; // улучшение "Ночная смена" компенсирует часть штрафа
+  const offMult = (G.offlineMult || 1) * (1 + skillBonus('offline_boost')); // "Автопилот завода" компенсирует часть штрафа
   G.machines.forEach(m => {
     if (!m.owned || !m.auto) return;
     const cycles = elapsed / m.speed;
-    total += cycles * m.reward * G.prestigeMult * iapMultiplier() * achievementMult() * referralMult() * offMult * OFFLINE_EFFICIENCY;
+    total += cycles * m.reward * incomeMult() * offMult * OFFLINE_EFFICIENCY;
   });
   return Math.floor(total);
 }
@@ -1619,6 +2327,7 @@ function claimOffline() {
   spawnParticles(window.innerWidth/2, window.innerHeight/2, 16, '#F0A500');
   renderHeader();
   saveGame();
+  setTimeout(maybeShowDailyModal, 400);
 }
 
 async function claimOfflineAd() {
@@ -1629,6 +2338,7 @@ async function claimOfflineAd() {
     showToast('📺 Офлайн доход ×2!');
     renderHeader();
     saveGame();
+    setTimeout(maybeShowDailyModal, 400);
   });
 }
 // ── ДРУЗЬЯ И РЕФЕРАЛЬНЫЕ БОНУСЫ ───────────────────────────────────
@@ -1711,6 +2421,100 @@ function workerUrl(path) {
   return GLOBAL_LB_ENDPOINT.replace(/\/submit-score$/, '') + path;
 }
 
+// ── ПРОМОКОДЫ ────────────────────────────────────────────────────
+async function redeemPromoCode() {
+  const input    = document.getElementById('promoInput');
+  const statusEl = document.getElementById('promoStatus');
+  const btn      = document.getElementById('promoRedeemBtn');
+  const code = (input.value || '').trim().toUpperCase();
+  if (!code) return;
+
+  if (PLATFORM !== 'vk' || !vkReady) {
+    statusEl.textContent = 'Доступно только внутри VK';
+    statusEl.className = 'promo-status error';
+    return;
+  }
+  if (!GLOBAL_LB_ENDPOINT) {
+    statusEl.textContent = 'Промокоды ещё не подключены';
+    statusEl.className = 'promo-status error';
+    return;
+  }
+
+  btn.disabled = true;
+  statusEl.textContent = 'Проверяем...';
+  statusEl.className = 'promo-status';
+
+  const launchParams = await getLaunchParamsString();
+  if (!launchParams) {
+    statusEl.textContent = 'Не удалось проверить — попробуй позже';
+    statusEl.className = 'promo-status error';
+    btn.disabled = false;
+    return;
+  }
+
+  try {
+    const res = await fetch(workerUrl('/redeem-code'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ launchParams, code }),
+    });
+    const data = await res.json();
+    if (data.ok) {
+      statusEl.textContent = '✅ Промокод активирован!';
+      statusEl.className = 'promo-status success';
+      input.value = '';
+      G.promoCodesRedeemed = (G.promoCodesRedeemed || 0) + 1;
+      applyPromoReward(data.reward);
+    } else {
+      const messages = {
+        not_found:              'Такого промокода не существует',
+        inactive:                'Промокод больше не активен',
+        expired:                 'Срок действия промокода истёк',
+        exhausted:                'Промокод исчерпал лимит активаций',
+        already_used:            'Ты уже использовал этот промокод',
+        already_used_youtuber:   'Можно активировать только один блогерский промокод',
+        invalid_sign:            'Ошибка проверки — попробуй позже',
+      };
+      statusEl.textContent = messages[data.error] || 'Не удалось активировать промокод';
+      statusEl.className = 'promo-status error';
+    }
+  } catch (e) {
+    statusEl.textContent = 'Ошибка сети — попробуй позже';
+    statusEl.className = 'promo-status error';
+  }
+  btn.disabled = false;
+}
+
+function applyPromoReward(reward) {
+  const { type, value } = reward;
+  if (type === 'coins') {
+    G.coins += value;
+    showToast('🎉 +' + fmt(value) + ' ' + t('coins') + '!');
+  } else if (type === 'crystals') {
+    G.crystals = (G.crystals || 0) + value;
+    G.lifetimeCrystals = (G.lifetimeCrystals || 0) + value;
+    showToast('🎉 +' + fmt(value) + ' 💎!');
+  } else if (type === 'starterPack') {
+    if (!G.purchases.starterPack) { G.purchases.starterPack = true; showToast('🎉 Стартовый набор активирован!'); }
+  } else if (type === 'vipStatus') {
+    if (!G.purchases.vipStatus) { G.purchases.vipStatus = true; showToast('🎉 VIP-статус активирован!'); }
+  } else if (type === 'secretLab') {
+    if (!G.purchases.secretLab) {
+      G.purchases.secretLab = true;
+      const m = getMachine(10);
+      m.owned = true; m.auto = true;
+      const ref = getMachine(9);
+      const refDps = ref.owned ? (ref.reward / ref.speed * 1000) : (baseCps() * 0.3 || 5);
+      m.reward = Math.max(50, Math.round(refDps * (m.speed / 1000) * 1.5));
+      showToast('🎉 Секретная лаборатория разблокирована!');
+    }
+  }
+  playSound('levelup');
+  goldenGlow(document.getElementById('hCoins'));
+  fullRender();
+  saveGame();
+}
+
 // Регистрируем код на сервере (код → мой vk_user_id), чтобы когда друг перейдёт
 // по ссылке, сервер знал кому засчитать приглашение. Само приглашение здесь
 // ещё НЕ засчитывается — только когда друг реально нажмёт "Начать" у себя.
@@ -1756,6 +2560,72 @@ function renderFriends() {
   if (codeEl)    codeEl.textContent    = t('refYourCode') + ': ' + getMyRefCode();
 }
 
+// Рейтинг среди друзей, которые тоже играют — VKWebAppGetFriends отдаёт
+// список друзей самого игрока (имена/аватарки), а очки для них спрашиваем
+// у своего воркера (тот же, что и всё остальное).
+async function renderFriendsRanking() {
+  const el = document.getElementById('friendsRankingList');
+  if (!el) return;
+  if (PLATFORM !== 'vk' || !vkReady) {
+    el.innerHTML = '<div class="friends-rank-empty">Доступно только внутри VK</div>';
+    return;
+  }
+  if (!GLOBAL_LB_ENDPOINT) {
+    el.innerHTML = '<div class="friends-rank-empty">Рейтинг ещё не подключён</div>';
+    return;
+  }
+  el.innerHTML = '<div class="friends-rank-empty">Загрузка...</div>';
+  try {
+    const friendsRes = await vkBridge.send('VKWebAppGetFriends', { multi: false });
+    const friends = (friendsRes.users || []).slice(0, 100);
+    if (!friends.length) {
+      el.innerHTML = '<div class="friends-rank-empty">Друзья ещё не найдены</div>';
+      return;
+    }
+    const launchParams = await getLaunchParamsString();
+    const profileRes = await vkBridge.send('VKWebAppGetUserInfo', {});
+    const res = await fetch(workerUrl('/friends-scores'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ launchParams, friendIds: friends.map(f => f.id) }),
+    });
+    const data = await res.json();
+    if (!data.ok) { el.innerHTML = '<div class="friends-rank-empty">Не удалось загрузить</div>'; return; }
+
+    const entries = [{
+      id: profileRes.id,
+      name: (profileRes.first_name||'') + ' ' + (profileRes.last_name||''),
+      avatar: profileRes.photo_100 || '',
+      score: Math.floor(G.coins),
+      me: true,
+    }];
+    friends.forEach(f => {
+      const score = data.scores[f.id];
+      if (score == null) return; // друг ещё не играл — не показываем
+      entries.push({
+        id: f.id, name: (f.first_name||'')+' '+(f.last_name||''),
+        avatar: f.photo_100 || '', score, me: false,
+      });
+    });
+    entries.sort((a,b) => b.score - a.score);
+
+    if (entries.length === 1) {
+      el.innerHTML = '<div class="friends-rank-empty">Пока никто из друзей не играет — пригласи их!</div>';
+      return;
+    }
+    el.innerHTML = entries.map((e,i) => `
+      <div class="friends-rank-item${e.me?' me':''}">
+        <div class="friends-rank-pos">${i+1}</div>
+        ${e.avatar ? `<img class="friends-rank-avatar" src="${e.avatar}" alt="">` : `<div class="friends-rank-avatar"></div>`}
+        <div class="friends-rank-name">${e.name}${e.me?' (ты)':''}</div>
+        <div class="friends-rank-score">${fmt(e.score)}</div>
+      </div>`).join('');
+  } catch(e) {
+    console.warn('[Friends] Ошибка рейтинга:', e);
+    el.innerHTML = '<div class="friends-rank-empty">Не удалось загрузить рейтинг</div>';
+  }
+}
+
 // ── ЭНЕРГИЯ И РУЧНОЕ ПРОИЗВОДСТВО ─────────────────────────────────
 // Отдельная механика клика, не зависящая от авто-цехов.
 // Энергия тратится на клик, восстанавливается со временем.
@@ -1763,12 +2633,15 @@ function renderFriends() {
 // скорость восстановления, монет за клик.
 
 function energyMax()    { return 100 + (G.energyMaxBonus || 0); }
-function energyRegen()  { return 1 + (G.energyRegenBonus || 0); } // ед./сек
+function energyRegen()  { return 1 + (G.energyRegenBonus || 0) + skillBonus('energy_regen'); } // ед./сек
 function clickValue()   {
-  // cps() уже включает prestigeMult — повторно их не умножаем, иначе двойная инфляция.
-  // Берём ~30% от дохода в секунду как разовую награду за клик.
-  const base = Math.max(1, Math.round(cps() * 0.3)) || 1;
-  return Math.round(base * (G.clickValueMult || 1) * iapMultiplier() * achievementMult() * referralMult());
+  // cps() уже включает totalPrestigeMult + iap/ачивки/рефералы — повторно
+  // их не умножаем здесь, иначе двойная инфляция.
+  // Берём ~10% от дохода в секунду как разовую награду за клик — раньше было
+  // 30%, из-за чего очередь кликов на полный запас энергии перекрывала
+  // больше половины стоимости следующего цеха.
+  const base = Math.max(1, Math.round(cps() * 0.1)) || 1;
+  return Math.round(base * (G.clickValueMult || 1) * (1 + skillBonus('click_power')));
 }
 
 function regenEnergy(dtMs) {
@@ -1779,11 +2652,42 @@ function regenEnergy(dtMs) {
   }
 }
 
+// ── КОМБО ЗА ЧАСТЫЕ КЛИКИ ──────────────────────────────────────────
+// Кликаешь по кнопке "Произвести вручную" достаточно часто (не реже раза в
+// 1.5с) — множитель растёт, до ×2 на 10-м клике подряд. Пауза — комбо
+// сгорает. Не сохраняется между сессиями — это про активность прямо сейчас.
+let comboCount = 0;
+let lastClickAt = 0;
+const COMBO_WINDOW = 1500;
+const COMBO_MAX = 10;
+const COMBO_MAX_MULT = 2.0;
+
+function comboMultiplier() {
+  return 1 + Math.min(comboCount, COMBO_MAX) / COMBO_MAX * (COMBO_MAX_MULT - 1);
+}
+
+function updateComboUI() {
+  const badge = document.getElementById('comboBadge');
+  const valEl = document.getElementById('comboMultVal');
+  if (!badge || !valEl) return;
+  if (comboCount <= 1) { badge.style.display = 'none'; return; }
+  badge.style.display = 'block';
+  badge.style.animation = 'none';
+  void badge.offsetWidth; // рестарт CSS-анимации при каждом клике
+  badge.style.animation = 'comboPulse .25s ease-out';
+  valEl.textContent = comboMultiplier().toFixed(2);
+}
+
 function manualProduce(evt) {
   if (G.energy == null) G.energy = energyMax();
   if (G.energy < 1) return;
   G.energy -= 1;
-  const earned = clickValue();
+
+  const now = Date.now();
+  comboCount = (now - lastClickAt <= COMBO_WINDOW) ? Math.min(COMBO_MAX, comboCount + 1) : 1;
+  lastClickAt = now;
+
+  const earned = Math.round(clickValue() * comboMultiplier());
   G.coins += earned;
   trackQuest('qtClick', 1);
   trackQuest('qtCoins', earned);
@@ -1794,6 +2698,7 @@ function manualProduce(evt) {
     spawnParticles(r.left + r.width/2, r.top + r.height/2, 5, '#4ad9ff');
   }
   updateEnergyUI();
+  updateComboUI();
 }
 
 function updateEnergyUI() {
@@ -1808,6 +2713,208 @@ function updateEnergyUI() {
   if (val) val.textContent = cur + '/' + max;
   if (sub) sub.textContent = '+' + fmt(clickValue()) + ' ' + t('coins') + ' · -1 ⚡';
   if (btn) btn.disabled = (G.energy < 1);
+}
+
+// ── ТЕМА ОФОРМЛЕНИЯ ────────────────────────────────────────────────
+// Чисто косметическое — не влияет на баланс. Часть тем открывается
+// прогрессом, чтобы это тоже ощущалось как награда.
+const THEMES = [
+  { id:'classic', name:'Классика', icon:'🟠',
+    unlock: () => true,
+    vars: { '--accent':'#f0a500', '--accent2':'#e05c00', '--teal':'#00c9a7' } },
+  { id:'neon', name:'Неон', icon:'🟣',
+    unlock: () => G.prestigeCount > 0,
+    hint: 'Открывается после первого престижа',
+    vars: { '--accent':'#ff2ec4', '--accent2':'#a000ff', '--teal':'#00f0ff' } },
+  { id:'gold', name:'VIP Золото', icon:'🟡',
+    unlock: () => !!(G.purchases && G.purchases.vipStatus),
+    hint: 'Открывается с VIP-статусом',
+    vars: { '--accent':'#ffd700', '--accent2':'#b8860b', '--teal':'#f5deb3' } },
+];
+
+function setThemeVars(id) {
+  const theme = THEMES.find(t => t.id === id) || THEMES[0];
+  Object.entries(theme.vars).forEach(([k, v]) => document.documentElement.style.setProperty(k, v));
+}
+
+function applyTheme(id) {
+  const theme = THEMES.find(t => t.id === id);
+  if (!theme || !theme.unlock()) return;
+  setThemeVars(id);
+  G.theme = id;
+  playSound('click');
+  renderThemePicker();
+  saveGame();
+}
+
+function renderThemePicker() {
+  const el = document.getElementById('themeList');
+  if (!el) return;
+  const current = G.theme || 'classic';
+  el.innerHTML = THEMES.map(t => {
+    const unlocked = t.unlock();
+    const active = current === t.id;
+    return `<div class="theme-swatch${active?' active':''}${unlocked?'':' locked'}"
+              style="--sw:${t.vars['--accent']}"
+              ${unlocked?`onclick="applyTheme('${t.id}')"`:''}>
+      <div class="theme-swatch-dot">${unlocked ? t.icon : '🔒'}</div>
+      <div class="theme-swatch-name">${t.name}</div>
+      ${!unlocked ? `<div class="theme-swatch-hint">${t.hint}</div>` : (active ? `<div class="theme-swatch-hint">Выбрана</div>` : '')}
+    </div>`;
+  }).join('');
+}
+
+// ── НАСТРОЙКИ (звук, уведомления, сохранение) ──────────────────────
+async function toggleNotifications() {
+  if (PLATFORM !== 'vk' || !vkReady) {
+    showToast('Доступно только внутри VK');
+    return;
+  }
+  if (G.notifAllowed) {
+    // Отозвать разрешение можно только в самом VK — просто перестаём слать
+    // запросы от игры и сообщаем об этом серверу.
+    G.notifAllowed = false;
+    await registerNotificationsOnServer(false);
+    showToast('🔕 Уведомления отключены');
+    renderSettingsPanel();
+    saveGame();
+    return;
+  }
+  try {
+    const res = await vkBridge.send('VKWebAppAllowNotifications', {});
+    if (res && res.result) {
+      G.notifAllowed = true;
+      await registerNotificationsOnServer(true);
+      showToast('🔔 Уведомления включены!');
+    }
+  } catch(e) {
+    showToast('Не удалось включить уведомления');
+  }
+  renderSettingsPanel();
+  saveGame();
+}
+
+async function registerNotificationsOnServer(allowed) {
+  if (!GLOBAL_LB_ENDPOINT || PLATFORM !== 'vk' || !vkReady) return;
+  const launchParams = await getLaunchParamsString();
+  if (!launchParams) return;
+  try {
+    await fetch(workerUrl('/register-notifications'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ launchParams, allowed }),
+    });
+  } catch(e) { console.warn('[Notifications] Ошибка регистрации:', e); }
+}
+
+function manualSave() {
+  saveGame();
+  playSound('click');
+  showToast('💾 Сохранено');
+  renderSettingsPanel();
+}
+
+function renderSettingsPanel() {
+  const soundBtn = document.getElementById('settingsSoundBtn');
+  if (soundBtn) {
+    soundBtn.textContent = G.soundEnabled ? '🔊 Включён' : '🔇 Выключен';
+    soundBtn.classList.toggle('on', !!G.soundEnabled);
+  }
+  const hapticBtn = document.getElementById('settingsHapticBtn');
+  if (hapticBtn) {
+    hapticBtn.textContent = G.hapticEnabled ? '📳 Включена' : '📴 Выключена';
+    hapticBtn.classList.toggle('on', !!G.hapticEnabled);
+  }
+  const notifBtn = document.getElementById('settingsNotifBtn');
+  const notifHint = document.getElementById('settingsNotifHint');
+  if (notifBtn) {
+    notifBtn.textContent = G.notifAllowed ? '🔔 Включены' : '🔕 Выключены';
+    notifBtn.classList.toggle('on', !!G.notifAllowed);
+  }
+  if (notifHint) {
+    notifHint.textContent = PLATFORM !== 'vk'
+      ? 'Доступно только внутри VK'
+      : 'Напомним, если давно не заходил и накопился офлайн-доход';
+  }
+  const saveInfo = document.getElementById('settingsSaveInfo');
+  if (saveInfo) {
+    const when = G.lastSaved ? new Date(G.lastSaved).toLocaleTimeString('ru-RU', {hour:'2-digit',minute:'2-digit'}) : '—';
+    saveInfo.textContent = `Последнее сохранение: ${when}`;
+  }
+}
+
+// ── ДЕРЕВО НАВЫКОВ (за кристаллы престижа) ────────────────────────
+// Кристаллы начисляются при каждом престиже и НИКОГДА не сгорают — как и
+// уровни навыков, купленных за них. Это отдельный, постоянный слой
+// прогрессии поверх обычного множителя престижа.
+const SKILLS_DEF = [
+  { id:'prod_mult',      branch:'prod', name:'Оптимизация цехов',   icon:'🏭', desc:'+8% ко всему доходу',        maxLevel:12, baseCost:5,  costMult:1.35, perLevel:0.08 },
+  { id:'prestige_thresh',branch:'prestige', name:'Быстрый рестарт', icon:'⏱️', desc:'-4% к порогу престижа',       maxLevel:10, baseCost:8,  costMult:1.4,  perLevel:0.04 },
+  { id:'crystal_gain',   branch:'prestige', name:'Огранка кристаллов', icon:'💎', desc:'+15% кристаллов за престиж', maxLevel:8,  baseCost:10, costMult:1.5,  perLevel:0.15 },
+  { id:'energy_regen',   branch:'utility', name:'Второе дыхание',   icon:'🔋', desc:'+0.2 энергии/сек',            maxLevel:8,  baseCost:5,  costMult:1.35, perLevel:0.2  },
+  { id:'offline_boost',  branch:'utility', name:'Автопилот завода',  icon:'🌙', desc:'+20% офлайн-дохода',          maxLevel:6,  baseCost:6,  costMult:1.4,  perLevel:0.2  },
+  { id:'click_power',    branch:'utility', name:'Твёрдая рука',     icon:'👆', desc:'+25% силы клика',             maxLevel:8,  baseCost:5,  costMult:1.35, perLevel:0.25 },
+];
+const SKILL_BRANCHES = [
+  { id:'prod',     name:'Производство', icon:'🏭' },
+  { id:'prestige', name:'Престиж',      icon:'⚡' },
+  { id:'utility',  name:'Энергия и клики', icon:'🔋' },
+];
+
+function skillLevel(id) { return (G.skills && G.skills[id]) || 0; }
+function skillDef(id)   { return SKILLS_DEF.find(s => s.id === id); }
+function skillCost(id) {
+  const d = skillDef(id);
+  const lvl = skillLevel(id);
+  if (!d || lvl >= d.maxLevel) return null;
+  return Math.ceil(d.baseCost * Math.pow(d.costMult, lvl));
+}
+function skillBonus(id) { return skillLevel(id) * (skillDef(id)?.perLevel || 0); }
+
+// Множитель дохода от навыков — применяется везде рядом с G.prestigeMult
+function skillProdMult() { return 1 + skillBonus('prod_mult'); }
+// Комбинированный множитель дохода (базовый престиж × бонус от навыков)
+function totalPrestigeMult() { return G.prestigeMult * skillProdMult(); }
+
+function buySkill(id) {
+  const cost = skillCost(id);
+  if (cost === null || G.crystals < cost) return;
+  G.crystals -= cost;
+  G.skills[id] = (G.skills[id] || 0) + 1;
+  playSound('upgrade');
+  renderSkillTree();
+  renderHeader();
+  saveGame();
+}
+
+function renderSkillTree() {
+  const el = document.getElementById('skillTreeList');
+  const crystalsEl = document.getElementById('skillCrystals');
+  if (!el) return;
+  if (crystalsEl) crystalsEl.textContent = fmt(G.crystals);
+
+  el.innerHTML = SKILL_BRANCHES.map(branch => {
+    const nodes = SKILLS_DEF.filter(s => s.branch === branch.id).map(d => {
+      const lvl = skillLevel(d.id);
+      const cost = skillCost(d.id);
+      const maxed = cost === null;
+      const affordable = !maxed && G.crystals >= cost;
+      return `<div class="skill-node${maxed?' maxed':''}">
+        <div class="skill-node-icon">${d.icon}</div>
+        <div class="skill-node-info">
+          <div class="skill-node-name">${d.name} <span class="skill-node-lvl">Ур.${lvl}/${d.maxLevel}</span></div>
+          <div class="skill-node-desc">${d.desc}</div>
+        </div>
+        <button class="btn-skill" ${maxed||!affordable?'disabled':''} onclick="buySkill('${d.id}')">
+          ${maxed ? '✅ Макс' : '💎 '+fmt(cost)}
+        </button>
+      </div>`;
+    }).join('');
+    return `<div class="skill-branch">
+      <div class="skill-branch-hdr">${branch.icon} ${branch.name}</div>
+      ${nodes}
+    </div>`;
+  }).join('');
 }
 
 // ── ДОСТИЖЕНИЯ ───────────────────────────────────────────────────
@@ -1825,8 +2932,8 @@ const ACHIEVEMENTS_DEF = [
   { id:'ach_coins_1b',   cat:'coinsTotal', target:1000000000, tier:'gold',   icon:'💰', rewardMult:1.10 },
   // Цеха куплено
   { id:'ach_machines_5', cat:'machines', target:5,  tier:'bronze', icon:'🏭', rewardMult:1.02 },
-  { id:'ach_machines_9', cat:'machines', target:9,  tier:'silver', icon:'🏭', rewardMult:1.05 },
-  { id:'ach_machines_11',cat:'machines', target:11, tier:'gold',   icon:'🏭', rewardMult:1.10 },
+  { id:'ach_machines_9', cat:'machines', target:10, tier:'silver', icon:'🏭', rewardMult:1.05 },
+  { id:'ach_machines_11',cat:'machines', target:16, tier:'gold',   icon:'🏭', rewardMult:1.10 },
   // Престиж
   { id:'ach_prestige_1', cat:'prestige', target:1,  tier:'bronze', icon:'⚡', rewardMult:1.03 },
   { id:'ach_prestige_5', cat:'prestige', target:5,  tier:'silver', icon:'⚡', rewardMult:1.06 },
@@ -1837,6 +2944,21 @@ const ACHIEVEMENTS_DEF = [
   // Реклама
   { id:'ach_ads_10',     cat:'adsTotal', target:10,  tier:'bronze', icon:'📺', rewardMult:1.02 },
   { id:'ach_ads_50',     cat:'adsTotal', target:50,  tier:'silver', icon:'📺', rewardMult:1.05 },
+  // Стрик ежедневных наград
+  { id:'ach_streak_7',   cat:'streak',   target:7,   tier:'bronze', icon:'🔥', rewardMult:1.02 },
+  { id:'ach_streak_30',  cat:'streak',   target:30,  tier:'silver', icon:'🔥', rewardMult:1.05 },
+  { id:'ach_streak_100', cat:'streak',   target:100, tier:'gold',   icon:'🔥', rewardMult:1.10 },
+  // Кристаллы престижа заработано за всё время
+  { id:'ach_crystals_50',   cat:'crystals', target:50,   tier:'bronze', icon:'💎', rewardMult:1.02 },
+  { id:'ach_crystals_500',  cat:'crystals', target:500,  tier:'silver', icon:'💎', rewardMult:1.05 },
+  { id:'ach_crystals_2000', cat:'crystals', target:2000, tier:'gold',   icon:'💎', rewardMult:1.10 },
+  // Друзья приглашены
+  { id:'ach_friends_1',  cat:'friends',  target:1,  tier:'bronze', icon:'👥', rewardMult:1.02 },
+  { id:'ach_friends_5',  cat:'friends',  target:5,  tier:'silver', icon:'👥', rewardMult:1.05 },
+  { id:'ach_friends_20', cat:'friends',  target:20, tier:'gold',   icon:'👥', rewardMult:1.10 },
+  // Промокоды активированы
+  { id:'ach_promo_1',    cat:'promoCodes', target:1, tier:'bronze', icon:'🎟️', rewardMult:1.02 },
+  { id:'ach_promo_5',    cat:'promoCodes', target:5, tier:'silver', icon:'🎟️', rewardMult:1.05 },
 ];
 
 function achState(id) {
@@ -1853,6 +2975,10 @@ function achProgress(def) {
     prestige:    G.prestigeCount,
     clicksTotal: G.lifetimeClicks || 0,
     adsTotal:    G.lifetimeAds || 0,
+    streak:      G.bestStreak || 0,
+    crystals:    G.lifetimeCrystals || 0,
+    friends:     G.friendsInvited || 0,
+    promoCodes:  G.promoCodesRedeemed || 0,
   };
   return map[def.cat] || 0;
 }
@@ -1873,12 +2999,83 @@ function claimAchievement(id) {
   const st = achState(id);
   if (st.claimed || achProgress(def) < def.target) return;
   st.claimed = true;
+  playSound('levelup');
   showToast('🏅 ' + t('achUnlocked') + ': x' + def.rewardMult.toFixed(2));
   goldenGlow(document.getElementById('hCoins'));
   spawnParticles(window.innerWidth/2, 120, 14, def.tier==='gold'?'#FFD700':def.tier==='silver'?'#C0C0C0':'#CD7F32');
   renderAchievements();
   updateQuestBadge();
   saveGame();
+}
+
+// ── СТАТИСТИКА ───────────────────────────────────────────────────
+// ── КОЛЛЕКЦИЯ / ТРОФЕИ ───────────────────────────────────────────
+function renderTrophyRoom() {
+  const el = document.getElementById('trophyGrid');
+  if (!el) return;
+
+  const ownedCount = G.machines.filter(m => m.owned).length;
+  const machinesHtml = MACHINES_DEF.map(d => {
+    const m = G.machines.find(mm => mm.id === d.id);
+    const owned = !!(m && m.owned);
+    return `<div class="trophy-item${owned?' owned':''}">
+      <div class="trophy-icon">${owned ? d.emoji : '🔒'}</div>
+      <div class="trophy-name">${owned ? d.name : '???'}</div>
+    </div>`;
+  }).join('');
+
+  const tiers = [
+    { id:'bronze', icon:'🥉', name:'Бронза' },
+    { id:'silver', icon:'🥈', name:'Серебро' },
+    { id:'gold',   icon:'🥇', name:'Золото' },
+  ];
+  const tiersHtml = tiers.map(t => {
+    const total = ACHIEVEMENTS_DEF.filter(d => d.tier === t.id).length;
+    const got   = ACHIEVEMENTS_DEF.filter(d => d.tier === t.id && achState(d.id).claimed).length;
+    return `<div class="trophy-tier">
+      <div class="trophy-tier-icon">${t.icon}</div>
+      <div class="trophy-tier-label">${t.name}</div>
+      <div class="trophy-tier-count">${got}/${total}</div>
+    </div>`;
+  }).join('');
+
+  el.innerHTML = `
+    <div class="trophy-section-title">🏭 Открытые цеха (${ownedCount}/${MACHINES_DEF.length})</div>
+    <div class="trophy-machines-grid">${machinesHtml}</div>
+    <div class="trophy-section-title">🏅 Достижения по уровням</div>
+    <div class="trophy-tiers">${tiersHtml}</div>
+  `;
+}
+
+function renderStats() {
+  const el = document.getElementById('statsList');
+  if (!el) return;
+  const days = Math.max(0, Math.floor((Date.now() - (G.firstPlayedAt || Date.now())) / 86400000));
+  const ownedMachines = G.machines.filter(m => m.owned).length;
+  const claimedAch = ACHIEVEMENTS_DEF.filter(d => achState(d.id).claimed).length;
+
+  const rows = [
+    ['🏭', 'Всего произведено', fmt(G.sold || 0) + ' ед.'],
+    ['💰', 'Всего заработано монет', fmt(G.lifetimeCoins || 0)],
+    ['👆', 'Кликов сделано', fmt(G.lifetimeClicks || 0)],
+    ['📺', 'Реклам просмотрено', fmt(G.lifetimeAds || 0)],
+    ['🏗️', 'Цехов открыто', ownedMachines + ' / ' + MACHINES_DEF.length],
+    ['🏅', 'Достижений получено', claimedAch + ' / ' + ACHIEVEMENTS_DEF.length],
+    ['⚡', 'Престижей сделано', fmt(G.prestigeCount || 0)],
+    ['💎', 'Кристаллов заработано', fmt(G.lifetimeCrystals || 0)],
+    ['👥', 'Друзей приглашено', fmt(G.friendsInvited || 0)],
+    ['🎟️', 'Промокодов активировано', fmt(G.promoCodesRedeemed || 0)],
+    ['✅', 'Ежедневных заданий выполнено', fmt(G.questsCompleted || 0)],
+    ['🔥', 'Лучший стрик', (G.bestStreak || 0) + ' дн.'],
+    ['📅', 'Играешь', days <= 0 ? 'первый день' : days + ' дн.'],
+  ];
+
+  el.innerHTML = rows.map(([icon, label, value]) => `
+    <div class="stats-row">
+      <span class="stats-icon">${icon}</span>
+      <span class="stats-label">${label}</span>
+      <span class="stats-value">${value}</span>
+    </div>`).join('');
 }
 
 function renderAchievements() {
@@ -1918,23 +3115,264 @@ function renderAchievements() {
 let currentMenuSection = null;
 
 function openMenuSection(section) {
+  if (section==='streak' && !streakUnlocked()) return; // ещё не куплен первый цех
   currentMenuSection = section;
+  document.getElementById('menuSecStreak').style.display  = section==='streak'  ? 'block':'none';
+  document.getElementById('menuSecSkills').style.display  = section==='skills'  ? 'block':'none';
+  document.getElementById('menuSecPromo').style.display   = section==='promo'   ? 'block':'none';
+  document.getElementById('menuSecStats').style.display   = section==='stats'   ? 'block':'none';
+  document.getElementById('menuSecTrophy').style.display  = section==='trophy'  ? 'block':'none';
+  document.getElementById('menuSecTheme').style.display   = section==='theme'   ? 'block':'none';
   document.getElementById('menuSecDaily').style.display   = section==='daily'   ? 'block':'none';
+  document.getElementById('menuSecWeekly').style.display  = section==='weekly'  ? 'block':'none';
   document.getElementById('menuSecAch').style.display     = section==='ach'     ? 'block':'none';
   document.getElementById('menuSecFriends').style.display = section==='friends' ? 'block':'none';
   document.querySelector('.menu-hub').style.display = 'none';
+  if (section==='streak')  { renderDailyStreak(); if (!G.seenStreakFeature) { G.seenStreakFeature = true; updateMenuBadge(); saveGame(); } }
+  if (section==='skills')  { renderSkillTree();   if (!G.seenSkillsFeature) { G.seenSkillsFeature = true; updateMenuBadge(); saveGame(); } }
+  if (section==='stats')   renderStats();
+  if (section==='trophy')  renderTrophyRoom();
+  if (section==='theme')   { renderThemePicker(); renderSettingsPanel(); }
   if (section==='daily')   renderQuests();
+  if (section==='weekly')  renderWeeklyChallenge();
   if (section==='ach')     renderAchievements();
-  if (section==='friends') { renderFriends(); syncInvitedCount(); }
+  if (section==='friends') { renderFriends(); syncInvitedCount(); renderFriendsRanking(); }
 }
 
 function closeMenuSection() {
   currentMenuSection = null;
+  document.getElementById('menuSecStreak').style.display  = 'none';
+  document.getElementById('menuSecSkills').style.display  = 'none';
+  document.getElementById('menuSecPromo').style.display   = 'none';
+  document.getElementById('menuSecStats').style.display   = 'none';
+  document.getElementById('menuSecTrophy').style.display  = 'none';
+  document.getElementById('menuSecTheme').style.display   = 'none';
   document.getElementById('menuSecDaily').style.display   = 'none';
+  document.getElementById('menuSecWeekly').style.display  = 'none';
   document.getElementById('menuSecAch').style.display     = 'none';
   document.getElementById('menuSecFriends').style.display = 'none';
   document.querySelector('.menu-hub').style.display = 'flex';
   updateMenuBadge();
+}
+
+// ── ЕЖЕДНЕВНАЯ НАГРАДА (СТРИК) ────────────────────────────────────
+// Награда растёт всю неделю, на 7-й день — большой бонус, дальше цикл
+// повторяется заново. Пропустил день — стрик сбрасывается на 1.
+const DAILY_REWARDS = [
+  { day:1, icon:'💰', type:'coins',  seconds:8,  min:100  },
+  { day:2, icon:'💰', type:'coins',  seconds:15, min:250  },
+  { day:3, icon:'⚡', type:'energy', seconds:12, min:200  },
+  { day:4, icon:'💰', type:'coins',  seconds:25, min:500  },
+  { day:5, icon:'🚀', type:'boost',  ms:30*60*1000        },
+  { day:6, icon:'💰', type:'coins',  seconds:45, min:800  },
+  { day:7, icon:'🏆', type:'coins',  seconds:80, min:2000 },
+];
+
+function todayStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function daysDiff(a, b) {
+  return Math.round((new Date(b+'T00:00:00') - new Date(a+'T00:00:00')) / 86400000);
+}
+function dailyAlreadyClaimedToday() {
+  return G.lastDailyClaimDay === todayStr();
+}
+// Стрик открывается только после того как новичок сам купит первый цех —
+// не должен быть доступен/выпадать попапом ещё до того как игрок вообще
+// что-то сделал в игре.
+function streakUnlocked() {
+  const m = getMachine(0);
+  return !!(m && m.owned);
+}
+// Индекс (0..6) награды, которая ждёт игрока СЕЙЧАС (ещё не забрана)
+function pendingStreakIndex() {
+  if (dailyAlreadyClaimedToday()) return ((G.dailyStreak - 1) % 7 + 7) % 7;
+  const diff = G.lastDailyClaimDay ? daysDiff(G.lastDailyClaimDay, todayStr()) : null;
+  const nextStreak = (diff === 1) ? (G.dailyStreak||0) + 1 : 1; // пропустил день — сброс
+  return ((nextStreak - 1) % 7 + 7) % 7;
+}
+
+function rewardText(r) {
+  if (r.type === 'boost')  return 'Буст ×2 на 30 мин';
+  if (r.type === 'energy') return 'Энергия + монеты';
+  return (r.day===7 ? 'Большой бонус!' : 'Монеты');
+}
+
+function claimDailyReward() {
+  if (dailyAlreadyClaimedToday()) return;
+  const diff = G.lastDailyClaimDay ? daysDiff(G.lastDailyClaimDay, todayStr()) : null;
+  G.dailyStreak = (diff === 1) ? (G.dailyStreak||0) + 1 : 1;
+  G.lastDailyClaimDay = todayStr();
+  G.bestStreak = Math.max(G.bestStreak||0, G.dailyStreak);
+  playSound('levelup');
+
+  const idx = (G.dailyStreak - 1) % 7;
+  const r = DAILY_REWARDS[idx];
+  if (r.type === 'coins') {
+    const n = Math.max(r.min, Math.round(cps() * r.seconds));
+    G.coins += n;
+    showToast('🎁 +'+fmt(n)+' '+t('coins')+'!');
+    goldenGlow(document.getElementById('hCoins'));
+  } else if (r.type === 'energy') {
+    G.energy = energyMax();
+    const n = Math.max(r.min, Math.round(cps() * r.seconds));
+    G.coins += n;
+    showToast('⚡ Энергия восстановлена! +'+fmt(n)+' '+t('coins'));
+  } else if (r.type === 'boost') {
+    adBonusEnd = Math.max(adBonusEnd, Date.now() + r.ms);
+    showToast('🚀 Буст ×2 на 30 минут!');
+    updateAdButton();
+  }
+
+  renderDailyStreak();
+  updateMenuBadge();
+  saveGame();
+}
+
+// ── ОБУЧЕНИЕ ДЛЯ НОВИЧКОВ ─────────────────────────────────────────
+const TUTORIAL_SLIDES = [
+  { icon:'👆', title:'Добро пожаловать на завод!', text:'Нажимай на цех, чтобы запустить его вручную и сразу получить монеты. Цеха с пометкой «АВТО» работают сами, даже пока ты не в игре.' },
+  { icon:'🏭', title:'Открывай новые цеха', text:'Покупай цеха по порядку — каждый следующий стоит дороже, но и приносит намного больше. Первым делом купи «Болты».' },
+  { icon:'⬆️', title:'Прокачивай', text:'У каждого цеха есть апгрейд — увеличивает награду и ускоряет цикл. В «Магазине» ещё больше усилений: автоматика, буст дохода, бонус за офлайн.' },
+  { icon:'⚡', title:'Престиж и кристаллы', text:'Когда накопишь достаточно монет — сделай престиж: доход сгорает, зато остаётся постоянный множитель и кристаллы. За кристаллы в «Меню → Дерево навыков» покупаются улучшения, которые никогда не сгорают.' },
+  { icon:'🎁', title:'Возвращайся каждый день', text:'В «Меню» тебя ждут ежедневные задания, награда за вход и промокоды — не забывай туда заглядывать.' },
+];
+let tutSlideIdx = 0;
+
+function showTutorial() {
+  tutSlideIdx = 0;
+  renderTutorialSlide();
+  document.getElementById('tutorialModal').classList.add('show');
+}
+
+function renderTutorialSlide() {
+  const s = TUTORIAL_SLIDES[tutSlideIdx];
+  document.getElementById('tutIcon').textContent = s.icon;
+  document.getElementById('tutTitle').textContent = s.title;
+  document.getElementById('tutText').textContent = s.text;
+  document.getElementById('tutDots').innerHTML = TUTORIAL_SLIDES.map((_,i) =>
+    `<span class="tut-dot${i===tutSlideIdx?' active':''}"></span>`).join('');
+  document.getElementById('tutNextBtn').textContent =
+    tutSlideIdx === TUTORIAL_SLIDES.length - 1 ? 'Начать играть!' : 'Дальше';
+}
+
+function nextTutorialSlide() {
+  playSound('click');
+  if (tutSlideIdx < TUTORIAL_SLIDES.length - 1) {
+    tutSlideIdx++;
+    renderTutorialSlide();
+  } else {
+    skipTutorial();
+  }
+}
+
+function skipTutorial() {
+  document.getElementById('tutorialModal').classList.remove('show');
+  G.tutorialSeen = true;
+  saveGame();
+}
+
+function claimDailyFromModal() {
+  claimDailyReward();
+  document.getElementById('dailyModal').classList.remove('show');
+}
+
+// Показываем попап при заходе, если сегодняшняя награда ещё не забрана
+function maybeShowDailyModal() {
+  if (!streakUnlocked()) return; // ещё не куплен первый цех
+  if (dailyAlreadyClaimedToday()) return;
+  const idx = pendingStreakIndex();
+  const r = DAILY_REWARDS[idx];
+  document.getElementById('dailyModalIcon').textContent = r.icon;
+  const streakNow = (G.lastDailyClaimDay && daysDiff(G.lastDailyClaimDay, todayStr())===1) ? (G.dailyStreak||0)+1 : 1;
+  document.getElementById('dailyModalStreak').textContent = `День ${idx+1} из 7 · Стрик: ${streakNow}`;
+  document.getElementById('dailyModalReward').textContent = rewardText(r);
+  document.getElementById('dailyModal').classList.add('show');
+}
+
+function renderDailyStreak() {
+  const grid = document.getElementById('streakGrid');
+  const counter = document.getElementById('streakCounter');
+  const btn = document.getElementById('streakClaimBtn');
+  if (!grid) return;
+
+  const pendingIdx = pendingStreakIndex();
+  const claimedToday = dailyAlreadyClaimedToday();
+
+  grid.innerHTML = DAILY_REWARDS.map((r,i) => {
+    let cls = 'locked';
+    if (i < pendingIdx || (claimedToday && i <= pendingIdx)) cls = 'claimed';
+    else if (i === pendingIdx && !claimedToday) cls = 'current';
+    return `<div class="streak-day ${cls}">
+      <div class="streak-day-label">День ${r.day}</div>
+      <div class="streak-day-icon">${cls==='claimed'?'✅':r.icon}</div>
+    </div>`;
+  }).join('');
+
+  counter.innerHTML = `Стрик: <b>${G.dailyStreak||0}</b> ${claimedToday ? '· Приходи завтра!' : ''}`;
+  btn.disabled = claimedToday;
+  btn.textContent = claimedToday ? '✅ Уже забрано сегодня' : '🎁 Забрать награду';
+}
+
+// ── НЕДЕЛЬНОЕ ИСПЫТАНИЕ ────────────────────────────────────────────
+// Одна крупная цель на 7 дней — заработать N монет (считаются и клики, и
+// авто-производство). Награда весомее ежедневных заданий, но всё ещё в
+// рамках правила "одна награда не должна покрывать больше половины
+// стоимости следующего цеха" — плюс немного кристаллов сверху, ради
+// ощущения особенной, недельной награды.
+function weeklyTarget() {
+  return Math.max(5000, Math.round(cps() * 3000));
+}
+
+function initWeeklyChallenge() {
+  if (!G.weekly) G.weekly = { target:0, progress:0, claimed:false, resetAt:0, sessionCoins:0 };
+  if (Date.now() >= G.weekly.resetAt) {
+    G.weekly.target = weeklyTarget();
+    G.weekly.progress = 0;
+    G.weekly.claimed = false;
+    G.weekly.sessionCoins = 0;
+    G.weekly.resetAt = Date.now() + 7*24*60*60*1000;
+    showToast('📅 Новое недельное испытание!');
+  }
+  renderWeeklyChallenge();
+}
+
+function trackWeekly(amount) {
+  if (!G.weekly || G.weekly.claimed) return;
+  G.weekly.sessionCoins = (G.weekly.sessionCoins||0) + amount;
+  G.weekly.progress = G.weekly.sessionCoins;
+}
+
+function claimWeeklyChallenge() {
+  if (!G.weekly || G.weekly.claimed || G.weekly.progress < G.weekly.target) return;
+  G.weekly.claimed = true;
+  const coins    = Math.max(1000, Math.round(cps() * 100));
+  const crystals = 5;
+  G.coins += coins;
+  G.crystals = (G.crystals||0) + crystals;
+  G.lifetimeCrystals = (G.lifetimeCrystals||0) + crystals;
+  playSound('levelup');
+  goldenGlow(document.getElementById('hCoins'));
+  showToast(`🏆 Испытание выполнено! +${fmt(coins)} монет, +${crystals} 💎`);
+  renderWeeklyChallenge();
+  updateMenuBadge();
+  saveGame();
+}
+
+function renderWeeklyChallenge() {
+  const el = document.getElementById('weeklyChallengeBox');
+  if (!el || !G.weekly) return;
+  const pct = Math.min(100, Math.round(G.weekly.progress / G.weekly.target * 100));
+  const daysLeft = Math.max(0, Math.ceil((G.weekly.resetAt - Date.now()) / 86400000));
+  el.innerHTML = `
+    <div class="weekly-hdr">🏆 Заработай ${fmt(G.weekly.target)} монет</div>
+    <div class="weekly-sub">Осталось дней: ${daysLeft} · Награда: монеты + 💎5</div>
+    <div class="quest-pbar-wrap"><div class="quest-pbar" style="width:${pct}%"></div></div>
+    <div class="weekly-progress">${fmt(Math.min(G.weekly.progress,G.weekly.target))} / ${fmt(G.weekly.target)}</div>
+    <button class="btn-claim" ${G.weekly.claimed || G.weekly.progress<G.weekly.target ? 'disabled':''} onclick="claimWeeklyChallenge()">
+      ${G.weekly.claimed ? '✅ Получено' : (G.weekly.progress>=G.weekly.target ? '🎁 Забрать награду' : 'Ещё не выполнено')}
+    </button>`;
 }
 
 // ── ЕЖЕДНЕВНЫЕ ЗАДАНИЯ ───────────────────────────────────────────
@@ -1952,8 +3390,8 @@ function questTarget(type) {
 }
 
 const QUEST_REWARDS = [
-  { type:'coins',   getValue:() => Math.max(2000,  Math.round(cps() * 300))  },
-  { type:'coins',   getValue:() => Math.max(10000, Math.round(cps() * 900))  },
+  { type:'coins',   getValue:() => Math.max(300, Math.round(cps() * 25))  },
+  { type:'coins',   getValue:() => Math.max(800, Math.round(cps() * 60))  },
   { type:'boost',   getValue:() => 30 * 60 * 1000 },
   { type:'upgrade', getValue:() => 1 },
 ];
@@ -1972,11 +3410,11 @@ function generateQuests() {
 }
 
 function initQuests() {
-  if (!G.quests) G.quests = { list:[], resetAt:0, sessionCoins:0, sessionClicks:0, sessionUpgrades:0, sessionBuys:0, sessionAds:0 };
+  if (!G.quests) G.quests = { list:[], resetAt:0, sessionProduce:0, sessionCoins:0, sessionClicks:0, sessionUpgrades:0, sessionBuys:0, sessionAds:0 };
   if (Date.now() >= G.quests.resetAt) {
     G.quests.list = generateQuests();
     G.quests.resetAt = Date.now() + 24*60*60*1000;
-    G.quests.sessionCoins=0; G.quests.sessionClicks=0;
+    G.quests.sessionProduce=0; G.quests.sessionCoins=0; G.quests.sessionClicks=0;
     G.quests.sessionUpgrades=0; G.quests.sessionBuys=0; G.quests.sessionAds=0;
     showToast(t('questNew'));
   }
@@ -1987,12 +3425,13 @@ function initQuests() {
 
 function trackQuest(type, amount=1) {
   // Lifetime-счётчики для достижений — работают всегда, независимо от заданий
-  if (type==='qtCoins') G.lifetimeCoins  = (G.lifetimeCoins||0)  + amount;
+  if (type==='qtCoins') { G.lifetimeCoins  = (G.lifetimeCoins||0)  + amount; trackWeekly(amount); }
   if (type==='qtClick') G.lifetimeClicks = (G.lifetimeClicks||0) + amount;
   if (type==='qtAd')    G.lifetimeAds    = (G.lifetimeAds||0)    + amount;
 
   if (!G.quests) return;
   const q = G.quests;
+  if (type==='qtProduce') q.sessionProduce  = (q.sessionProduce||0)  + amount;
   if (type==='qtCoins')   q.sessionCoins    = (q.sessionCoins||0)    + amount;
   if (type==='qtClick')   q.sessionClicks   = (q.sessionClicks||0)   + amount;
   if (type==='qtUpgrade') q.sessionUpgrades = (q.sessionUpgrades||0) + amount;
@@ -2000,7 +3439,7 @@ function trackQuest(type, amount=1) {
   if (type==='qtAd')      q.sessionAds      = (q.sessionAds||0)      + amount;
   q.list.forEach(quest => {
     if (quest.claimed) return;
-    if (quest.type==='qtProduce') quest.progress = G.sold;
+    if (quest.type==='qtProduce') quest.progress = q.sessionProduce;
     if (quest.type==='qtClick')   quest.progress = q.sessionClicks;
     if (quest.type==='qtCoins')   quest.progress = q.sessionCoins;
     if (quest.type==='qtUpgrade') quest.progress = q.sessionUpgrades;
@@ -2015,6 +3454,8 @@ function claimQuest(idx) {
   const q = G.quests.list[idx];
   if (!q||q.claimed||q.progress<q.target) return;
   q.claimed = true;
+  G.questsCompleted = (G.questsCompleted || 0) + 1;
+  playSound('quest');
   const reward = QUEST_REWARDS[q.rewardIdx];
   if (reward.type==='coins') {
     const n = reward.getValue();
@@ -2033,18 +3474,44 @@ function claimQuest(idx) {
 }
 
 function updateMenuBadge() {
-  const hasQuest = G.quests && G.quests.list.some(q=>!q.claimed && q.progress>=q.target);
-  const hasAch   = ACHIEVEMENTS_DEF.some(d => !achState(d.id).claimed && achProgress(d) >= d.target);
-  const has = hasQuest || hasAch;
+  const unlocked  = streakUnlocked();
+  const hasQuest  = G.quests && G.quests.list.some(q=>!q.claimed && q.progress>=q.target);
+  const hasAch    = ACHIEVEMENTS_DEF.some(d => !achState(d.id).claimed && achProgress(d) >= d.target);
+  const hasStreak = unlocked && !dailyAlreadyClaimedToday();
+  const hasSkill  = SKILLS_DEF.some(d => { const c = skillCost(d.id); return c!==null && G.crystals>=c; });
+  // Впервые открывшаяся механика — подсвечиваем той же точкой, что и обычные
+  // уведомления, пока игрок не заглянет в раздел хотя бы раз.
+  const streakIsNew = unlocked && !G.seenStreakFeature;
+  const skillsIsNew = G.prestigeCount > 0 && !G.seenSkillsFeature;
+  const hasWeekly = G.weekly && !G.weekly.claimed && G.weekly.progress >= G.weekly.target;
+  const has = hasQuest || hasAch || hasStreak || hasSkill || streakIsNew || skillsIsNew || hasWeekly;
+  // Карточка "Награда за вход" — появляется только после покупки первого цеха
+  const streakCard = document.getElementById('streakMenuCard');
+  if (streakCard) streakCard.style.display = unlocked ? 'flex' : 'none';
   // badge на нижней вкладке Меню
   const mb = document.getElementById('menuBadge');
   if (mb) mb.classList.toggle('show', has && currentTab!=='menu');
   // badge на карточке Задания в хабе
   const qb = document.getElementById('questBadge');
   if (qb) qb.classList.toggle('show', hasQuest);
+  // badge на карточке Недельного испытания
+  const wb = document.getElementById('weeklyBadge');
+  if (wb) wb.classList.toggle('show', hasWeekly);
   // badge на карточке Достижения в хабе
   const ab = document.getElementById('achBadge');
   if (ab) ab.classList.toggle('show', hasAch);
+  // badge на карточке Навыков — есть на что потратить кристаллы, или раздел открылся впервые
+  const skb = document.getElementById('skillsBadge');
+  if (skb) skb.classList.toggle('show', hasSkill || skillsIsNew);
+  // sub-label навыков
+  const skillSub = document.getElementById('menuSubSkills');
+  if (skillSub) skillSub.textContent = `💎 ${fmt(G.crystals||0)}`;
+  // badge на карточке Награды за вход — есть награда, или раздел открылся впервые
+  const sb = document.getElementById('streakBadge');
+  if (sb) sb.classList.toggle('show', hasStreak || streakIsNew);
+  // sub-label награды за вход
+  const streakSub = document.getElementById('menuSubStreak');
+  if (streakSub) streakSub.textContent = hasStreak ? 'Награда ждёт!' : `Стрик: ${G.dailyStreak||0} · заходи завтра`;
   // sub-label заданий: N/3 (только забранные)
   const sub = document.getElementById('menuSubDaily');
   if (sub && G.quests) {
@@ -2134,7 +3601,7 @@ function tick(now) {
     if(m.progress>0){
       m.progress+=dt;
       if(m.progress>=m.speed){
-        const earned = m.reward * G.prestigeMult * getAdMultiplier() * iapMultiplier() * achievementMult() * referralMult();
+        const earned = m.reward * incomeMult() * getAdMultiplier() * getRushMultiplier();
         G.coins += earned;
         G.sold  += 1;
         m.progress = 0;
@@ -2165,7 +3632,7 @@ function tick(now) {
       const owned = G.machines.filter(m=>m.owned);
       if (owned.length) {
         const m = owned[Math.floor(Math.random()*owned.length)];
-        const bonus = Math.round(m.reward * G.prestigeMult * 10);
+        const bonus = Math.round(m.reward * incomeMult() * 10);
         G.coins += bonus;
         showToast('✨ Золотая деталь! +'+fmt(bonus));
         goldenGlow(document.getElementById('hCoins'));
@@ -2183,8 +3650,18 @@ function tick(now) {
     tick.lastAdUpdate = now;
     updateAdButton();
     updateMenuBadge();
+    maybeTriggerRushHour(now);
+    updateRushBanner();
+    if (comboCount > 0 && now - lastClickAt > COMBO_WINDOW) {
+      comboCount = 0;
+      const badge = document.getElementById('comboBadge');
+      if (badge) badge.style.display = 'none';
+    }
     if (currentTab==='menu' && currentMenuSection && !uiIsBusy()) {
+      if (currentMenuSection==='streak')  renderDailyStreak();
+      if (currentMenuSection==='stats')   renderStats();
       if (currentMenuSection==='daily')   renderQuests();
+      if (currentMenuSection==='weekly')  renderWeeklyChallenge();
       if (currentMenuSection==='ach')     renderAchievements();
       if (currentMenuSection==='friends') renderFriends();
     }
@@ -2206,8 +3683,52 @@ function applyLoaded(saved) {
     if (o.level!=null) return {id:d.id,level:o.level};
     return {id:d.id,level:o.bought?1:0};
   });
+  // Миграция старых сохранений: если появились новые цеха после того как
+  // человек последний раз сохранялся — дописываем их (свежими, не купленными)
+  MACHINES_DEF.forEach(d => {
+    if (!G.machines.find(m => m.id === d.id)) {
+      G.machines.push({ id:d.id, level:1, owned:false, auto:true, progress:0, reward:d.baseReward, speed:d.baseSpeed });
+    }
+  });
+  // Убираем записи с id, которых больше нет в текущем списке цехов
+  // (могли остаться от промежуточной версии с другой нумерацией)
+  G.machines = G.machines.filter(m => MACHINES_DEF.some(d => d.id === m.id));
+  // На всякий случай подчищаем характеристики ещё не купленных цехов —
+  // если номер цеха когда-то временно означал что-то другое (см. историю
+  // правок нумерации), не купленный цех не должен наследовать чужие цифры:
+  // он ещё не куплен, значит ничего не потеряется, если сверить с текущим
+  // описанием заново.
+  G.machines.forEach(m => {
+    if (!m.owned) {
+      const d = getDef(m.id);
+      if (d) { m.level = 1; m.reward = d.baseReward; m.speed = d.baseSpeed; }
+    }
+  });
   // Миграция старых сохранений: все купленные цеха теперь работают автоматически
   G.machines.forEach(m => { if (m.owned) m.auto = true; });
+  // Порядок карточек должен всегда совпадать с порядком в MACHINES_DEF
+  // (лаборатория — последней), а не с порядком записей в старом сохранении —
+  // иначе новые цеха, дописанные миграцией в конец, окажутся ПОСЛЕ лаборатории.
+  G.machines.sort((a, b) =>
+    MACHINES_DEF.findIndex(d => d.id === a.id) - MACHINES_DEF.findIndex(d => d.id === b.id));
+  // Миграция: у уже играющих (в сохранении есть реальный прогресс) не должен
+  // всплывать туториал для новичков и метки "НОВОЕ" на уже знакомых разделах —
+  // помечаем всё как "уже видел", раз это явно не первый запуск.
+  const isVeteran = G.machines.some(m => m.owned) || (G.sold || 0) > 0;
+  if (isVeteran) {
+    if (saved.tutorialSeen === undefined)       G.tutorialSeen = true;
+    if (saved.seenStreakFeature === undefined)  G.seenStreakFeature = true;
+    if (saved.seenSkillsFeature === undefined)  G.seenSkillsFeature = true;
+  }
+  // Разовая коррекция: старая формула кристаллов не ограничивала "бонус за
+  // ожидание" сверху и могла выдать сотни тысяч кристаллов за один престиж.
+  // Обрезаем баланс до того, что в принципе можно честно заработать по
+  // новой (исправленной) формуле — с запасом на промокоды.
+  let maxHonestCrystals = 5000; // запас на промокоды
+  for (let i = 0; i < (G.prestigeCount || 0); i++) maxHonestCrystals += (2 + i * 1.5) * 5 * 2.2;
+  maxHonestCrystals = Math.ceil(maxHonestCrystals);
+  if (G.crystals > maxHonestCrystals)         G.crystals = maxHonestCrystals;
+  if (G.lifetimeCrystals > maxHonestCrystals) G.lifetimeCrystals = maxHonestCrystals;
 }
 
 // ── INIT ─────────────────────────────────────────────────────────
@@ -2215,21 +3736,25 @@ function applyLoaded(saved) {
 // Яндекс требует определять язык через environment.i18n.lang при запуске
 
 async function initSDK() {
+  let cloudApplied = false;
   if (PLATFORM === 'vk') {
     try {
       await vkBridge.send('VKWebAppInit');
       vkReady = true;
-      await loadVKSave();
+      cloudApplied = await loadVKSave();
     } catch(e) {
       console.warn('[VK] Bridge недоступен:', e.message);
     }
   }
 
-  // Загружаем сохранение
-  const hasSave = loadGame();
+  // Загружаем локальное сохранение — но только если облачное только что
+  // не оказалось свежее (иначе только что подгруженный прогресс из облака
+  // тут же затирался бы локальной версией с этого устройства).
+  const hasSave = cloudApplied || loadGame();
   if (hasSave) {
     document.getElementById('saveNote').textContent = t('saveFound') + ' · ' + fmt(G.coins) + ' ' + t('coins');
   }
+  setThemeVars(G.theme || 'classic'); // применяем ещё на сплэше, до входа в игру
 
   // Показываем кнопку "Начать"
   document.getElementById('sdkLoading').style.display = 'none';
@@ -2248,17 +3773,23 @@ setTimeout(() => {
 document.getElementById('startBtn').addEventListener('click', () => {
   document.getElementById('splash').classList.add('hide');
   document.getElementById('game').style.display = 'flex';
+  if (G.soundEnabled) getAudioCtx(); // разблокируем звук по первому жесту пользователя
   fullRender();
   initIAP();
   initQuests();
+  initWeeklyChallenge();
   checkIncomingReferral();
   renderFriends();
   syncInvitedCount();
+  syncPurchases();
+  updateMenuBadge();
 
   // Офлайн доход
   const offlineCoins = calcOfflineIncome();
   const elapsed = Math.min(Date.now() - (G.lastSaved||0), MAX_OFFLINE_HOURS * 3600000);
-  if (offlineCoins > 0) showOfflineModal(offlineCoins, elapsed);
+  if (!G.tutorialSeen) showTutorial();
+  else if (offlineCoins > 0) showOfflineModal(offlineCoins, elapsed);
+  else maybeShowDailyModal();
 
   setTimeout(() => document.getElementById('splash').style.display = 'none', 900);
 
