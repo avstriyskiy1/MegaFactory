@@ -414,7 +414,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
   <button class="splash-btn" id="startBtn" style="display:none">▶ НАЧАТЬ</button>
   <div id="sdkLoading" style="margin-top:36px;font-size:14px;color:var(--muted);letter-spacing:2px">⏳ Загрузка...</div>
   <div class="splash-save-note" id="saveNote"></div>
-  <a href="https://avstriyskiy1.github.io/privacy/" target="_blank" rel="noopener" style="margin-top:20px;font-size:11px;color:var(--muted);text-decoration:underline">Политика конфиденциальности</a>
+  <a href="[ВСТАВЬ_ССЫЛКУ_НА_PRIVACY.HTML]" target="_blank" rel="noopener" style="margin-top:20px;font-size:11px;color:var(--muted);text-decoration:underline">Политика конфиденциальности</a>
 </div>
 
 <div class="milestone-toast" id="toast"></div>
@@ -2779,8 +2779,19 @@ async function shareProgressToWall() {
     showToast(t('shareProgressPosted'));
     playSound('quest');
   } catch(e) {
-    // Пользователь закрыл диалог публикации, не отправив пост — тихо выходим,
-    // как и в shareReferralLink() выше.
+    // Пользователь мог просто закрыть окно публикации, не отправив пост —
+    // это НЕ ошибка, тут действительно нужно тихо выйти. Но у vkBridge это
+    // приходит отдельным полем (error_reason), а не просто пустым catch —
+    // поэтому явно проверяем его и на любую ДРУГУЮ причину (метод недоступен,
+    // отклонён платформой и т.п.) показываем тост с деталью, а не молчим:
+    // тихий catch() до этой правки прятал реальные ошибки точно так же, как
+    // и настоящую отмену, из-за чего казалось что кнопка "просто не работает".
+    const reason = e?.error_data?.error_reason || e?.error_reason;
+    const isUserCancel = reason === 'User denied' || e?.error_type === 'client_error' && !reason;
+    console.warn('[Share] VKWebAppShowWallPostBox:', e);
+    if (!isUserCancel) {
+      showToast('⚠️ ' + (reason || t('shareProgressUnavailable')));
+    }
   }
 }
 
@@ -2956,8 +2967,8 @@ const THEMES = [
     unlock: () => true,
     vars: { '--accent':'#f0a500', '--accent2':'#e05c00', '--teal':'#00c9a7' } },
   { id:'neon', name:'Неон', icon:'🟣',
-    unlock: () => G.prestigeCount > 0,
-    hint: 'Открывается после первого престижа',
+    unlock: () => G.prestigeCount >= 5,
+    hint: 'Открывается после 5-го престижа',
     vars: { '--accent':'#ff2ec4', '--accent2':'#a000ff', '--teal':'#00f0ff' } },
   { id:'gold', name:'VIP Золото', icon:'🟡',
     unlock: () => !!(G.purchases && G.purchases.vipStatus),

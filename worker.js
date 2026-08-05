@@ -10,8 +10,12 @@
  *
  * Нужные секреты (задаются командой `wrangler secret put ...`, см. README):
  *   VK_APP_ID          — ID приложения (число)
- *   VK_SECRET_KEY       — "Защищённый ключ" из настроек приложения
- *                          (используется ТОЛЬКО для проверки подписи sign)
+ *   VK_SECRET_KEY       — "Защищённый ключ" из настроек приложения.
+ *                          Используется И для проверки подписи launchParams,
+ *                          И для проверки подписи платёжных уведомлений
+ *                          (VK подписывает их тем же самым ключом — в текущем
+ *                          кабинете разработчика отдельного "платёжного"
+ *                          секрета нет, см. PAYMENTS-SETUP.md).
  *   VK_SERVICE_TOKEN    — "Сервисный ключ доступа" из настроек приложения
  *                          (используется для вызова secure.addAppEvent)
  *   VK_ACTIVITY_ID      — ID активности рейтинга, настроенной в разделе
@@ -19,9 +23,14 @@
  *   ADMIN_KEY           — придуманный тобой пароль для панели администратора
  *                          промокодов (см. admin.html). Придумай длинную
  *                          случайную строку, никому её не показывай.
- *   VK_PAYMENTS_SECRET  — "Секретный ключ" именно из раздела "Платежи"
- *                          настроек приложения (это ДРУГОЙ ключ, не
- *                          VK_SECRET_KEY! См. PAYMENTS-SETUP.md).
+ *   VK_PAYMENTS_SECRET  — НЕОБЯЗАТЕЛЬНО. Если у твоего приложения всё же
+ *                          есть отдельный ключ именно в разделе "Платежи"
+ *                          (в старых типах приложений он иногда встречается),
+ *                          задай его сюда — тогда он будет использован ВМЕСТО
+ *                          VK_SECRET_KEY для подписи платёжных уведомлений.
+ *                          Если такого поля в кабинете нет (как в актуальном
+ *                          интерфейсе) — просто не задавай этот секрет,
+ *                          воркер возьмёт VK_SECRET_KEY.
  *
  * Нужен KV-namespace, привязанный в wrangler.toml под именем REFERRALS
  * (см. README — команда `wrangler kv namespace create REFERRALS`).
@@ -455,13 +464,22 @@ async function handleLoadGame(userId, env, corsHeaders) {
 // Единая точка входа для платёжных уведомлений VK (see PAYMENTS-SETUP.md).
 // Награда выдаётся ТОЛЬКО отсюда, после реального прохождения оплаты —
 // клиент никогда не может сам себе её начислить.
+//
+// ВАЖНО про секрет: в текущем кабинете разработчика VK (раздел «Платежи» →
+// «Подключение») отдельного "платёжного" секретного ключа больше нет — эти
+// уведомления подписываются ТЕМ ЖЕ САМЫМ "Защищённым ключом" приложения
+// (client_secret), который уже используется как VK_SECRET_KEY для проверки
+// launchParams в остальной части воркера. Отдельный VK_PAYMENTS_SECRET
+// оставлен только как необязательный override — если он не задан, берётся
+// VK_SECRET_KEY.
 async function handlePaymentNotification(request, env) {
   const text = await request.text();
   const params = new URLSearchParams(text);
 
+  const secret = env.VK_PAYMENTS_SECRET || env.VK_SECRET_KEY || '';
   const sig = params.get('sig');
-  const expectedSig = await vkPaymentsSign(params, env.VK_PAYMENTS_SECRET || '');
-  if (!sig || !env.VK_PAYMENTS_SECRET || sig !== expectedSig) {
+  const expectedSig = await vkPaymentsSign(params, secret);
+  if (!sig || !secret || sig !== expectedSig) {
     return paymentsJson({ error: { error_code: 10, error_msg: 'Bad signature', critical: true } });
   }
 
