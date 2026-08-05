@@ -311,6 +311,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
 .friends-stat-val{font-size:18px;font-weight:700;color:#ff6b9d;}
 .friends-stat-label{font-size:10px;color:var(--muted);margin-top:2px;}
 .btn-friends{width:100%;padding:10px;background:linear-gradient(135deg,#ff6b9d,#c2387a);border:none;border-radius:6px;color:#fff;font-family:'Exo 2',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:filter .15s;}
+.btn-friends-row{display:flex;gap:8px;margin-top:8px;}
+.btn-friends-row .btn-friends.secondary{margin-top:0;flex:1;}
 .btn-friends.secondary{margin-top:8px;background:linear-gradient(135deg,#4a9eff,#2f6fd6);}
 
 .friends-code{font-size:10px;color:var(--muted);text-align:center;margin-top:8px;word-break:break-all;}
@@ -783,11 +785,17 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
               </div>
             </div>
             <button class="btn-friends" onclick="shareReferralLink()" id="friendsShareBtn">📤 Пригласить друга</button>
-            <button class="btn-friends secondary" onclick="shareProgressToWall()" id="shareProgressBtn">📸 Поделиться прогрессом</button>
+            <div class="btn-friends-row">
+              <button class="btn-friends secondary" onclick="shareProgressToStory()" id="shareProgressStoryBtn">📸 В историю</button>
+              <button class="btn-friends secondary" onclick="shareProgressToWall()" id="shareProgressWallBtn">📝 На стену</button>
+            </div>
             <div class="friends-code" id="friendsCode"></div>
           </div>
           <div class="friends-rank-hdr">🏆 Рейтинг среди друзей</div>
-          <div id="friendsRankingList"><div class="friends-rank-empty">Загрузка...</div></div>
+          <div id="friendsRankingList">
+            <button class="btn-friends secondary" onclick="renderFriendsRanking()" id="loadRankingBtn">🏆 Загрузить топ друзей</button>
+            <div class="friends-rank-empty" style="margin-top:8px">VK спросит доступ к списку друзей только сейчас, по кнопке</div>
+          </div>
         </div>
 
       </div>
@@ -928,8 +936,7 @@ const I18N = {
     refShareText: 'Играю в МегаЗавод — присоединяйся, получи бонус на старте!',
     refLinkCopied: 'Ссылка скопирована!',
     refShareUnavailable: 'Не удалось поделиться, попробуй позже',
-    shareProgressBtn: '📸 Поделиться прогрессом',
-    shareProgressPosted: '📸 Пост опубликован на стене!',
+    shareProgressPosted: '📸 Готово!',
     shareProgressUnavailable: 'Доступно только внутри VK',
     shareProgressText: 'Мой МегаЗавод уже приносит {cps}/с! Заглянул в игру и построил {machines} цехов — присоединяйся 👇',
     refYourCode: 'Твой код',
@@ -2738,6 +2745,100 @@ async function registerRefCodeOnServer() {
   } catch(e) { console.warn('[REF] register error:', e); }
 }
 
+// ── ГЕНЕРАЦИЯ КАРТОЧКИ ПРОГРЕССА (canvas, без единого файла-картинки) ─────
+// Рисуем вертикальное изображение 1080×1920 (стандартный формат историй VK)
+// с текущей статистикой игрока. Цвета берём из активной темы оформления
+// (--accent/--teal), чтобы карточка визуально совпадала с тем, что игрок
+// видит в самой игре.
+function roundRectPath(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+function drawProgressCard() {
+  const W = 1080, H = 1920;
+  const canvas = document.createElement('canvas');
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext('2d');
+
+  const css    = getComputedStyle(document.documentElement);
+  const accent = (css.getPropertyValue('--accent') || '#f0a500').trim() || '#f0a500';
+  const teal   = (css.getPropertyValue('--teal')   || '#00c9a7').trim() || '#00c9a7';
+
+  // Тёмный фон + мягкое цветное свечение сверху, в цвет активной темы.
+  const bg = ctx.createLinearGradient(0, 0, 0, H);
+  bg.addColorStop(0, '#0d0d12');
+  bg.addColorStop(1, '#17171f');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, W, H);
+
+  const glow = ctx.createRadialGradient(W/2, H*0.3, 40, W/2, H*0.3, W*0.8);
+  glow.addColorStop(0, accent + '30');
+  glow.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = glow;
+  ctx.fillRect(0, 0, W, H);
+
+  // Заголовок
+  ctx.textAlign = 'center';
+  ctx.fillStyle = accent;
+  ctx.font = '700 66px "Russo One", sans-serif';
+  ctx.fillText('MEGAFACTORY', W/2, 220);
+  ctx.fillStyle = '#8b93a6';
+  ctx.font = '400 34px "Exo 2", sans-serif';
+  ctx.fillText('Idle Factory Tycoon', W/2, 272);
+
+  // Карточка со статистикой
+  const cardX = 90, cardY = 420, cardW = W - 180, cardH = 820;
+  ctx.fillStyle = 'rgba(255,255,255,0.05)';
+  roundRectPath(ctx, cardX, cardY, cardW, cardH, 32);
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+  ctx.lineWidth = 2;
+  roundRectPath(ctx, cardX, cardY, cardW, cardH, 32);
+  ctx.stroke();
+
+  const stats = [
+    ['💰', fmt(Math.floor(G.coins)),        'монет накоплено'],
+    ['⚡', fmt(cps()) + '/с',                'текущий доход'],
+    ['🏭', String(G.machines.filter(m => m.owned).length), 'цехов построено'],
+    ['🏆', String(G.prestigeCount || 0),     'престижей'],
+  ];
+  const rowH = cardH / stats.length;
+  stats.forEach((s, i) => {
+    const rowY = cardY + rowH * i + rowH / 2;
+    ctx.textAlign = 'left';
+    ctx.font = '64px sans-serif';
+    ctx.fillStyle = '#fff';
+    ctx.fillText(s[0], cardX + 50, rowY + 22);
+    ctx.font = '700 58px "Exo 2", sans-serif';
+    ctx.fillText(s[1], cardX + 150, rowY + 8);
+    ctx.fillStyle = '#8b93a6';
+    ctx.font = '400 32px "Exo 2", sans-serif';
+    ctx.fillText(s[2], cardX + 150, rowY + 56);
+    if (i < stats.length - 1) {
+      ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(cardX + 40, cardY + rowH * (i + 1));
+      ctx.lineTo(cardX + cardW - 40, cardY + rowH * (i + 1));
+      ctx.stroke();
+    }
+  });
+
+  // Призыв к действию
+  ctx.textAlign = 'center';
+  ctx.fillStyle = teal;
+  ctx.font = '700 46px "Exo 2", sans-serif';
+  ctx.fillText('Открой свой завод 👇', W/2, cardY + cardH + 140);
+
+  return canvas.toDataURL('image/png');
+}
+
 async function shareReferralLink() {
   const code = getMyRefCode();
   const url  = 'https://vk.com/app54630379#ref=' + code;
@@ -2758,19 +2859,58 @@ async function shareReferralLink() {
   }
 }
 
+// Общая проверка ошибки vkBridge: отмена самим пользователем — это НЕ ошибка,
+// тут нужно тихо выйти. Любая другая причина (метод недоступен, платформа не
+// поддерживает и т.п.) — настоящая проблема, и её стоит показать, а не молчать.
+function isUserCancelledShare(e) {
+  const reason = e?.error_data?.error_reason || e?.error_reason;
+  return { reason, cancelled: reason === 'User denied' || (e?.error_type === 'client_error' && !reason) };
+}
+
+// ── «Поделиться прогрессом» — история VK с настоящей картинкой ────────
+// VKWebAppShowStoryBox принимает готовую картинку прямо как base64 (поле
+// blob), без загрузки файлов на сервер — этим и пользуемся: рисуем карточку
+// на canvas (drawProgressCard выше) и открываем нативный редактор историй
+// с ней как фоном + кликабельным стикером-ссылкой на игру.
+async function shareProgressToStory() {
+  if (PLATFORM !== 'vk' || !vkReady) {
+    showToast(t('shareProgressUnavailable'));
+    return;
+  }
+  const code = getMyRefCode();
+  const url  = 'https://vk.com/app54630379#ref=' + code;
+  registerRefCodeOnServer();
+
+  try {
+    if (document.fonts && document.fonts.ready) await document.fonts.ready;
+    const blob = drawProgressCard();
+    await vkBridge.send('VKWebAppShowStoryBox', {
+      background_type: 'image',
+      blob,
+      attachment: { text: 'Играть', type: 'url', url },
+    });
+    showToast(t('shareProgressPosted'));
+    playSound('quest');
+  } catch(e) {
+    const { reason, cancelled } = isUserCancelledShare(e);
+    console.warn('[Share] VKWebAppShowStoryBox:', e);
+    if (!cancelled) showToast('⚠️ Не удалось открыть историю' + (reason ? ': ' + reason : ''));
+  }
+}
+
 // ── «Поделиться прогрессом» — пост на стену VK ─────────────────────
-// Использует VKWebAppShowWallPostBox — открывает НАСТОЯЩЕЕ нативное окно
-// публикации записи (пользователь сам подтверждает и может отредактировать
-// текст перед публикацией, игра не постит в обход него). В текст добавляется
-// реферальная ссылка — VK сам разворачивает такую ссылку в превью-карточку
-// со скриншотом/иконкой игры прямо в записи, отдельная картинка не нужна.
+// Использует VKWebAppShowWallPostBox — открывает нативное окно публикации
+// записи (пользователь сам подтверждает и может отредактировать текст
+// перед публикацией). В текст добавляется реферальная ссылка — VK сам
+// разворачивает такую ссылку в превью-карточку прямо в записи.
 //
-// VKWebAppShowWallPostBox поддерживается не на всех клиентах/версиях VK —
-// там, где его нет, VK отвечает общей "Unknown error" без деталей (это
-// особенность самого VK, не нашего кода). Чтобы кнопка не оказывалась
-// нерабочей на таких клиентах, при любой НЕ-отмене пользователем ошибке
-// автоматически пробуем запасной вариант — VKWebAppShare с той же ссылкой
-// (тот самый метод, что уже стабильно работает в "Пригласить друга").
+// ВАЖНО: раньше при любой ошибке здесь тихо подменялось на VKWebAppShare —
+// то есть кнопка "на стену" при сбое вела себя как обычное "Пригласить
+// друга", без предупреждения. Это и создавало ощущение "кнопка просто не
+// делает то, что должна". Теперь при реальной ошибке (не отмене) честно
+// показываем это тостом, без скрытой подмены на другой диалог — если метод
+// действительно недоступен на клиенте, лучше явно предложить "В историю"
+// (shareProgressToStory выше), которая работает независимо.
 async function shareProgressToWall() {
   if (PLATFORM !== 'vk' || !vkReady) {
     showToast(t('shareProgressUnavailable'));
@@ -2793,30 +2933,13 @@ async function shareProgressToWall() {
     // о публикации — не подтверждение, а просто обратная связь по действию.
     showToast(t('shareProgressPosted'));
     playSound('quest');
-    return;
   } catch(e) {
-    // Пользователь мог просто закрыть окно публикации, не отправив пост —
-    // это НЕ ошибка, тут действительно нужно тихо выйти без запасного
-    // варианта ниже. У vkBridge это приходит отдельным полем (error_reason).
-    const reason = e?.error_data?.error_reason || e?.error_reason;
-    const isUserCancel = reason === 'User denied' || (e?.error_type === 'client_error' && !reason);
-    console.warn('[Share] VKWebAppShowWallPostBox не сработал, пробуем VKWebAppShare:', e);
-    if (isUserCancel) return;
-  }
-
-  // Запасной вариант — тот же диалог, что и у "Пригласить друга". Здесь
-  // человек сам выбирает, куда отправить (не обязательно на стену), поэтому
-  // текст тоста нейтральный, а не "опубликовано на стене".
-  try {
-    await vkBridge.send('VKWebAppShare', { link: url });
-    showToast('📤 Готово!');
-    playSound('quest');
-  } catch(e2) {
-    // И запасной вариант отменили/не сработал — тут уже действительно нечего
-    // предложить, тихо выходим (как и везде в проекте при отмене диалога).
-    console.warn('[Share] Запасной VKWebAppShare тоже не сработал:', e2);
+    const { reason, cancelled } = isUserCancelledShare(e);
+    console.warn('[Share] VKWebAppShowWallPostBox:', e);
+    if (!cancelled) showToast('⚠️ Не получилось опубликовать на стене' + (reason ? ': ' + reason : '') + ' — попробуй «В историю»');
   }
 }
+
 
 function renderFriends() {
   const invitedEl = document.getElementById('friendsInvited');
@@ -3427,7 +3550,13 @@ function openMenuSection(section) {
   if (section==='daily')   renderQuests();
   if (section==='weekly')  renderWeeklyChallenge();
   if (section==='ach')     renderAchievements();
-  if (section==='friends') { renderFriends(); syncInvitedCount(); renderFriendsRanking(); }
+  // renderFriendsRanking() сюда намеренно НЕ вызывается — этот запрос дёргает
+  // VKWebAppGetFriends, который показывает нативный диалог "разрешить доступ
+  // к друзьям". Если делать это автоматически при каждом открытии раздела,
+  // диалог выскакивает без явного действия игрока, что и раздражало. Теперь
+  // рейтинг грузится только по кнопке "🏆 Загрузить топ друзей" в самом
+  // списке (см. HTML секции menuSecFriends).
+  if (section==='friends') { renderFriends(); syncInvitedCount(); }
 }
 
 function closeMenuSection() {
