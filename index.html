@@ -412,9 +412,9 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
   <div class="splash-logo">MegaFactory</div>
   <div class="splash-sub">Idle Factory Tycoon</div>
   <button class="splash-btn" id="startBtn" style="display:none">▶ НАЧАТЬ</button>
-  <div id="sdkLoading" style="margin-top:36px;font-size:14px;color:var(--muted);letter-spacing:2px">⏳ Загрузка...</div>
+  <div id="sdkLoading" style="margin-top:36px;font-size:14px;color:var(--muted);letter-spacing:2px">⏳ Ищем облачное сохранение...</div>
   <div class="splash-save-note" id="saveNote"></div>
-  <a href="[ВСТАВЬ_ССЫЛКУ_НА_PRIVACY.HTML]" target="_blank" rel="noopener" style="margin-top:20px;font-size:11px;color:var(--muted);text-decoration:underline">Политика конфиденциальности</a>
+  <a href="https://avstriyskiy1.github.io/privacy/" target="_blank" rel="noopener" style="margin-top:20px;font-size:11px;color:var(--muted);text-decoration:underline">Политика конфиденциальности</a>
 </div>
 
 <div class="milestone-toast" id="toast"></div>
@@ -4027,6 +4027,17 @@ function applyLoaded(saved) {
 // Шаг 1: SDK инициализируется ДО показа кнопки "Начать"
 // Яндекс требует определять язык через environment.i18n.lang при запуске
 
+// Раньше ниже была "страховка" — setTimeout на 1 секунду, который показывал
+// кнопку "Начать" безусловно, даже если initSDK() (внутри которого сетевой
+// запрос за облачным сохранением) ещё не закончился. На медленной сети или
+// при "холодном" старте воркера облачный запрос легко занимает больше
+// секунды — страховка срабатывала раньше настоящей загрузки, игрок жал
+// "Начать" по ещё пустому G (облачные данные ещё не применены через
+// applyLoaded), и реально терял прогресс с точки зрения того, что видел на
+// экране. Флаг ниже позволяет страховке отличать "всё ещё честно грузится"
+// от "SDK и правда завис" — и не бить по кнопке раньше времени.
+let sdkInitDone = false;
+
 async function initSDK() {
   let cloudApplied = false;
   if (PLATFORM === 'vk') {
@@ -4048,6 +4059,7 @@ async function initSDK() {
   }
   setThemeVars(G.theme || 'classic'); // применяем ещё на сплэше, до входа в игру
 
+  sdkInitDone = true;
   // Показываем кнопку "Начать"
   document.getElementById('sdkLoading').style.display = 'none';
   document.getElementById('startBtn').style.display   = 'block';
@@ -4056,11 +4068,21 @@ async function initSDK() {
 // Запускаем инициализацию SDK сразу при загрузке страницы
 initSDK();
 
-// Страховка — если SDK завис, показываем кнопку через 1 секунду
+// Страховка — если SDK/сеть реально зависли (не просто "чуть дольше
+// грузится"), через 8 секунд показываем кнопку без дальнейшего ожидания —
+// это ЗАМЕТНО дольше, чем занимает обычный запрос за облачным сохранением,
+// так что в норме эта страховка вообще не должна срабатывать. Если она всё
+// же сработала — sdkInitDone ещё false, и applyLoaded из облака ещё не
+// применился, поэтому дальше игра просто продолжит грузиться в фоне и как
+// только реально дойдёт до конца, локальный/облачный прогресс подтянется
+// сам — кнопку это уже не блокирует, но G на момент нажатия может быть
+// неактуален, если игрок успеет тапнуть в первую же секунду после появления.
 setTimeout(() => {
+  if (sdkInitDone) return; // всё честно загрузилось само — страховка не нужна
+  console.warn('[Init] SDK не ответил за 8с — показываем кнопку без ожидания');
   document.getElementById('sdkLoading').style.display = 'none';
   document.getElementById('startBtn').style.display   = 'block';
-}, 1000);
+}, 8000);
 
 document.getElementById('startBtn').addEventListener('click', () => {
   document.getElementById('splash').classList.add('hide');
