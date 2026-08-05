@@ -2887,7 +2887,11 @@ async function shareProgressToStory() {
     await vkBridge.send('VKWebAppShowStoryBox', {
       background_type: 'image',
       blob,
-      attachment: { text: 'Играть', type: 'url', url },
+      // "text" у стикера-ссылки — НЕ произвольная строка, а один из
+      // фиксированных типов кнопки, которые VK сам переводит и рисует
+      // (список пришёл прямо в ошибке от VK: play/go_to/open/...).
+      // "play" ближе всего по смыслу к игре.
+      attachment: { text: 'play', type: 'url', url },
     });
     showToast(t('shareProgressPosted'));
     playSound('quest');
@@ -2956,8 +2960,15 @@ function renderFriends() {
 async function renderFriendsRanking() {
   const el = document.getElementById('friendsRankingList');
   if (!el) return;
+  // Единый рендер состояния "не получилось" — везде с кнопкой повтора,
+  // чтобы транспортная ошибка/временный сбой сети не оставляли тупик:
+  // ткнул "Загрузить топ" → не получилось → и без этой кнопки раздел
+  // приходилось полностью закрывать и открывать заново, чтобы попробовать
+  // ещё раз.
+  const retryHtml = (msg) => `<div class="friends-rank-empty">${msg}</div><button class="btn-friends secondary" style="margin-top:10px" onclick="renderFriendsRanking()">🔄 Попробовать ещё раз</button>`;
+
   if (PLATFORM !== 'vk' || !vkReady) {
-    el.innerHTML = '<div class="friends-rank-empty">Доступно только внутри VK</div>';
+    el.innerHTML = retryHtml('Доступно только внутри VK');
     return;
   }
   if (!GLOBAL_LB_ENDPOINT) {
@@ -2969,7 +2980,7 @@ async function renderFriendsRanking() {
     const friendsRes = await vkBridge.send('VKWebAppGetFriends', { multi: false });
     const friends = (friendsRes.users || []).slice(0, 100);
     if (!friends.length) {
-      el.innerHTML = '<div class="friends-rank-empty">Друзья ещё не найдены</div>';
+      el.innerHTML = retryHtml('Друзья ещё не найдены');
       return;
     }
     const launchParams = await getLaunchParamsString();
@@ -2980,7 +2991,7 @@ async function renderFriendsRanking() {
       body: JSON.stringify({ launchParams, friendIds: friends.map(f => f.id) }),
     });
     const data = await res.json();
-    if (!data.ok) { el.innerHTML = '<div class="friends-rank-empty">Не удалось загрузить</div>'; return; }
+    if (!data.ok) { el.innerHTML = retryHtml('Не удалось загрузить'); return; }
 
     const entries = [{
       id: profileRes.id,
@@ -3000,7 +3011,7 @@ async function renderFriendsRanking() {
     entries.sort((a,b) => b.score - a.score);
 
     if (entries.length === 1) {
-      el.innerHTML = '<div class="friends-rank-empty">Пока никто из друзей не играет — пригласи их!</div>';
+      el.innerHTML = retryHtml('Пока никто из друзей не играет — пригласи их!');
       return;
     }
     el.innerHTML = entries.map((e,i) => `
@@ -3012,7 +3023,7 @@ async function renderFriendsRanking() {
       </div>`).join('');
   } catch(e) {
     console.warn('[Friends] Ошибка рейтинга:', e);
-    el.innerHTML = '<div class="friends-rank-empty">Не удалось загрузить рейтинг</div>';
+    el.innerHTML = retryHtml('Не удалось загрузить рейтинг');
   }
 }
 
