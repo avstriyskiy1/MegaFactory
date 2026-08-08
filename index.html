@@ -380,7 +380,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
 .iap-info { flex:1; }
 .iap-name { font-size:14px; font-weight:500; margin-bottom:3px; }
 .iap-desc { font-size:11px; color:var(--muted); line-height:1.5; }
-.iap-badge { position:absolute; top:8px; right:90px; font-size:10px; padding:2px 8px; border-radius:10px; background:rgba(0,201,167,.15); color:var(--teal); border:1px solid rgba(0,201,167,.3); }
+.iap-badge { display:inline-block; vertical-align:middle; margin-left:6px; font-size:9px; padding:2px 7px; border-radius:10px; background:rgba(0,201,167,.15); color:var(--teal); border:1px solid rgba(0,201,167,.3); white-space:nowrap; }
 .btn-iap { padding:8px 14px; border-radius:6px; font-family:'Exo 2',sans-serif; font-size:13px; font-weight:500; cursor:pointer; transition:all .15s; flex-shrink:0; text-align:center; min-width:72px; }
 .btn-iap.starter { background:#4a9eff22; border:1px solid #4a9eff; color:#4a9eff; }
 
@@ -1408,10 +1408,9 @@ function renderIAP() {
     const owned  = prod.once && iapFlagOwned(prod.id);
     return `<div class="iap-item ${prod.type}${owned?' owned':''}">
       <div class="iap-info">
-        <div class="iap-name">${t(prod.nameKey)}${owned?' ✓':''}</div>
+        <div class="iap-name">${t(prod.nameKey)}${owned?' ✓':''}${prod.badgeKey && !owned ? `<span class="iap-badge">${t(prod.badgeKey)}</span>` : ''}</div>
         <div class="iap-desc">${t(prod.descKey)}</div>
       </div>
-      ${prod.badgeKey && !owned ? `<div class="iap-badge">${t(prod.badgeKey)}</div>` : ''}
       <button class="btn-iap ${prod.type}" onclick="buyProduct('${prod.id}')" ${owned?'disabled':''}>
         ${owned ? t('bought') : prod.price}
       </button>
