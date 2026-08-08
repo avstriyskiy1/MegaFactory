@@ -46,6 +46,12 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
 .header-stats{display:flex;align-items:center;gap:6px;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none;}
 .header-stats::-webkit-scrollbar{display:none;}
 .rush-banner{background:linear-gradient(90deg,#ff2e6b,#ff8a00);color:#fff;text-align:center;padding:7px 10px;font-size:12px;font-weight:700;letter-spacing:.02em;animation:rushPulse 1.2s ease-in-out infinite;}
+.event-banner{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 12px;font-size:12px;font-weight:600;color:#fff;}
+.event-banner.breakdown{background:linear-gradient(90deg,#7a1f1f,#c23b2e);}
+.event-banner.package{background:linear-gradient(90deg,#1f5c3a,#2e9e5b);}
+.event-banner-btn{flex-shrink:0;padding:6px 12px;border-radius:20px;border:1px solid rgba(255,255,255,.5);background:rgba(255,255,255,.15);color:#fff;font-family:'Exo 2',sans-serif;font-size:12px;font-weight:700;cursor:pointer;transition:background .15s;}
+.event-banner-btn:hover{background:rgba(255,255,255,.28);}
+.mcard.broken{border-color:#c23b2e;background:linear-gradient(135deg,rgba(194,59,46,.12),rgba(122,31,31,.08));}
 @keyframes rushPulse{0%,100%{filter:brightness(1);}50%{filter:brightness(1.25);}}
 .game-title{font-family:'Russo One',sans-serif;font-size:20px;color:var(--accent);letter-spacing:1px;}
 .stat-pill{background:var(--bg3);border:1px solid var(--border);border-radius:20px;padding:5px 10px;font-size:12px;color:var(--muted);display:flex;align-items:center;gap:4px;flex-shrink:0;white-space:nowrap;}
@@ -219,6 +225,40 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
 .quest-card.ach-tier-silver.done{background:rgba(192,192,192,.08);}
 .quest-card.ach-tier-gold.done{background:rgba(255,215,0,.08);}
 
+/* Достижения — компактные плитки по категориям (вместо quest-card на каждое) */
+.ach-block{margin-bottom:14px;}
+.ach-block-title{font-size:12px;font-weight:600;color:var(--muted);margin-bottom:6px;letter-spacing:.02em;}
+.ach-tiles{display:flex;gap:8px;}
+.ach-tile{flex:1;max-width:74px;aspect-ratio:1;background:var(--card);border:2px solid var(--tier,var(--border));border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;opacity:.4;transition:transform .1s,opacity .15s;}
+.ach-tile:active{transform:scale(0.93);}
+.ach-tile.ready{opacity:1;background:rgba(255,255,255,.06);animation:achTilePulse 1.4s ease-in-out infinite;}
+.ach-tile.claimed{opacity:1;background:rgba(255,255,255,.03);}
+.ach-tile-icon{font-size:22px;}
+.ach-tile.claimed .ach-tile-icon{color:var(--tier);font-weight:700;}
+.ach-tile-bar{width:70%;height:3px;background:rgba(255,255,255,.12);border-radius:2px;overflow:hidden;}
+.ach-tile-bar div{height:100%;border-radius:2px;}
+@keyframes achTilePulse{0%,100%{box-shadow:0 0 0 0 rgba(255,255,255,0);}50%{box-shadow:0 0 0 4px var(--tier);}}
+
+/* Сезонный пропуск */
+.season-summary{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:12px;text-align:center;}
+.season-block-title{font-size:12px;font-weight:600;color:var(--muted);letter-spacing:.02em;margin:14px 0 8px;}
+.season-title{font-size:16px;font-weight:700;color:var(--accent);}
+.season-sub{font-size:12px;color:var(--muted);margin:4px 0 10px;}
+.season-premium-badge{font-size:12px;font-weight:600;color:#3ec9ff;background:rgba(62,201,255,.1);border:1px solid rgba(62,201,255,.3);border-radius:20px;padding:6px 12px;display:inline-block;}
+.season-track{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:8px 10px;}
+.season-track-hdr{display:flex;font-size:11px;color:var(--muted);padding:4px 4px 8px;font-weight:600;}
+.season-track-hdr span{flex:1;text-align:center;}
+.season-track-hdr span:first-child{flex:0 0 26px;}
+.season-tier-row{display:flex;align-items:center;gap:6px;padding:5px 0;border-top:1px solid var(--border);}
+.season-tier-row:first-child{border-top:none;}
+.season-tier-num{flex:0 0 26px;text-align:center;font-size:12px;font-weight:700;color:var(--muted);}
+.season-tier-row.unlocked .season-tier-num{color:var(--teal);}
+.season-cell{flex:1;display:flex;align-items:center;justify-content:center;padding:8px 4px;border-radius:8px;background:var(--bg3);font-size:11px;font-weight:600;cursor:pointer;opacity:.4;text-align:center;transition:opacity .15s,transform .1s;}
+.season-cell:active{transform:scale(0.95);}
+.season-cell.ready{opacity:1;background:rgba(0,201,167,.12);border:1px solid var(--teal);color:var(--teal);}
+.season-cell.claimed{opacity:.5;background:rgba(255,255,255,.03);}
+.season-cell.locked-premium{opacity:.3;cursor:default;}
+
 /* DAILY STREAK */
 .streak-desc{font-size:12px;color:var(--muted);text-align:center;padding:4px 0 10px;}
 .streak-counter{text-align:center;font-size:13px;color:var(--muted);margin-bottom:12px;}
@@ -311,6 +351,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
 .friends-stat-val{font-size:18px;font-weight:700;color:#ff6b9d;}
 .friends-stat-label{font-size:10px;color:var(--muted);margin-top:2px;}
 .btn-friends{width:100%;padding:10px;background:linear-gradient(135deg,#ff6b9d,#c2387a);border:none;border-radius:6px;color:#fff;font-family:'Exo 2',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:filter .15s;}
+.btn-friends-row{display:flex;gap:8px;margin-top:8px;}
+.btn-friends-row .btn-friends.secondary{margin-top:0;flex:1;}
 .btn-friends.secondary{margin-top:8px;background:linear-gradient(135deg,#4a9eff,#2f6fd6);}
 
 .friends-code{font-size:10px;color:var(--muted);text-align:center;margin-top:8px;word-break:break-all;}
@@ -331,6 +373,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
 .iap-item.starter { border:1px solid #4a9eff; }
 .iap-item.vip     { border:1px solid var(--accent); background:linear-gradient(135deg,rgba(240,165,0,.07),rgba(224,92,0,.05)); }
 .iap-item.coins   { border:1px solid #7c5cff; }
+.iap-item.cosmetic { border:1px solid #ff6bd6; background:linear-gradient(135deg,rgba(255,107,214,.08),rgba(123,47,247,.06)); }
+.iap-item.season { border:1px solid #3ec9ff; background:linear-gradient(135deg,rgba(62,201,255,.09),rgba(123,47,247,.06)); }
 .iap-item.owned   { border-color:#3a4060; opacity:.65; }
 .iap-icon { font-size:32px; flex-shrink:0; }
 .iap-info { flex:1; }
@@ -343,6 +387,9 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
 .btn-iap.vip     { background:var(--accent); border:1px solid var(--accent); color:#000; font-weight:700; }
 
 .btn-iap.coins   { background:#7c5cff22; border:1px solid #7c5cff; color:#a090ff; }
+
+.btn-iap.cosmetic { background:#ff6bd622; border:1px solid #ff6bd6; color:#ff9fe4; }
+.btn-iap.season   { background:#3ec9ff22; border:1px solid #3ec9ff; color:#8adfff; }
 
 .btn-iap:disabled { opacity:.4; cursor:not-allowed; filter:none; }
 .btn-lb-refresh { width:100%; padding:10px; background:transparent; border:1px solid var(--border); border-radius:4px; color:var(--muted); font-family:'Exo 2',sans-serif; font-size:14px; cursor:pointer; transition:all .15s; margin-top:4px; }
@@ -382,6 +429,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
   .btn-iap.starter:hover { background:#4a9eff; color:#000; }
   .btn-iap.vip:hover { filter:brightness(1.1); }
   .btn-iap.coins:hover { background:#7c5cff; color:#fff; }
+  .btn-iap.cosmetic:hover { background:#ff6bd6; color:#fff; }
+  .btn-iap.season:hover { background:#3ec9ff; color:#04222c; }
   .btn-lb-refresh:hover { border-color:var(--accent); color:var(--accent); }
   .splash-btn:hover{filter:brightness(1.15)}
   .btn-hdr:hover{border-color:var(--accent);color:var(--accent);}
@@ -496,6 +545,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
     </div>
   </div>
   <div class="rush-banner" id="rushBanner" style="display:none">🚨 Час пик! Доход ×2 — осталось <b id="rushTimer">0:00</b></div>
+  <div class="event-banner" id="eventBanner" style="display:none"></div>
   <div class="layout">
     <div class="tab-content">
       <div class="tab-pane active" id="pane-factory">
@@ -583,6 +633,17 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
               <div class="menu-card-sub">Большая цель на 7 дней</div>
             </div>
             <span class="tab-badge menu-badge" id="weeklyBadge"></span>
+            <div class="menu-card-arrow">›</div>
+          </div>
+
+          <!-- Сезонный пропуск -->
+          <div class="menu-card" onclick="openMenuSection('season')">
+            <div class="menu-card-icon">🎫</div>
+            <div class="menu-card-info">
+              <div class="menu-card-title">Сезонный пропуск</div>
+              <div class="menu-card-sub">15 уровней наград за 14 дней</div>
+            </div>
+            <span class="tab-badge menu-badge" id="seasonBadge"></span>
             <div class="menu-card-arrow">›</div>
           </div>
 
@@ -760,6 +821,16 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
           <div id="weeklyChallengeBox"></div>
         </div>
 
+        <!-- Секция: Сезонный пропуск -->
+        <div id="menuSecSeason" style="display:none">
+          <button class="menu-back-btn" onclick="closeMenuSection('season')">‹ Назад</button>
+          <div class="season-summary" id="seasonSummary"></div>
+          <div class="season-block-title">🎯 Задания сезона</div>
+          <div class="quest-list" id="seasonQuestsList"></div>
+          <div class="season-block-title">🎫 Уровни пропуска</div>
+          <div class="season-track" id="seasonTierList"></div>
+        </div>
+
         <!-- Секция: Достижения -->
         <div id="menuSecAch" style="display:none">
           <button class="menu-back-btn" onclick="closeMenuSection('ach')">‹ Назад</button>
@@ -783,11 +854,17 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
               </div>
             </div>
             <button class="btn-friends" onclick="shareReferralLink()" id="friendsShareBtn">📤 Пригласить друга</button>
-            <button class="btn-friends secondary" onclick="shareProgressToWall()" id="shareProgressBtn">📸 Поделиться прогрессом</button>
+            <div class="btn-friends-row">
+              <button class="btn-friends secondary" onclick="shareProgressToStory()" id="shareProgressStoryBtn">📸 В историю</button>
+              <button class="btn-friends secondary" onclick="shareProgressToWall()" id="shareProgressWallBtn">📝 На стену</button>
+            </div>
             <div class="friends-code" id="friendsCode"></div>
           </div>
           <div class="friends-rank-hdr">🏆 Рейтинг среди друзей</div>
-          <div id="friendsRankingList"><div class="friends-rank-empty">Загрузка...</div></div>
+          <div id="friendsRankingList">
+            <button class="btn-friends secondary" onclick="renderFriendsRanking()" id="loadRankingBtn">🏆 Загрузить топ друзей</button>
+            <div class="friends-rank-empty" style="margin-top:8px">VK спросит доступ к списку друзей только сейчас, по кнопке</div>
+          </div>
         </div>
 
       </div>
@@ -911,6 +988,17 @@ const I18N = {
     iapAutoDesc: 'Открывает автопокупку следующего цеха и автоапгрейд самого дешёвого улучшения — настраивается в Настройках',
     iapAutoBadge: 'AFK',
     iapToastAuto: '🤖 Автопилот разблокирован — включи его в Настройках!',
+    iapThemeAurora: '🌌 Тема «Аврора»',
+    iapThemeAuroraDesc: 'Эксклюзивная тема оформления — космический сине-зелёный градиент. Чистая косметика, на баланс не влияет',
+    iapToastThemeAurora: '🌌 Тема «Аврора» открыта — выбери её в Настройках!',
+    iapThemeMagma: '🔥 Тема «Магма»',
+    iapThemeMagmaDesc: 'Эксклюзивная тема оформления — огненно-красный градиент. Чистая косметика, на баланс не влияет',
+    iapToastThemeMagma: '🔥 Тема «Магма» открыта — выбери её в Настройках!',
+    iapCosmeticBadge: 'КОСМЕТИКА',
+    iapSeasonPass: '🎫 Сезонный пропуск',
+    iapSeasonPassDesc: 'Открывает премиум-награды на всех уровнях сезона — до конца текущего сезона (14 дней)',
+    iapSeasonBadge: 'СЕЗОН',
+    iapToastSeasonPass: '🎫 Премиум-трек открыт до конца сезона!',
     settingsAutoBuy: '🤖 Автопокупка цехов',
     settingsAutoBuyHint: 'Сам покупает следующий цех, как только хватает монет',
     settingsAutoUpgrade: '⬆️ Автоапгрейд',
@@ -928,8 +1016,7 @@ const I18N = {
     refShareText: 'Играю в МегаЗавод — присоединяйся, получи бонус на старте!',
     refLinkCopied: 'Ссылка скопирована!',
     refShareUnavailable: 'Не удалось поделиться, попробуй позже',
-    shareProgressBtn: '📸 Поделиться прогрессом',
-    shareProgressPosted: '📸 Пост опубликован на стене!',
+    shareProgressPosted: '📸 Готово!',
     shareProgressUnavailable: 'Доступно только внутри VK',
     shareProgressText: 'Мой МегаЗавод уже приносит {cps}/с! Заглянул в игру и построил {machines} цехов — присоединяйся 👇',
     refYourCode: 'Твой код',
@@ -973,6 +1060,15 @@ const I18N = {
     ach_friends_20_n:'Народный магнат', ach_friends_20_d:'Пригласи 20 друзей',
     ach_promo_1_n:'Счастливый код', ach_promo_1_d:'Активируй 1 промокод',
     ach_promo_5_n:'Охотник за кодами', ach_promo_5_d:'Активируй 5 промокодов',
+    ach_daily_7_n:'Неделя привычки', ach_daily_7_d:'Забери ежедневную награду 7 раз',
+    ach_daily_30_n:'Месяц с заводом', ach_daily_30_d:'Забери ежедневную награду 30 раз',
+    ach_daily_100_n:'Верный директор', ach_daily_100_d:'Забери ежедневную награду 100 раз',
+    ach_days_7_n:'Неделя в игре', ach_days_7_d:'Заходи в игру 7 разных дней',
+    ach_days_30_n:'Месяц в игре', ach_days_30_d:'Заходи в игру 30 разных дней',
+    ach_days_100_n:'Сто дней завода', ach_days_100_d:'Заходи в игру 100 разных дней',
+    ach_quests_10_n:'Первые задания', ach_quests_10_d:'Выполни 10 ежедневных заданий',
+    ach_quests_50_n:'Мастер заданий', ach_quests_50_d:'Выполни 50 ежедневных заданий',
+    ach_quests_200_n:'Легенда заданий', ach_quests_200_d:'Выполни 200 ежедневных заданий',
     // Задания
     questTitle:'Ежедневные задания', questTimer:'Обновление через',
     questClaim:'🎁 Забрать награду', questDone:'✅ Выполнено',
@@ -1039,8 +1135,23 @@ const MILESTONES = [
 ];
 
 // ── IN-APP PURCHASES ─────────────────────────────────────────────
-// Товары создаются в консоли Яндекс.Игр → Монетизация → Товары
-// ID товаров должны совпадать с теми что зарегистрированы в консоли
+// Цены — В ГОЛОСАХ ВКонтакте (их внутренняя валюта), а не в рублях: так
+// требуют правила VK Mini Apps (dev.vk.com/ru/mini-apps-rules, п. про цены
+// в валюте платформы) — раньше тут были рубли, и приложение из-за этого
+// отклонили на модерации. Число голосов ниже ДОЛЖНО совпадать 1-в-1 с тем,
+// что реально стоит списание — см. PAYMENT_CATALOG в worker.js, это два
+// разных файла и их приходится держать в синхроне руками.
+function pluralRu(n, one, few, many) {
+  const mod100 = Math.abs(n) % 100;
+  const mod10  = mod100 % 10;
+  if (mod100 > 10 && mod100 < 20) return many;
+  if (mod10 > 1 && mod10 < 5) return few;
+  if (mod10 === 1) return one;
+  return many;
+}
+function voicesLabel(n) {
+  return `${n} ${pluralRu(n, 'голос', 'голоса', 'голосов')}`;
+}
 
 const IAP_PRODUCTS = [
   {
@@ -1048,8 +1159,9 @@ const IAP_PRODUCTS = [
     type:     'starter',
     nameKey:  'iapStarter',
     descKey:  'iapStarterDesc',
-    price:    '99 ₽',
+    price:    voicesLabel(40),
     once:     true,   // разовая покупка
+    flag:     'starterPack', // ключ в G.purchases — используется везде вместо хардкода id
     onBuy:    () => {
       G.purchases.starterPack = true;
       adCooldownEnd = 0; // Сбрасываем cooldown рекламы
@@ -1061,8 +1173,9 @@ const IAP_PRODUCTS = [
     type:     'vip',
     nameKey:  'iapVip',
     descKey:  'iapVipDesc',
-    price:    '299 ₽',
+    price:    voicesLabel(120),
     once:     true,
+    flag:     'vipStatus',
     badgeKey: 'iapBadge',
     onBuy:    () => {
       G.purchases.vipStatus = true;
@@ -1074,8 +1187,9 @@ const IAP_PRODUCTS = [
     type:     'vip',
     nameKey:  'iapLab',
     descKey:  'iapLabDesc',
-    price:    '199 ₽',
+    price:    voicesLabel(80),
     once:     true,
+    flag:     'secretLab',
     badgeKey: 'iapLabBadge',
     onBuy:    () => {
       G.purchases.secretLab = true;
@@ -1092,11 +1206,26 @@ const IAP_PRODUCTS = [
     },
   },
   {
+    id:       'auto_pilot',
+    type:     'vip',
+    nameKey:  'iapAuto',
+    descKey:  'iapAutoDesc',
+    price:    voicesLabel(60),
+    once:     true,
+    flag:     'autoPilot',
+    badgeKey: 'iapAutoBadge',
+    onBuy:    () => {
+      G.purchases.autoPilot = true;
+      showToast(t('iapToastAuto'));
+      renderSettingsPanel();
+    },
+  },
+  {
     id:       'coin_pack',
     type:     'coins',
     nameKey:  'iapCoins',
     descKey:  'iapCoinsDesc',
-    price:    '59 ₽',
+    price:    voicesLabel(25),
     once:     false,  // можно покупать несколько раз
     onBuy:    () => {
       const hourly = cps() * 7200; // 2 часа
@@ -1106,23 +1235,79 @@ const IAP_PRODUCTS = [
     },
   },
   {
-    id:       'auto_pilot',
-    type:     'vip',
-    nameKey:  'iapAuto',
-    descKey:  'iapAutoDesc',
-    price:    '149 ₽',
+    // ── Косметика: тема оформления "Аврора" ────────────────────────
+    // Чисто визуальная покупка — не влияет ни на цену цехов, ни на доход,
+    // ни на любую другую механику баланса. Открывает пункт в THEMES ниже.
+    id:       'theme_aurora',
+    type:     'cosmetic',
+    nameKey:  'iapThemeAurora',
+    descKey:  'iapThemeAuroraDesc',
+    price:    voicesLabel(28),
     once:     true,
-    badgeKey: 'iapAutoBadge',
+    flag:     'themeAurora',
+    badgeKey: 'iapCosmeticBadge',
     onBuy:    () => {
-      G.purchases.autoPilot = true;
-      showToast(t('iapToastAuto'));
-      renderSettingsPanel();
+      G.purchases.themeAurora = true;
+      showToast(t('iapToastThemeAurora'));
+      renderThemePicker();
+    },
+    onRevoke: () => {
+      if (G.theme === 'aurora') { G.theme = 'classic'; setThemeVars('classic'); }
+      renderThemePicker();
+      showToast('Тема «Аврора» стала недоступна (возврат оплаты)');
+    },
+  },
+  {
+    // ── Косметика: тема оформления "Магма" ─────────────────────────
+    id:       'theme_magma',
+    type:     'cosmetic',
+    nameKey:  'iapThemeMagma',
+    descKey:  'iapThemeMagmaDesc',
+    price:    voicesLabel(28),
+    once:     true,
+    flag:     'themeMagma',
+    badgeKey: 'iapCosmeticBadge',
+    onBuy:    () => {
+      G.purchases.themeMagma = true;
+      showToast(t('iapToastThemeMagma'));
+      renderThemePicker();
+    },
+    onRevoke: () => {
+      if (G.theme === 'magma') { G.theme = 'classic'; setThemeVars('classic'); }
+      renderThemePicker();
+      showToast('Тема «Магма» стала недоступна (возврат оплаты)');
+    },
+  },
+  {
+    // ── Сезонный пропуск: премиум-трек ──────────────────────────────
+    // once:false — покупается заново каждый сезон (как и положено боевому
+    // пропуску), выдаётся через тот же "pending" механизм, что и coin_pack
+    // (см. syncPurchases выше — расходники приходят через data.pending).
+    id:       'season_pass',
+    type:     'season',
+    nameKey:  'iapSeasonPass',
+    descKey:  'iapSeasonPassDesc',
+    price:    voicesLabel(75),
+    once:     false,
+    badgeKey: 'iapSeasonBadge',
+    onBuy:    () => {
+      ensureSeasonFresh();
+      G.seasonPremiumForIndex = G.seasonIndex;
+      showToast(t('iapToastSeasonPass'));
+      renderSeasonPass();
     },
   },
 ];
 
 // Хранит id купленных товаров (сохраняется в G)
-// G.purchases = { starterPack: false, vipStatus: false }
+// G.purchases = { starterPack: false, vipStatus: false, ... }
+// Ключ purchases-флага для каждого разового товара живёт в поле `flag` самого
+// продукта — используем это везде ниже вместо трёх отдельных хардкод-списков
+// id, которые раньше приходилось руками держать в синхроне.
+function iapFlagOwned(id) {
+  const prod = IAP_PRODUCTS.find(p => p.id === id);
+  return !!(prod && prod.flag && G.purchases && G.purchases[prod.flag]);
+}
 
 function iapMultiplier() {
   return G.purchases && G.purchases.vipStatus ? 1.5 : 1;
@@ -1142,12 +1327,7 @@ async function initIAP() {
 async function buyProduct(id) {
   const prod = IAP_PRODUCTS.find(p => p.id === id);
   if (!prod) { console.error('[IAP] Товар не найден:', id); return; }
-  if (prod.once && G.purchases && (
-    (id==='starter_pack' && G.purchases.starterPack) ||
-    (id==='vip_status'   && G.purchases.vipStatus)   ||
-    (id==='secret_lab'   && G.purchases.secretLab)   ||
-    (id==='auto_pilot'   && G.purchases.autoPilot)
-  )) return; // уже куплено
+  if (prod.once && iapFlagOwned(id)) return; // уже куплено
 
   if (PLATFORM !== 'vk' || !vkReady) {
     showToast('Покупки доступны только внутри VK');
@@ -1193,12 +1373,21 @@ async function syncPurchases(retryHard) {
       if (!data.ok) continue;
 
       let changed = false;
-      const idByFlag = { starter_pack: 'starterPack', vip_status: 'vipStatus', secret_lab: 'secretLab', auto_pilot: 'autoPilot' };
-      Object.keys(idByFlag).forEach(prodId => {
-        const flag = idByFlag[prodId];
-        if (data.purchases[prodId] && !G.purchases[flag]) {
-          const prod = IAP_PRODUCTS.find(p => p.id === prodId);
-          if (prod) { prod.onBuy(); changed = true; }
+      // Раньше тут был захардкоженный idByFlag-словарь, который приходилось
+      // руками дополнять при каждом новом разовом товаре — теперь просто
+      // берём флаг из самого товара (см. поле `flag` в IAP_PRODUCTS).
+      // Заодно обрабатываем и обратное направление — возврат оплаты: сервер
+      // просто перестаёт включать item в data.purchases (см. worker.js
+      // handleMyPurchases), если у товара раньше был флаг true, а теперь
+      // сервер его не подтверждает — считаем это возвратом и снимаем флаг.
+      IAP_PRODUCTS.filter(p => p.once && p.flag).forEach(prod => {
+        const nowOwned = !!data.purchases[prod.id];
+        if (nowOwned && !G.purchases[prod.flag]) {
+          prod.onBuy(); changed = true;
+        } else if (!nowOwned && G.purchases[prod.flag]) {
+          G.purchases[prod.flag] = false;
+          if (typeof prod.onRevoke === 'function') prod.onRevoke();
+          changed = true;
         }
       });
       (data.pending || []).forEach(p => {
@@ -1216,12 +1405,7 @@ function renderIAP() {
   const el = document.getElementById('iapList');
   if (!el) return;
   el.innerHTML = IAP_PRODUCTS.map(prod => {
-    const owned  = prod.once && (
-      (prod.id==='starter_pack' && G.purchases?.starterPack) ||
-      (prod.id==='vip_status'   && G.purchases?.vipStatus)   ||
-      (prod.id==='secret_lab'   && G.purchases?.secretLab)   ||
-      (prod.id==='auto_pilot'   && G.purchases?.autoPilot)
-    );
+    const owned  = prod.once && iapFlagOwned(prod.id);
     return `<div class="iap-item ${prod.type}${owned?' owned':''}">
       <div class="iap-info">
         <div class="iap-name">${t(prod.nameKey)}${owned?' ✓':''}</div>
@@ -1330,6 +1514,7 @@ async function saveVK(data) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ launchParams, data }),
+      keepalive: true, // запрос не оборвётся, если вкладка/приложение закроется прямо во время отправки
     });
   } catch(e) { console.warn('[VK] Ошибка облачного сохранения:', e); }
 }
@@ -1382,6 +1567,17 @@ async function saveGame() {
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'hidden' && PLATFORM === 'vk' && vkReady && GLOBAL_LB_ENDPOINT) {
     lastCloudSaveAt = Date.now();
+    G.lastSaved = Date.now();
+    localStorage.setItem(SAVE_KEY, JSON.stringify(G));
+    saveVK(JSON.stringify(G));
+  }
+});
+// Подстраховка: на некоторых мобильных WebView внутри VK-приложения (iOS/
+// Android) 'visibilitychange' при реальном закрытии срабатывает не всегда
+// надёжно, а 'pagehide' — гораздо стабильнее в таких случаях. Дублируем ту
+// же логику на него, saveVK() внутри всё равно no-op вне VK/до готовности.
+window.addEventListener('pagehide', () => {
+  if (PLATFORM === 'vk' && vkReady && GLOBAL_LB_ENDPOINT) {
     G.lastSaved = Date.now();
     localStorage.setItem(SAVE_KEY, JSON.stringify(G));
     saveVK(JSON.stringify(G));
@@ -1479,6 +1675,15 @@ let musicNodes = null;
 function startAmbientMusic() {
   const ctx = getAudioCtx();
   if (!ctx || musicNodes) return;
+  // Та же гонка, что и в playSound() выше — ждём реального resume(), иначе
+  // фейд-ин может начать планироваться по времени, которое к моменту
+  // фактического запуска контекста уже "в прошлом".
+  if (ctx.state !== 'running') { ctx.resume().then(() => startAmbientMusicNow(ctx)).catch(()=>{}); }
+  else startAmbientMusicNow(ctx);
+}
+
+function startAmbientMusicNow(ctx) {
+  if (musicNodes) return; // на случай, если toggle успели дважды нажать, пока ждали resume()
 
   const master = ctx.createGain();
   master.gain.setValueAtTime(0.0001, ctx.currentTime);
@@ -1580,37 +1785,54 @@ function playSound(type) {
   if (!G.soundEnabled) return;
   const ctx = getAudioCtx();
   if (!ctx) return;
-  const now = ctx.currentTime;
 
-  function tone(freq, start, dur, vol, wave, freqEnd) {
-    const osc  = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.type = wave || 'sine';
-    osc.frequency.setValueAtTime(freq, now + start);
-    if (freqEnd) osc.frequency.exponentialRampToValueAtTime(freqEnd, now + start + dur);
-    gain.gain.setValueAtTime(0.0001, now + start);
-    gain.gain.linearRampToValueAtTime(vol, now + start + 0.006);
-    gain.gain.exponentialRampToValueAtTime(0.0001, now + start + dur);
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.start(now + start);
-    osc.stop(now + start + dur + 0.03);
-  }
+  // ВАЖНО: getAudioCtx() запускает ctx.resume() асинхронно и не ждёт его
+  // завершения. Если тут же (синхронно) запланировать ноты через
+  // ctx.currentTime, а resume() в этот момент ещё не завершился (особенно
+  // часто на мобильных WebView внутри VK-приложения) — к моменту, когда
+  // контекст реально перейдёт в running, запланированное время может уже
+  // "оказаться в прошлом", и браузер тихо ничего не проиграет: ни ошибки,
+  // ни звука. Поэтому ждём подтверждения, что контекст правда работает, и
+  // только тогда читаем currentTime и планируем звук.
+  const schedule = () => {
+    const now = ctx.currentTime;
 
-  switch (type) {
-    case 'click':    tone(560, 0, 0.05, 0.07, 'square'); break;
-    case 'buy':       tone(420, 0, 0.09, 0.09, 'triangle', 680);
-                       tone(680, 0.07, 0.12, 0.08, 'triangle', 980); break;
-    case 'upgrade':   tone(520, 0, 0.09, 0.08, 'sawtooth', 880); break;
-    case 'levelup':   tone(520, 0, 0.09, 0.09, 'triangle');
-                       tone(780, 0.09, 0.09, 0.09, 'triangle');
-                       tone(1040, 0.18, 0.15, 0.09, 'triangle'); break;
-    case 'quest':     tone(600, 0, 0.08, 0.08, 'triangle');
-                       tone(920, 0.1, 0.12, 0.08, 'triangle'); break;
-    case 'prestige':  tone(380, 0, 0.16, 0.1, 'sawtooth', 1100);
-                       tone(600, 0.16, 0.22, 0.1, 'sawtooth', 1500); break;
-    case 'error':     tone(180, 0, 0.14, 0.09, 'square'); break;
-    default:          tone(600, 0, 0.06, 0.07, 'sine');
+    function tone(freq, start, dur, vol, wave, freqEnd) {
+      const osc  = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = wave || 'sine';
+      osc.frequency.setValueAtTime(freq, now + start);
+      if (freqEnd) osc.frequency.exponentialRampToValueAtTime(freqEnd, now + start + dur);
+      gain.gain.setValueAtTime(0.0001, now + start);
+      gain.gain.linearRampToValueAtTime(vol, now + start + 0.006);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + start + dur);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now + start);
+      osc.stop(now + start + dur + 0.03);
+    }
+
+    switch (type) {
+      case 'click':    tone(560, 0, 0.05, 0.07, 'square'); break;
+      case 'buy':       tone(420, 0, 0.09, 0.09, 'triangle', 680);
+                         tone(680, 0.07, 0.12, 0.08, 'triangle', 980); break;
+      case 'upgrade':   tone(520, 0, 0.09, 0.08, 'sawtooth', 880); break;
+      case 'levelup':   tone(520, 0, 0.09, 0.09, 'triangle');
+                         tone(780, 0.09, 0.09, 0.09, 'triangle');
+                         tone(1040, 0.18, 0.15, 0.09, 'triangle'); break;
+      case 'quest':     tone(600, 0, 0.08, 0.08, 'triangle');
+                         tone(920, 0.1, 0.12, 0.08, 'triangle'); break;
+      case 'prestige':  tone(380, 0, 0.16, 0.1, 'sawtooth', 1100);
+                         tone(600, 0.16, 0.22, 0.1, 'sawtooth', 1500); break;
+      case 'error':     tone(180, 0, 0.14, 0.09, 'square'); break;
+      default:          tone(600, 0, 0.06, 0.07, 'sine');
+    }
+  };
+
+  if (ctx.state !== 'running') {
+    ctx.resume().then(schedule).catch(()=>{});
+  } else {
+    schedule();
   }
 }
 
@@ -1649,6 +1871,387 @@ function updateRushBanner() {
   const m = Math.floor(left / 60000);
   const s = Math.floor((left % 60000) / 1000);
   document.getElementById('rushTimer').textContent = `${m}:${String(s).padStart(2,'0')}`;
+}
+
+// ── СЛУЧАЙНЫЕ СОБЫТИЯ: ПОЛОМКА / ПОСЫЛКА / ЭНЕРГИЯ ──────────────────
+// Ещё один источник "поводов заглянуть в игру", отдельный от Часа пик —
+// но, в отличие от него, не только позитив: поломка требует решения
+// (почини сейчас за монеты или просто подожди — и то, и другое ок).
+// Только одно такое событие активно за раз (см. проверку в начале
+// maybeTriggerRandomEvent), Час пик им не мешает и наоборот.
+let brokenMachine = null;   // { id, endsAt } — сломанный цех, если есть
+let packageDrop   = null;   // { bonus, endsAt } — посылка, ждущая, чтобы её забрали
+const RANDOM_EVENT_CHECK_EVERY = 3 * 60 * 1000; // проверяем шанс раз в 3 минуты
+const RANDOM_EVENT_CHANCE      = 0.18;           // ~18% на каждую проверку
+const BREAKDOWN_DURATION       = 90 * 1000;      // авария чинится сама через 90с, если не помочь
+const PACKAGE_DURATION         = 60 * 1000;      // посылку можно забрать в течение 60с
+
+function maybeTriggerRandomEvent(now) {
+  if (brokenMachine || packageDrop) return; // уже что-то идёт — не наслаиваем
+  if (now < rushHourEnd) return;            // не мешаем Часу пик
+  if (!tick.lastRandomEventCheck) tick.lastRandomEventCheck = now; // не в первые секунды сессии
+  if (now - tick.lastRandomEventCheck < RANDOM_EVENT_CHECK_EVERY) return;
+  tick.lastRandomEventCheck = now;
+  if (Math.random() >= RANDOM_EVENT_CHANCE) return;
+
+  const ownedMachines = G.machines.filter(m => m.owned);
+  const pool = ['package', 'energy'];
+  // Поломка возможна только если есть хотя бы 2 цеха — не хотим выключать
+  // единственный источник дохода совсем новому игроку.
+  if (ownedMachines.length >= 2) pool.push('breakdown');
+  const type = pool[Math.floor(Math.random() * pool.length)];
+
+  if (type === 'breakdown') triggerBreakdown(now, ownedMachines);
+  else if (type === 'package') triggerPackage(now);
+  else triggerEnergySurge();
+}
+
+function isMachineBroken(id) {
+  return !!(brokenMachine && brokenMachine.id === id && Date.now() < brokenMachine.endsAt);
+}
+
+function triggerBreakdown(now, ownedMachines) {
+  const autoOwned = ownedMachines.filter(m => m.auto);
+  const pool = autoOwned.length ? autoOwned : ownedMachines;
+  const target = pool[Math.floor(Math.random() * pool.length)];
+  brokenMachine = { id: target.id, endsAt: now + BREAKDOWN_DURATION };
+  const d = getDef(target.id);
+  showToast(`🔧 Авария на цехе «${d.name}»! Почини или подожди`);
+  playSound('error');
+  updateMachineCardDOM(target.id);
+  updateEventBanner();
+}
+
+// Ремонт стоит долю от стоимости апгрейда этого же цеха — так цена всегда
+// соразмерна текущему прогрессу игрока (как и апгрейды).
+function repairCost(id) {
+  return Math.max(20, Math.round(machineUpgCost(id) * 0.35));
+}
+
+function repairMachine(id) {
+  if (!brokenMachine || brokenMachine.id !== id) return;
+  const cost = repairCost(id);
+  if (G.coins < cost) return;
+  G.coins -= cost;
+  clearBreakdown();
+  showToast('🔧 Починено!');
+  playSound('buy');
+  saveGame();
+}
+
+function clearBreakdown() {
+  if (!brokenMachine) return;
+  const id = brokenMachine.id;
+  brokenMachine = null;
+  updateMachineCardDOM(id);
+  updateEventBanner();
+}
+
+function triggerPackage(now) {
+  const bonus = Math.max(200, Math.round(cps() * 180)); // ~3 минуты дохода
+  packageDrop = { bonus, endsAt: now + PACKAGE_DURATION };
+  showToast('📦 Кто-то оставил посылку у ворот завода!');
+  playSound('quest');
+  updateEventBanner();
+}
+
+function claimPackage() {
+  if (!packageDrop) return;
+  G.coins += packageDrop.bonus;
+  showToast(`📦 +${fmt(packageDrop.bonus)} монет!`);
+  playSound('levelup');
+  packageDrop = null;
+  updateEventBanner();
+  saveGame();
+}
+
+function triggerEnergySurge() {
+  const before = G.energy;
+  G.energy = energyMax();
+  if (G.energy > before) {
+    showToast('⚡ Всплеск энергии — бак полон!');
+    playSound('levelup');
+    updateEnergyUI();
+  }
+}
+
+// Единый баннер под шапкой для обоих claimable-событий (поломка/посылка) —
+// Час пик рисуется отдельным баннером выше (updateRushBanner), тут только
+// то, что требует решения игрока прямо сейчас.
+function updateEventBanner() {
+  const banner = document.getElementById('eventBanner');
+  if (!banner) return;
+  const now = Date.now();
+
+  if (brokenMachine && now >= brokenMachine.endsAt) clearBreakdown();
+  if (packageDrop && now >= packageDrop.endsAt) { packageDrop = null; }
+
+  if (brokenMachine) {
+    const d = getDef(brokenMachine.id);
+    const cost = repairCost(brokenMachine.id);
+    banner.style.display = 'flex';
+    banner.className = 'event-banner breakdown';
+    banner.innerHTML = `<span>🔧 Авария на «${d.name}»!</span>
+      <button class="event-banner-btn" onclick="repairMachine(${brokenMachine.id})">Почини за ${fmt(cost)} 💰</button>`;
+    return;
+  }
+  if (packageDrop) {
+    banner.style.display = 'flex';
+    banner.className = 'event-banner package';
+    banner.innerHTML = `<span>📦 Нашлась посылка!</span>
+      <button class="event-banner-btn" onclick="claimPackage()">Забрать +${fmt(packageDrop.bonus)} 💰</button>`;
+    return;
+  }
+  banner.style.display = 'none';
+}
+
+// ── СЕЗОННЫЙ ПРОПУСК ─────────────────────────────────────────────
+// Циклический сезон длиной 14 дней — считается от фиксированной даты-опоры,
+// поэтому "Сезон N" сменяется сам собой каждые 14 дней, без ручного
+// администрирования на сервере. Очки сезона (SP) зарабатываются за реальные
+// игровые действия (задания/испытания/достижения/престиж), а не просто от
+// времени в игре — см. addSeasonSP() и её вызовы в соответствующих claim-
+// функциях. Премиум-трек — отдельная (повторная, за каждый новый сезон)
+// покупка через тот же честный VK Pay пайплайн, что и остальные IAP.
+const SEASON_EPOCH      = new Date('2026-01-05T00:00:00Z').getTime();
+const SEASON_LENGTH_MS  = 14 * 24 * 60 * 60 * 1000;
+const SEASON_TIER_COUNT = 15;
+const SEASON_TIER_SP    = 40; // очков сезона на каждый следующий уровень
+
+function currentSeasonIndex(now) {
+  return Math.floor(((now || Date.now()) - SEASON_EPOCH) / SEASON_LENGTH_MS);
+}
+function seasonBounds(idx) {
+  const start = SEASON_EPOCH + idx * SEASON_LENGTH_MS;
+  return { start, end: start + SEASON_LENGTH_MS };
+}
+function seasonNumber(idx) { return idx + 1; } // человекочитаемый номер — "Сезон 1", а не индекс с нуля
+
+// Приводит G.season* в актуальное состояние. Если реальный номер сезона уже
+// другой — начинаем новый: очки и прогресс по уровням сбрасываются, а
+// премиум-пропуск (если был куплен) действовал только на прошлый сезон и
+// не переносится — это ожидаемое поведение боевого пропуска, не баг.
+function ensureSeasonFresh() {
+  const idx = currentSeasonIndex();
+  if (G.seasonIndex !== idx) {
+    G.seasonIndex = idx;
+    G.seasonSP = 0;
+    G.seasonFreeClaimed = [];
+    G.seasonPremiumClaimed = [];
+  }
+}
+
+function addSeasonSP(n) {
+  ensureSeasonFresh();
+  G.seasonSP = (G.seasonSP || 0) + n;
+}
+
+function seasonHasPremium() {
+  ensureSeasonFresh();
+  return G.seasonPremiumForIndex === G.seasonIndex;
+}
+
+function seasonTierSPRequired(tier) { return tier * SEASON_TIER_SP; }
+
+function seasonTierUnlocked(tier) {
+  ensureSeasonFresh();
+  return (G.seasonSP || 0) >= seasonTierSPRequired(tier);
+}
+
+// Награда считается в момент получения (как и в недельном испытании выше),
+// а не хранится заранее посчитанным числом — так она всегда пропорциональна
+// текущему доходу игрока, а не той цифре, что была актуальна на момент
+// открытия уровня.
+function seasonFreeReward(tier) {
+  const coins = Math.max(150, Math.round(cps() * (30 + tier * 18)));
+  const crystal = (tier % 5 === 0) ? Math.round(tier / 5) : 0;
+  return { coins, crystal };
+}
+function seasonPremiumReward(tier) {
+  const coins = Math.max(300, Math.round(cps() * (60 + tier * 30)));
+  const crystal = (tier % 5 === 0) ? Math.round(tier / 5) * 2 : (tier % 3 === 0 ? 1 : 0);
+  return { coins, crystal };
+}
+
+// ── ЗАДАНИЯ СЕЗОННОГО ПРОПУСКА ──────────────────────────────────────
+// Отдельные от обычных ежедневных заданий и недельного испытания — свои
+// ежедневные (2 шт, 24ч), своё еженедельное (7 дней) и одно сезонное
+// (на весь 14-дневный сезон целиком). Награда — только очки сезона (SP),
+// не монеты: монеты игрок и так получает с обычных заданий, тут отдельная
+// прогрессия специально под трек сезона.
+//
+// Прогресс считается не через отдельные session-счётчики (как у обычных
+// daily/weekly), а как разница между ТЕКУЩИМ lifetime-показателем и его
+// значением в момент выдачи задания (startVal) — это позволяет не заводить
+// ещё три копии счётчиков-сессий и их сброса, а просто переиспользовать уже
+// существующие lifetime-метрики (G.sold, G.lifetimeCoins и т.д.).
+// (использует QUEST_TYPES напрямую, а не через отдельный алиас-константу —
+// та объявлена ниже по файлу, и обращение к ней с верхнего уровня до её
+// объявления валило TDZ-ошибкой; обращение изнутри функций ниже безопасно,
+// так как эти функции вызываются намного позже полной загрузки скрипта).
+const SEASON_QUEST_SP = { daily: 8, weekly: 35, seasonal: 120 };
+
+function lifetimeMetric(type) {
+  return {
+    qtProduce: G.sold || 0,
+    qtClick:   G.lifetimeClicks   || 0,
+    qtCoins:   G.lifetimeCoins    || 0,
+    qtUpgrade: G.lifetimeUpgrades || 0,
+    qtBuy:     G.lifetimeBuys     || 0,
+    qtAd:      G.lifetimeAds      || 0,
+  }[type] || 0;
+}
+
+function makeSeasonQuest(type, scale) {
+  return { type, startVal: lifetimeMetric(type), target: Math.max(1, Math.round(questTarget(type) * scale)), claimed:false };
+}
+
+function seasonQuestProgress(q) {
+  if (!q) return 0;
+  return Math.max(0, lifetimeMetric(q.type) - q.startVal);
+}
+
+function ensureSeasonQuests() {
+  ensureSeasonFresh();
+  if (!G.seasonQuests) G.seasonQuests = { daily:{list:[],resetAt:0}, weekly:{quest:null,resetAt:0}, seasonal:{quest:null,seasonIndex:null} };
+  const sq = G.seasonQuests;
+  const now = Date.now();
+
+  if (now >= (sq.daily.resetAt||0)) {
+    sq.daily.list = pickRandom(QUEST_TYPES, 2).map(type => makeSeasonQuest(type, 0.6));
+    sq.daily.resetAt = now + 24*60*60*1000;
+  }
+  if (now >= (sq.weekly.resetAt||0)) {
+    sq.weekly.quest = makeSeasonQuest(pickRandom(QUEST_TYPES, 1)[0], 3.5);
+    sq.weekly.resetAt = now + 7*24*60*60*1000;
+  }
+  // Сезонное задание живёт весь сезон — обновляется не по таймеру, а когда
+  // реально сменился номер сезона (см. ensureSeasonFresh выше).
+  if (sq.seasonal.seasonIndex !== G.seasonIndex) {
+    sq.seasonal.quest = makeSeasonQuest(pickRandom(QUEST_TYPES, 1)[0], 12);
+    sq.seasonal.seasonIndex = G.seasonIndex;
+  }
+}
+
+function claimSeasonQuest(kind, idx) {
+  ensureSeasonQuests();
+  const sq = G.seasonQuests;
+  const q = kind === 'daily' ? sq.daily.list[idx] : kind === 'weekly' ? sq.weekly.quest : sq.seasonal.quest;
+  if (!q || q.claimed) return;
+  if (seasonQuestProgress(q) < q.target) return;
+  q.claimed = true;
+  const sp = SEASON_QUEST_SP[kind] || 0;
+  addSeasonSP(sp);
+  playSound('quest');
+  showToast(`🎫 +${sp} очков сезона!`);
+  renderSeasonQuests();
+  renderSeasonPass();
+  updateMenuBadge();
+  saveGame();
+}
+
+function seasonQuestCardHtml(label, q, kind, idx) {
+  if (!q) return '';
+  const qt = t(q.type);
+  const progress = Math.min(seasonQuestProgress(q), q.target);
+  const pct = Math.min(100, Math.round(progress/q.target*100));
+  const done = progress >= q.target;
+  const sp = SEASON_QUEST_SP[kind] || 0;
+  return `<div class="quest-card ${q.claimed?'claimed':done?'done':''}">
+    <div class="quest-head">
+      <div class="quest-icon">${qt.icon}</div>
+      <div class="quest-info">
+        <div class="quest-name">${label} · ${qt.name}</div>
+        <div class="quest-desc">${qt.desc.replace('{n}', fmt(q.target))}</div>
+        <div class="quest-reward">🎫 +${sp} очков сезона</div>
+      </div>
+    </div>
+    <div class="quest-progress">
+      <div class="quest-pbar-wrap"><div class="quest-pbar" style="width:${pct}%"></div></div>
+      <div class="quest-pct">${fmt(progress)}/${fmt(q.target)}</div>
+    </div>
+    ${!q.claimed
+      ? `<button class="btn-claim" onclick="claimSeasonQuest('${kind}',${idx})" ${done?'':'disabled'}>${done?t('questClaim'):pct+'%'}</button>`
+      : `<button class="btn-claim" disabled>${t('questClaimed')}</button>`}
+  </div>`;
+}
+
+function renderSeasonQuests() {
+  ensureSeasonQuests();
+  const el = document.getElementById('seasonQuestsList');
+  if (!el) return;
+  const sq = G.seasonQuests;
+  let html = sq.daily.list.map((q,i) => seasonQuestCardHtml('Ежедневное', q, 'daily', i)).join('');
+  html += seasonQuestCardHtml('Еженедельное', sq.weekly.quest, 'weekly', 0);
+  html += seasonQuestCardHtml('Сезонное', sq.seasonal.quest, 'seasonal', 0);
+  el.innerHTML = html;
+}
+
+function claimSeasonTier(tier, track) {
+  ensureSeasonFresh();
+  if (!seasonTierUnlocked(tier)) return;
+  if (track === 'premium' && !seasonHasPremium()) return;
+  if (track === 'premium') { if (!G.seasonPremiumClaimed) G.seasonPremiumClaimed = []; }
+  else { if (!G.seasonFreeClaimed) G.seasonFreeClaimed = []; }
+  const claimedList = track === 'premium' ? G.seasonPremiumClaimed : G.seasonFreeClaimed;
+  if (claimedList.includes(tier)) return;
+  const reward = track === 'premium' ? seasonPremiumReward(tier) : seasonFreeReward(tier);
+  G.coins += reward.coins;
+  if (reward.crystal) { G.crystals = (G.crystals||0)+reward.crystal; G.lifetimeCrystals = (G.lifetimeCrystals||0)+reward.crystal; }
+  claimedList.push(tier);
+  playSound('levelup');
+  goldenGlow(document.getElementById('hCoins'));
+  showToast(`🎫 Уровень ${tier}: +${fmt(reward.coins)} монет${reward.crystal?` +${reward.crystal} 💎`:''}`);
+  renderSeasonPass();
+  updateMenuBadge();
+  saveGame();
+}
+
+function renderSeasonPass() {
+  ensureSeasonFresh();
+  renderSeasonQuests();
+  const summary = document.getElementById('seasonSummary');
+  const list = document.getElementById('seasonTierList');
+  if (!list) return;
+
+  const bounds = seasonBounds(G.seasonIndex);
+  const daysLeft = Math.max(0, Math.ceil((bounds.end - Date.now()) / (24*60*60*1000)));
+  const hasPremium = seasonHasPremium();
+
+  if (summary) {
+    summary.innerHTML = `
+      <div class="season-title">🎫 Сезон ${seasonNumber(G.seasonIndex)}</div>
+      <div class="season-sub">Осталось ${daysLeft} дн. · Очков сезона: ${G.seasonSP||0}</div>
+      ${hasPremium
+        ? '<div class="season-premium-badge">✨ Премиум-трек активен до конца сезона</div>'
+        : '<button class="btn-claim" onclick="buyProduct(\'season_pass\')">🎫 Открыть премиум-трек</button>'}
+    `;
+  }
+
+  const rows = [];
+  for (let tier = 1; tier <= SEASON_TIER_COUNT; tier++) {
+    const unlocked = seasonTierUnlocked(tier);
+    const freeClaimed = (G.seasonFreeClaimed||[]).includes(tier);
+    const premClaimed = (G.seasonPremiumClaimed||[]).includes(tier);
+    const freeR = seasonFreeReward(tier);
+    const premR = seasonPremiumReward(tier);
+
+    const freeCellClass = freeClaimed ? 'claimed' : (unlocked ? 'ready' : '');
+    const premCellClass = premClaimed ? 'claimed' : (!hasPremium ? 'locked-premium' : (unlocked ? 'ready' : ''));
+
+    rows.push(`<div class="season-tier-row${unlocked?' unlocked':''}">
+      <div class="season-tier-num">${tier}</div>
+      <div class="season-cell ${freeCellClass}" onclick="claimSeasonTier(${tier},'free')">
+        ${freeClaimed ? '✓' : `💰${fmt(freeR.coins)}${freeR.crystal?` 💎${freeR.crystal}`:''}`}
+      </div>
+      <div class="season-cell ${premCellClass}" onclick="${hasPremium?`claimSeasonTier(${tier},'premium')`:''}">
+        ${premClaimed
+          ? '✓'
+          : `${hasPremium?'':'🔒 '}💰${fmt(premR.coins)}${premR.crystal?` 💎${premR.crystal}`:''}`}
+      </div>
+    </div>`);
+  }
+  list.innerHTML = `<div class="season-track-hdr"><span>Уровень</span><span>Бесплатно</span><span>Премиум ${hasPremium?'✨':'🔒'}</span></div>` + rows.join('');
 }
 
 function getAdMultiplier() {
@@ -1729,13 +2332,18 @@ function defaultState() {
     achievements: {},
     myRefCode: null, friendsInvited: 0, referredBy: null,
     dailyStreak: 0, lastDailyClaimDay: null, bestStreak: 0,
+    totalDailyClaims: 0, // сколько раз всего забирал ежедневную награду (не текущий стрик, а общее число)
+    totalDaysPlayed: 0, lastPlayedDay: null, // сколько РАЗНЫХ календарных дней вообще открывал игру
+    weeklyCompleted: 0, // сколько еженедельных челленджей всего выполнено (текущий G.weekly.claimed — только про эту неделю)
+    seasonIndex: null, seasonSP: 0, seasonFreeClaimed: [], seasonPremiumClaimed: [], seasonPremiumForIndex: null,
+    seasonQuests: null,
     soundEnabled: true, musicEnabled: false,
     autoBuyMachines: false, autoUpgradeCheapest: false,
     crystals: 0, lifetimeCrystals: 0, skills: {}, promoCodesRedeemed: 0, questsCompleted: 0,
     tutorialSeen: false, seenStreakFeature: false, seenSkillsFeature: false, theme: 'classic',
     weekly: null, notifAllowed: false, hapticEnabled: true,
     firstPlayedAt: Date.now(),
-    purchases: { starterPack: false, vipStatus: false, secretLab: false, autoPilot: false },
+    purchases: { starterPack: false, vipStatus: false, secretLab: false, autoPilot: false, themeAurora: false, themeMagma: false },
     machines: MACHINES_DEF.map(d=>({
       id:d.id, level:1, owned:false, auto:true,
       progress:0, reward:d.baseReward, speed:d.baseSpeed,
@@ -1782,14 +2390,14 @@ function incomeMult() {
 }
 
 function cps() {
-  return G.machines.filter(m=>m.owned&&m.auto)
+  return G.machines.filter(m=>m.owned&&m.auto&&!isMachineBroken(m.id))
     .reduce((s,m)=>s+m.reward*incomeMult()*1000/m.speed, 0);
 }
 // "Голая" скорость дохода без множителей — для сравнения БАЗОВЫХ наград
 // цехов между собой (m.reward у всех цехов хранится без incomeMult, он
 // применяется один раз в момент начисления/показа).
 function baseCps() {
-  return G.machines.filter(m=>m.owned&&m.auto)
+  return G.machines.filter(m=>m.owned&&m.auto&&!isMachineBroken(m.id))
     .reduce((s,m)=>s+m.reward*1000/m.speed, 0);
 }
 
@@ -1996,6 +2604,13 @@ function closePrestige() {
 }
 function doPrestige() {
   playSound('prestige');
+  // Активные случайные события завязаны на конкретные id цехов — после
+  // престижа список цехов пересоздаётся с нуля, так что старое событие
+  // (если было) уже ни к чему не относится. Сбрасываем сразу.
+  brokenMachine = null;
+  packageDrop = null;
+  updateEventBanner();
+  addSeasonSP(15); // престиж — заметное событие, даёт больше очков сезона, чем рядовое задание
   // Кристаллы считаем ДО увеличения prestigeCount — порог должен быть тем,
   // который действовал в этом заходе, а не следующим.
   const crystalsEarned = calcPrestigeCrystals();
@@ -2021,6 +2636,10 @@ function doPrestige() {
   const dailyStreak  = G.dailyStreak;
   const lastDailyClaimDay = G.lastDailyClaimDay;
   const bestStreak   = G.bestStreak;
+  const totalDailyClaims = G.totalDailyClaims;
+  const totalDaysPlayed  = G.totalDaysPlayed;
+  const lastPlayedDay    = G.lastPlayedDay;
+  const weeklyCompleted  = G.weeklyCompleted;
   const firstPlayedAt = G.firstPlayedAt;
   const soundEnabled = G.soundEnabled;
   const promoCodesRedeemed = G.promoCodesRedeemed;
@@ -2035,6 +2654,14 @@ function doPrestige() {
   const musicEnabled = G.musicEnabled;
   const autoBuyMachines = G.autoBuyMachines;
   const autoUpgradeCheapest = G.autoUpgradeCheapest;
+  const seasonIndex = G.seasonIndex;
+  const seasonSP = G.seasonSP;
+  const seasonFreeClaimed = G.seasonFreeClaimed;
+  const seasonPremiumClaimed = G.seasonPremiumClaimed;
+  const seasonPremiumForIndex = G.seasonPremiumForIndex;
+  const seasonQuests = G.seasonQuests;
+  const lifetimeUpgrades = G.lifetimeUpgrades;
+  const lifetimeBuys = G.lifetimeBuys;
   G = defaultState();
   G.prestigeMult   = mult;
   G.prestigeCount  = cnt;
@@ -2056,6 +2683,10 @@ function doPrestige() {
   G.dailyStreak        = dailyStreak;
   G.lastDailyClaimDay  = lastDailyClaimDay;
   G.bestStreak         = bestStreak;
+  G.totalDailyClaims   = totalDailyClaims;
+  G.totalDaysPlayed    = totalDaysPlayed;
+  G.lastPlayedDay      = lastPlayedDay;
+  G.weeklyCompleted    = weeklyCompleted;
   G.firstPlayedAt      = firstPlayedAt;
   G.soundEnabled       = soundEnabled;
   G.promoCodesRedeemed = promoCodesRedeemed;
@@ -2070,6 +2701,14 @@ function doPrestige() {
   G.musicEnabled        = musicEnabled;
   G.autoBuyMachines       = autoBuyMachines;
   G.autoUpgradeCheapest   = autoUpgradeCheapest;
+  G.seasonIndex           = seasonIndex;
+  G.seasonSP              = seasonSP;
+  G.seasonFreeClaimed     = seasonFreeClaimed;
+  G.seasonPremiumClaimed  = seasonPremiumClaimed;
+  G.seasonPremiumForIndex = seasonPremiumForIndex;
+  G.seasonQuests          = seasonQuests;
+  G.lifetimeUpgrades      = lifetimeUpgrades;
+  G.lifetimeBuys          = lifetimeBuys;
   G.energy = energyMax();
   if (purchases.secretLab) { const ml=getMachine(10); ml.owned=true; ml.auto=true; }
   closePrestige();
@@ -2213,12 +2852,12 @@ function buildMachineCard(m) {
             <div class="mcard-name" style="color:#a090ff">${d.name}</div>
             <div class="mcard-lvl">${t('iapLabBadge')} · ${t('premiumOnly')}</div>
           </div>
-          <div style="font-size:11px;color:#a090ff;font-weight:600">199 ₽</div>
+          <div style="font-size:11px;color:#a090ff;font-weight:600">${voicesLabel(80)}</div>
         </div>
         <div class="mcard-reward" style="color:#a090ff">+${fmt(d.baseReward * incomeMult())} ${t('coins')} ${t('perCycle')}</div>
         <button class="btn-buy-big" data-action="buypremium" data-product="secret_lab"
           style="background:#7c5cff;margin-top:8px;pointer-events:all;cursor:pointer">
-          💎 ${t('iapLab')} — 199 ₽
+          💎 ${t('iapLab')} — ${voicesLabel(80)}
         </button>
       </div>`;
     }
@@ -2273,6 +2912,29 @@ function buildMachineCard(m) {
   const upgPct  = Math.min(100, Math.round(G.coins / upgCost * 100));
   const adUpg   = !canUpg && upgPct >= 80 && canFreeUpgrade();
   const eff     = Math.round(m.reward * incomeMult());
+  const broken  = isMachineBroken(m.id);
+
+  if (broken) {
+    const cost = repairCost(m.id);
+    const canRepair = G.coins >= cost;
+    return `<div class="mcard broken" data-mid="${m.id}">
+      <div class="mcard-head">
+        <div class="mcard-icon" style="filter:grayscale(1);opacity:.6">🔧</div>
+        <div>
+          <div class="mcard-name">${d.name}</div>
+          <div class="mcard-lvl" style="color:#ff5c5c">Авария — не производит</div>
+        </div>
+      </div>
+      <div class="pbar-wrap"><div class="pbar" style="width:100%;background:#ff5c5c"></div></div>
+      <div class="mcard-footer">
+        <button class="btn-upg" data-action="repair"
+          style="${canRepair?'border-color:#ff5c5c;color:#ff5c5c':''}"
+          ${canRepair?'':'disabled'}>
+          🔧 Починить ${fmt(cost)} 💰
+        </button>
+      </div>
+    </div>`;
+  }
 
   return `<div class="mcard${m.progress>0?' working':''}" data-mid="${m.id}">
     <div class="mcard-head">
@@ -2738,6 +3400,100 @@ async function registerRefCodeOnServer() {
   } catch(e) { console.warn('[REF] register error:', e); }
 }
 
+// ── ГЕНЕРАЦИЯ КАРТОЧКИ ПРОГРЕССА (canvas, без единого файла-картинки) ─────
+// Рисуем вертикальное изображение 1080×1920 (стандартный формат историй VK)
+// с текущей статистикой игрока. Цвета берём из активной темы оформления
+// (--accent/--teal), чтобы карточка визуально совпадала с тем, что игрок
+// видит в самой игре.
+function roundRectPath(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+function drawProgressCard() {
+  const W = 1080, H = 1920;
+  const canvas = document.createElement('canvas');
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext('2d');
+
+  const css    = getComputedStyle(document.documentElement);
+  const accent = (css.getPropertyValue('--accent') || '#f0a500').trim() || '#f0a500';
+  const teal   = (css.getPropertyValue('--teal')   || '#00c9a7').trim() || '#00c9a7';
+
+  // Тёмный фон + мягкое цветное свечение сверху, в цвет активной темы.
+  const bg = ctx.createLinearGradient(0, 0, 0, H);
+  bg.addColorStop(0, '#0d0d12');
+  bg.addColorStop(1, '#17171f');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, W, H);
+
+  const glow = ctx.createRadialGradient(W/2, H*0.3, 40, W/2, H*0.3, W*0.8);
+  glow.addColorStop(0, accent + '30');
+  glow.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = glow;
+  ctx.fillRect(0, 0, W, H);
+
+  // Заголовок
+  ctx.textAlign = 'center';
+  ctx.fillStyle = accent;
+  ctx.font = '700 66px "Russo One", sans-serif';
+  ctx.fillText('MEGAFACTORY', W/2, 220);
+  ctx.fillStyle = '#8b93a6';
+  ctx.font = '400 34px "Exo 2", sans-serif';
+  ctx.fillText('Idle Factory Tycoon', W/2, 272);
+
+  // Карточка со статистикой
+  const cardX = 90, cardY = 420, cardW = W - 180, cardH = 820;
+  ctx.fillStyle = 'rgba(255,255,255,0.05)';
+  roundRectPath(ctx, cardX, cardY, cardW, cardH, 32);
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+  ctx.lineWidth = 2;
+  roundRectPath(ctx, cardX, cardY, cardW, cardH, 32);
+  ctx.stroke();
+
+  const stats = [
+    ['💰', fmt(Math.floor(G.coins)),        'монет накоплено'],
+    ['⚡', fmt(cps()) + '/с',                'текущий доход'],
+    ['🏭', String(G.machines.filter(m => m.owned).length), 'цехов построено'],
+    ['🏆', String(G.prestigeCount || 0),     'престижей'],
+  ];
+  const rowH = cardH / stats.length;
+  stats.forEach((s, i) => {
+    const rowY = cardY + rowH * i + rowH / 2;
+    ctx.textAlign = 'left';
+    ctx.font = '64px sans-serif';
+    ctx.fillStyle = '#fff';
+    ctx.fillText(s[0], cardX + 50, rowY + 22);
+    ctx.font = '700 58px "Exo 2", sans-serif';
+    ctx.fillText(s[1], cardX + 150, rowY + 8);
+    ctx.fillStyle = '#8b93a6';
+    ctx.font = '400 32px "Exo 2", sans-serif';
+    ctx.fillText(s[2], cardX + 150, rowY + 56);
+    if (i < stats.length - 1) {
+      ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(cardX + 40, cardY + rowH * (i + 1));
+      ctx.lineTo(cardX + cardW - 40, cardY + rowH * (i + 1));
+      ctx.stroke();
+    }
+  });
+
+  // Призыв к действию
+  ctx.textAlign = 'center';
+  ctx.fillStyle = teal;
+  ctx.font = '700 46px "Exo 2", sans-serif';
+  ctx.fillText('Открой свой завод 👇', W/2, cardY + cardH + 140);
+
+  return canvas.toDataURL('image/png');
+}
+
 async function shareReferralLink() {
   const code = getMyRefCode();
   const url  = 'https://vk.com/app54630379#ref=' + code;
@@ -2758,19 +3514,62 @@ async function shareReferralLink() {
   }
 }
 
+// Общая проверка ошибки vkBridge: отмена самим пользователем — это НЕ ошибка,
+// тут нужно тихо выйти. Любая другая причина (метод недоступен, платформа не
+// поддерживает и т.п.) — настоящая проблема, и её стоит показать, а не молчать.
+function isUserCancelledShare(e) {
+  const reason = e?.error_data?.error_reason || e?.error_reason;
+  return { reason, cancelled: reason === 'User denied' || (e?.error_type === 'client_error' && !reason) };
+}
+
+// ── «Поделиться прогрессом» — история VK с настоящей картинкой ────────
+// VKWebAppShowStoryBox принимает готовую картинку прямо как base64 (поле
+// blob), без загрузки файлов на сервер — этим и пользуемся: рисуем карточку
+// на canvas (drawProgressCard выше) и открываем нативный редактор историй
+// с ней как фоном + кликабельным стикером-ссылкой на игру.
+async function shareProgressToStory() {
+  if (PLATFORM !== 'vk' || !vkReady) {
+    showToast(t('shareProgressUnavailable'));
+    return;
+  }
+  const code = getMyRefCode();
+  const url  = 'https://vk.com/app54630379#ref=' + code;
+  registerRefCodeOnServer();
+
+  try {
+    if (document.fonts && document.fonts.ready) await document.fonts.ready;
+    const blob = drawProgressCard();
+    await vkBridge.send('VKWebAppShowStoryBox', {
+      background_type: 'image',
+      blob,
+      // "text" у стикера-ссылки — НЕ произвольная строка, а один из
+      // фиксированных типов кнопки, которые VK сам переводит и рисует
+      // (список пришёл прямо в ошибке от VK: play/go_to/open/...).
+      // "play" ближе всего по смыслу к игре.
+      attachment: { text: 'play', type: 'url', url },
+    });
+    showToast(t('shareProgressPosted'));
+    playSound('quest');
+  } catch(e) {
+    const { reason, cancelled } = isUserCancelledShare(e);
+    console.warn('[Share] VKWebAppShowStoryBox:', e);
+    if (!cancelled) showToast('⚠️ Не удалось открыть историю' + (reason ? ': ' + reason : ''));
+  }
+}
+
 // ── «Поделиться прогрессом» — пост на стену VK ─────────────────────
-// Использует VKWebAppShowWallPostBox — открывает НАСТОЯЩЕЕ нативное окно
-// публикации записи (пользователь сам подтверждает и может отредактировать
-// текст перед публикацией, игра не постит в обход него). В текст добавляется
-// реферальная ссылка — VK сам разворачивает такую ссылку в превью-карточку
-// со скриншотом/иконкой игры прямо в записи, отдельная картинка не нужна.
+// Использует VKWebAppShowWallPostBox — открывает нативное окно публикации
+// записи (пользователь сам подтверждает и может отредактировать текст
+// перед публикацией). В текст добавляется реферальная ссылка — VK сам
+// разворачивает такую ссылку в превью-карточку прямо в записи.
 //
-// VKWebAppShowWallPostBox поддерживается не на всех клиентах/версиях VK —
-// там, где его нет, VK отвечает общей "Unknown error" без деталей (это
-// особенность самого VK, не нашего кода). Чтобы кнопка не оказывалась
-// нерабочей на таких клиентах, при любой НЕ-отмене пользователем ошибке
-// автоматически пробуем запасной вариант — VKWebAppShare с той же ссылкой
-// (тот самый метод, что уже стабильно работает в "Пригласить друга").
+// ВАЖНО: раньше при любой ошибке здесь тихо подменялось на VKWebAppShare —
+// то есть кнопка "на стену" при сбое вела себя как обычное "Пригласить
+// друга", без предупреждения. Это и создавало ощущение "кнопка просто не
+// делает то, что должна". Теперь при реальной ошибке (не отмене) честно
+// показываем это тостом, без скрытой подмены на другой диалог — если метод
+// действительно недоступен на клиенте, лучше явно предложить "В историю"
+// (shareProgressToStory выше), которая работает независимо.
 async function shareProgressToWall() {
   if (PLATFORM !== 'vk' || !vkReady) {
     showToast(t('shareProgressUnavailable'));
@@ -2793,30 +3592,13 @@ async function shareProgressToWall() {
     // о публикации — не подтверждение, а просто обратная связь по действию.
     showToast(t('shareProgressPosted'));
     playSound('quest');
-    return;
   } catch(e) {
-    // Пользователь мог просто закрыть окно публикации, не отправив пост —
-    // это НЕ ошибка, тут действительно нужно тихо выйти без запасного
-    // варианта ниже. У vkBridge это приходит отдельным полем (error_reason).
-    const reason = e?.error_data?.error_reason || e?.error_reason;
-    const isUserCancel = reason === 'User denied' || (e?.error_type === 'client_error' && !reason);
-    console.warn('[Share] VKWebAppShowWallPostBox не сработал, пробуем VKWebAppShare:', e);
-    if (isUserCancel) return;
-  }
-
-  // Запасной вариант — тот же диалог, что и у "Пригласить друга". Здесь
-  // человек сам выбирает, куда отправить (не обязательно на стену), поэтому
-  // текст тоста нейтральный, а не "опубликовано на стене".
-  try {
-    await vkBridge.send('VKWebAppShare', { link: url });
-    showToast('📤 Готово!');
-    playSound('quest');
-  } catch(e2) {
-    // И запасной вариант отменили/не сработал — тут уже действительно нечего
-    // предложить, тихо выходим (как и везде в проекте при отмене диалога).
-    console.warn('[Share] Запасной VKWebAppShare тоже не сработал:', e2);
+    const { reason, cancelled } = isUserCancelledShare(e);
+    console.warn('[Share] VKWebAppShowWallPostBox:', e);
+    if (!cancelled) showToast('⚠️ Не получилось опубликовать на стене' + (reason ? ': ' + reason : '') + ' — попробуй «В историю»');
   }
 }
+
 
 function renderFriends() {
   const invitedEl = document.getElementById('friendsInvited');
@@ -2833,8 +3615,15 @@ function renderFriends() {
 async function renderFriendsRanking() {
   const el = document.getElementById('friendsRankingList');
   if (!el) return;
+  // Единый рендер состояния "не получилось" — везде с кнопкой повтора,
+  // чтобы транспортная ошибка/временный сбой сети не оставляли тупик:
+  // ткнул "Загрузить топ" → не получилось → и без этой кнопки раздел
+  // приходилось полностью закрывать и открывать заново, чтобы попробовать
+  // ещё раз.
+  const retryHtml = (msg) => `<div class="friends-rank-empty">${msg}</div><button class="btn-friends secondary" style="margin-top:10px" onclick="renderFriendsRanking()">🔄 Попробовать ещё раз</button>`;
+
   if (PLATFORM !== 'vk' || !vkReady) {
-    el.innerHTML = '<div class="friends-rank-empty">Доступно только внутри VK</div>';
+    el.innerHTML = retryHtml('Доступно только внутри VK');
     return;
   }
   if (!GLOBAL_LB_ENDPOINT) {
@@ -2846,7 +3635,7 @@ async function renderFriendsRanking() {
     const friendsRes = await vkBridge.send('VKWebAppGetFriends', { multi: false });
     const friends = (friendsRes.users || []).slice(0, 100);
     if (!friends.length) {
-      el.innerHTML = '<div class="friends-rank-empty">Друзья ещё не найдены</div>';
+      el.innerHTML = retryHtml('Друзья ещё не найдены');
       return;
     }
     const launchParams = await getLaunchParamsString();
@@ -2857,7 +3646,7 @@ async function renderFriendsRanking() {
       body: JSON.stringify({ launchParams, friendIds: friends.map(f => f.id) }),
     });
     const data = await res.json();
-    if (!data.ok) { el.innerHTML = '<div class="friends-rank-empty">Не удалось загрузить</div>'; return; }
+    if (!data.ok) { el.innerHTML = retryHtml('Не удалось загрузить'); return; }
 
     const entries = [{
       id: profileRes.id,
@@ -2877,7 +3666,7 @@ async function renderFriendsRanking() {
     entries.sort((a,b) => b.score - a.score);
 
     if (entries.length === 1) {
-      el.innerHTML = '<div class="friends-rank-empty">Пока никто из друзей не играет — пригласи их!</div>';
+      el.innerHTML = retryHtml('Пока никто из друзей не играет — пригласи их!');
       return;
     }
     el.innerHTML = entries.map((e,i) => `
@@ -2889,7 +3678,7 @@ async function renderFriendsRanking() {
       </div>`).join('');
   } catch(e) {
     console.warn('[Friends] Ошибка рейтинга:', e);
-    el.innerHTML = '<div class="friends-rank-empty">Не удалось загрузить рейтинг</div>';
+    el.innerHTML = retryHtml('Не удалось загрузить рейтинг');
   }
 }
 
@@ -2993,6 +3782,14 @@ const THEMES = [
     unlock: () => G.prestigeCount >= 5,
     hint: 'Открывается после 5-го престижа',
     vars: { '--accent':'#ff2ec4', '--accent2':'#a000ff', '--teal':'#00f0ff' } },
+  { id:'aurora', name:'Аврора', icon:'🌌',
+    unlock: () => !!(G.purchases && G.purchases.themeAurora),
+    hint: 'Косметика — открывается покупкой в Магазине',
+    vars: { '--accent':'#00ffa3', '--accent2':'#7b2ff7', '--teal':'#00d9ff' } },
+  { id:'magma', name:'Магма', icon:'🔥',
+    unlock: () => !!(G.purchases && G.purchases.themeMagma),
+    hint: 'Косметика — открывается покупкой в Магазине',
+    vars: { '--accent':'#ff3d00', '--accent2':'#8b0000', '--teal':'#ffab00' } },
   { id:'gold', name:'VIP Золото', icon:'🟡',
     unlock: () => !!(G.purchases && G.purchases.vipStatus),
     hint: 'Открывается с VIP-статусом',
@@ -3250,7 +4047,37 @@ const ACHIEVEMENTS_DEF = [
   // Промокоды активированы
   { id:'ach_promo_1',    cat:'promoCodes', target:1, tier:'bronze', icon:'🎟️', rewardMult:1.02 },
   { id:'ach_promo_5',    cat:'promoCodes', target:5, tier:'silver', icon:'🎟️', rewardMult:1.05 },
+  // Ежедневная награда забрана (сколько раз всего, не текущий стрик)
+  { id:'ach_daily_7',    cat:'dailyClaims', target:7,   tier:'bronze', icon:'🎁', rewardMult:1.02 },
+  { id:'ach_daily_30',   cat:'dailyClaims', target:30,  tier:'silver', icon:'🎁', rewardMult:1.05 },
+  { id:'ach_daily_100',  cat:'dailyClaims', target:100, tier:'gold',   icon:'🎁', rewardMult:1.10 },
+  // Разных календарных дней в игре побывал (необязательно подряд)
+  { id:'ach_days_7',     cat:'daysPlayed', target:7,   tier:'bronze', icon:'📅', rewardMult:1.02 },
+  { id:'ach_days_30',    cat:'daysPlayed', target:30,  tier:'silver', icon:'📅', rewardMult:1.05 },
+  { id:'ach_days_100',   cat:'daysPlayed', target:100, tier:'gold',   icon:'📅', rewardMult:1.10 },
+  // Ежедневных заданий выполнено за всё время
+  { id:'ach_quests_10',  cat:'questsDone', target:10,  tier:'bronze', icon:'✅', rewardMult:1.02 },
+  { id:'ach_quests_50',  cat:'questsDone', target:50,  tier:'silver', icon:'✅', rewardMult:1.05 },
+  { id:'ach_quests_200', cat:'questsDone', target:200, tier:'gold',   icon:'✅', rewardMult:1.10 },
 ];
+
+// Подписи и иконки категорий — используются только для заголовков блоков
+// в компактном виде достижений ниже (не влияют на сам прогресс/расчёты).
+const ACH_CATEGORY_META = {
+  sold:        { title: 'Производство',          icon: '⚙️' },
+  coinsTotal:  { title: 'Монеты заработано',      icon: '💰' },
+  machines:    { title: 'Цехов открыто',          icon: '🏭' },
+  prestige:    { title: 'Престижей сделано',      icon: '⚡' },
+  clicksTotal: { title: 'Кликов сделано',         icon: '👆' },
+  adsTotal:    { title: 'Реклам просмотрено',     icon: '📺' },
+  streak:      { title: 'Лучший стрик',           icon: '🔥' },
+  crystals:    { title: 'Кристаллов заработано',  icon: '💎' },
+  friends:     { title: 'Друзей приглашено',      icon: '👥' },
+  promoCodes:  { title: 'Промокодов активировано',icon: '🎟️' },
+  dailyClaims: { title: 'Ежедневных наград забрано', icon: '🎁' },
+  daysPlayed:  { title: 'Дней в игре',            icon: '📅' },
+  questsDone:  { title: 'Ежедневных заданий выполнено', icon: '✅' },
+};
 
 function achState(id) {
   if (!G.achievements) G.achievements = {};
@@ -3270,6 +4097,9 @@ function achProgress(def) {
     crystals:    G.lifetimeCrystals || 0,
     friends:     G.friendsInvited || 0,
     promoCodes:  G.promoCodesRedeemed || 0,
+    dailyClaims: G.totalDailyClaims || 0,
+    daysPlayed:  G.totalDaysPlayed || 0,
+    questsDone:  G.questsCompleted || 0,
   };
   return map[def.cat] || 0;
 }
@@ -3290,6 +4120,7 @@ function claimAchievement(id) {
   const st = achState(id);
   if (st.claimed || achProgress(def) < def.target) return;
   st.claimed = true;
+  addSeasonSP(3);
   playSound('levelup');
   showToast('🏅 ' + t('achUnlocked') + ': x' + def.rewardMult.toFixed(2));
   goldenGlow(document.getElementById('hCoins'));
@@ -3357,6 +4188,7 @@ function renderStats() {
     ['👥', 'Друзей приглашено', fmt(G.friendsInvited || 0)],
     ['🎟️', 'Промокодов активировано', fmt(G.promoCodesRedeemed || 0)],
     ['✅', 'Ежедневных заданий выполнено', fmt(G.questsCompleted || 0)],
+    ['🏆', 'Еженедельных испытаний выполнено', fmt(G.weeklyCompleted || 0)],
     ['🔥', 'Лучший стрик', (G.bestStreak || 0) + ' дн.'],
     ['📅', 'Играешь', days <= 0 ? 'первый день' : days + ' дн.'],
   ];
@@ -3369,6 +4201,27 @@ function renderStats() {
     </div>`).join('');
 }
 
+// Клик по плитке: если условие уже выполнено, но награда не забрана —
+// сразу забираем. Иначе просто показываем тостом, что это за достижение и
+// какой сейчас прогресс — плитка слишком маленькая, чтобы уместить текст
+// постоянно, но сама информация не должна теряться.
+function handleAchTileClick(id) {
+  const def = ACHIEVEMENTS_DEF.find(d => d.id === id);
+  if (!def) return;
+  const st = achState(id);
+  const progress = Math.min(achProgress(def), def.target);
+  if (!st.claimed && progress >= def.target) { claimAchievement(id); return; }
+  const pct = Math.min(100, Math.round(progress/def.target*100));
+  showToast(`${def.icon} ${t(def.id+'_n')} — ${fmt(progress)}/${fmt(def.target)}${st.claimed ? ' ✓' : ' ('+pct+'%)'}`);
+}
+
+// ── ДОСТИЖЕНИЯ: компактные плитки по категориям ─────────────────────
+// Раньше каждое из 34 достижений рисовалось как полноразмерная quest-card
+// (иконка + название + описание + прогресс-бар + кнопка) — это очень длинный
+// скролл. Теперь — сгруппировано по категориям (та же группа = тот же
+// показатель на бронзу/серебро/золото), каждая плитка маленькая: иконка,
+// цвет рамки по тиру, тонкая полоска прогресса. Тап — либо забрать награду
+// (если уже готово), либо показать детали тостом.
 function renderAchievements() {
   const list = document.getElementById('achList');
   const summary = document.getElementById('achSummary');
@@ -3377,27 +4230,33 @@ function renderAchievements() {
   const unlocked = ACHIEVEMENTS_DEF.filter(d => achState(d.id).claimed).length;
   if (summary) summary.innerHTML = `${t('achUnlocked2')}: <b>${unlocked}/${ACHIEVEMENTS_DEF.length}</b> · ${t('achTotalBonus')}: <b>×${achievementMult().toFixed(2)}</b>`;
 
-  list.innerHTML = ACHIEVEMENTS_DEF.map(def => {
-    const st = achState(def.id);
-    const progress = Math.min(achProgress(def), def.target);
-    const pct = Math.min(100, Math.round(progress/def.target*100));
-    const done = progress >= def.target;
-    return `<div class="quest-card ach-tier-${def.tier} ${st.claimed?'claimed':done?'done':''}">
-      <div class="quest-head">
-        <div class="quest-icon">${def.icon}</div>
-        <div class="quest-info">
-          <div class="quest-name">${t(def.id+'_n')}</div>
-          <div class="quest-desc">${t(def.id+'_d')}</div>
-          <div class="quest-reward">🎁 ${t('achBonusLabel')} ×${def.rewardMult.toFixed(2)} ${t('achBonusToAll')}</div>
-        </div>
-      </div>
-      <div class="quest-progress">
-        <div class="quest-pbar-wrap"><div class="quest-pbar" style="width:${pct}%;background:${def.tier==='gold'?'#FFD700':def.tier==='silver'?'#C0C0C0':'#CD7F32'}"></div></div>
-        <div class="quest-pct">${fmt(progress)}/${fmt(def.target)}</div>
-      </div>
-      ${!st.claimed
-        ? `<button class="btn-claim" onclick="claimAchievement('${def.id}')" ${done?'':'disabled'}>${done?t('questClaim'):pct+'%'}</button>`
-        : `<button class="btn-claim" disabled>${t('questClaimed')}</button>`}
+  const tierColor = { bronze:'#CD7F32', silver:'#C0C0C0', gold:'#FFD700' };
+
+  const byCat = {};
+  const catOrder = [];
+  ACHIEVEMENTS_DEF.forEach(def => {
+    if (!byCat[def.cat]) { byCat[def.cat] = []; catOrder.push(def.cat); }
+    byCat[def.cat].push(def);
+  });
+
+  list.innerHTML = catOrder.map(cat => {
+    const meta = ACH_CATEGORY_META[cat] || { title: cat, icon: '🏅' };
+    const catUnlocked = byCat[cat].filter(d => achState(d.id).claimed).length;
+    const tiles = byCat[cat].map(def => {
+      const st = achState(def.id);
+      const progress = Math.min(achProgress(def), def.target);
+      const pct = Math.min(100, Math.round(progress/def.target*100));
+      const done = progress >= def.target;
+      const color = tierColor[def.tier] || '#888';
+      const stateClass = st.claimed ? 'claimed' : (done ? 'ready' : '');
+      return `<div class="ach-tile ${stateClass}" style="--tier:${color}" onclick="handleAchTileClick('${def.id}')">
+        <div class="ach-tile-icon">${st.claimed ? '✓' : def.icon}</div>
+        ${!st.claimed ? `<div class="ach-tile-bar"><div style="width:${pct}%;background:${color}"></div></div>` : ''}
+      </div>`;
+    }).join('');
+    return `<div class="ach-block">
+      <div class="ach-block-title">${meta.icon} ${meta.title} <span style="opacity:.6">${catUnlocked}/${byCat[cat].length}</span></div>
+      <div class="ach-tiles">${tiles}</div>
     </div>`;
   }).join('');
 }
@@ -3416,6 +4275,7 @@ function openMenuSection(section) {
   document.getElementById('menuSecTheme').style.display   = section==='theme'   ? 'block':'none';
   document.getElementById('menuSecDaily').style.display   = section==='daily'   ? 'block':'none';
   document.getElementById('menuSecWeekly').style.display  = section==='weekly'  ? 'block':'none';
+  document.getElementById('menuSecSeason').style.display  = section==='season'  ? 'block':'none';
   document.getElementById('menuSecAch').style.display     = section==='ach'     ? 'block':'none';
   document.getElementById('menuSecFriends').style.display = section==='friends' ? 'block':'none';
   document.querySelector('.menu-hub').style.display = 'none';
@@ -3426,8 +4286,15 @@ function openMenuSection(section) {
   if (section==='theme')   { renderThemePicker(); renderSettingsPanel(); }
   if (section==='daily')   renderQuests();
   if (section==='weekly')  renderWeeklyChallenge();
+  if (section==='season')  renderSeasonPass();
   if (section==='ach')     renderAchievements();
-  if (section==='friends') { renderFriends(); syncInvitedCount(); renderFriendsRanking(); }
+  // renderFriendsRanking() сюда намеренно НЕ вызывается — этот запрос дёргает
+  // VKWebAppGetFriends, который показывает нативный диалог "разрешить доступ
+  // к друзьям". Если делать это автоматически при каждом открытии раздела,
+  // диалог выскакивает без явного действия игрока, что и раздражало. Теперь
+  // рейтинг грузится только по кнопке "🏆 Загрузить топ друзей" в самом
+  // списке (см. HTML секции menuSecFriends).
+  if (section==='friends') { renderFriends(); syncInvitedCount(); }
 }
 
 function closeMenuSection() {
@@ -3440,6 +4307,7 @@ function closeMenuSection() {
   document.getElementById('menuSecTheme').style.display   = 'none';
   document.getElementById('menuSecDaily').style.display   = 'none';
   document.getElementById('menuSecWeekly').style.display  = 'none';
+  document.getElementById('menuSecSeason').style.display  = 'none';
   document.getElementById('menuSecAch').style.display     = 'none';
   document.getElementById('menuSecFriends').style.display = 'none';
   document.querySelector('.menu-hub').style.display = 'flex';
@@ -3496,6 +4364,7 @@ function claimDailyReward() {
   G.dailyStreak = (diff === 1) ? (G.dailyStreak||0) + 1 : 1;
   G.lastDailyClaimDay = todayStr();
   G.bestStreak = Math.max(G.bestStreak||0, G.dailyStreak);
+  G.totalDailyClaims = (G.totalDailyClaims||0) + 1;
   playSound('levelup');
 
   const idx = (G.dailyStreak - 1) % 7;
@@ -3638,6 +4507,8 @@ function trackWeekly(amount) {
 function claimWeeklyChallenge() {
   if (!G.weekly || G.weekly.claimed || G.weekly.progress < G.weekly.target) return;
   G.weekly.claimed = true;
+  G.weeklyCompleted = (G.weeklyCompleted||0) + 1;
+  addSeasonSP(25);
   const coins    = Math.max(1000, Math.round(cps() * 100));
   const crystals = 5;
   G.coins += coins;
@@ -3719,6 +4590,12 @@ function trackQuest(type, amount=1) {
   if (type==='qtCoins') { G.lifetimeCoins  = (G.lifetimeCoins||0)  + amount; trackWeekly(amount); }
   if (type==='qtClick') G.lifetimeClicks = (G.lifetimeClicks||0) + amount;
   if (type==='qtAd')    G.lifetimeAds    = (G.lifetimeAds||0)    + amount;
+  // Ещё два lifetime-счётчика — нужны только для заданий сезонного пропуска
+  // (см. ensureSeasonQuests ниже), которые считают прогресс как разницу
+  // между текущим значением и значением на момент выдачи задания, а не
+  // через отдельные session-счётчики (как у обычных daily/weekly).
+  if (type==='qtUpgrade') G.lifetimeUpgrades = (G.lifetimeUpgrades||0) + amount;
+  if (type==='qtBuy')     G.lifetimeBuys     = (G.lifetimeBuys||0)     + amount;
 
   if (!G.quests) return;
   const q = G.quests;
@@ -3746,6 +4623,7 @@ function claimQuest(idx) {
   if (!q||q.claimed||q.progress<q.target) return;
   q.claimed = true;
   G.questsCompleted = (G.questsCompleted || 0) + 1;
+  addSeasonSP(5);
   playSound('quest');
   const reward = QUEST_REWARDS[q.rewardIdx];
   if (reward.type==='coins') {
@@ -3775,7 +4653,25 @@ function updateMenuBadge() {
   const streakIsNew = unlocked && !G.seenStreakFeature;
   const skillsIsNew = G.prestigeCount > 0 && !G.seenSkillsFeature;
   const hasWeekly = G.weekly && !G.weekly.claimed && G.weekly.progress >= G.weekly.target;
-  const has = hasQuest || hasAch || hasStreak || hasSkill || streakIsNew || skillsIsNew || hasWeekly;
+  const hasSeason = (() => {
+    ensureSeasonFresh();
+    ensureSeasonQuests();
+    const hasPremium = seasonHasPremium();
+    for (let tier = 1; tier <= SEASON_TIER_COUNT; tier++) {
+      if (!seasonTierUnlocked(tier)) break;
+      if (!(G.seasonFreeClaimed||[]).includes(tier)) return true;
+      if (hasPremium && !(G.seasonPremiumClaimed||[]).includes(tier)) return true;
+    }
+    const sq = G.seasonQuests;
+    if (sq) {
+      const questReady = q => q && !q.claimed && seasonQuestProgress(q) >= q.target;
+      if (sq.daily.list.some(questReady)) return true;
+      if (questReady(sq.weekly.quest)) return true;
+      if (questReady(sq.seasonal.quest)) return true;
+    }
+    return false;
+  })();
+  const has = hasQuest || hasAch || hasStreak || hasSkill || streakIsNew || skillsIsNew || hasWeekly || hasSeason;
   // Карточка "Награда за вход" — появляется только после покупки первого цеха
   const streakCard = document.getElementById('streakMenuCard');
   if (streakCard) streakCard.style.display = unlocked ? 'flex' : 'none';
@@ -3788,6 +4684,9 @@ function updateMenuBadge() {
   // badge на карточке Недельного испытания
   const wb = document.getElementById('weeklyBadge');
   if (wb) wb.classList.toggle('show', hasWeekly);
+  // badge на карточке Сезонного пропуска
+  const seb = document.getElementById('seasonBadge');
+  if (seb) seb.classList.toggle('show', hasSeason);
   // badge на карточке Достижения в хабе
   const ab = document.getElementById('achBadge');
   if (ab) ab.classList.toggle('show', hasAch);
@@ -3888,6 +4787,7 @@ function tick(now) {
 
   G.machines.forEach(m=>{
     if(!m.owned) return;
+    if(isMachineBroken(m.id)) return; // сломанный цех не производит, пока не починят или не пройдёт время
     if(m.auto && m.progress===0) m.progress=1;
     if(m.progress>0){
       m.progress+=dt;
@@ -3943,6 +4843,8 @@ function tick(now) {
     updateMenuBadge();
     maybeTriggerRushHour(now);
     updateRushBanner();
+    maybeTriggerRandomEvent(now);
+    updateEventBanner();
     if (G.purchases?.autoPilot) runAutoPilot();
     if (comboCount > 0 && now - lastClickAt > COMBO_WINDOW) {
       comboCount = 0;
@@ -4059,6 +4961,15 @@ async function initSDK() {
   }
   setThemeVars(G.theme || 'classic'); // применяем ещё на сплэше, до входа в игру
 
+  // Считаем сегодняшний день как ещё один "день в игре", если сегодня мы
+  // тут ещё не были — независимо от того, забирал ли игрок ежедневную
+  // награду (это отдельный счётчик, totalDailyClaims выше).
+  const today = todayStr();
+  if (G.lastPlayedDay !== today) {
+    G.lastPlayedDay = today;
+    G.totalDaysPlayed = (G.totalDaysPlayed || 0) + 1;
+  }
+
   sdkInitDone = true;
   // Показываем кнопку "Начать"
   document.getElementById('sdkLoading').style.display = 'none';
@@ -4093,6 +5004,7 @@ document.getElementById('startBtn').addEventListener('click', () => {
   initIAP();
   initQuests();
   initWeeklyChallenge();
+  ensureSeasonQuests(); // тоже приводит G.season* в актуальное состояние (через ensureSeasonFresh внутри)
   checkIncomingReferral();
   renderFriends();
   syncInvitedCount();
@@ -4116,6 +5028,7 @@ document.getElementById('startBtn').addEventListener('click', () => {
     if (e.target.closest('[data-action="upgrade"]'))   { upgradeMachine(id); return; }
     if (e.target.closest('[data-action="adupgrade"]')) { adFreeUpgrade(id); return; }
     if (e.target.closest('[data-action="adopen"]'))    { adOpenMachine(id); return; }
+    if (e.target.closest('[data-action="repair"]'))    { repairMachine(id); return; }
     const premBtn = e.target.closest('[data-action="buypremium"]');
     if (premBtn) { buyProduct(premBtn.dataset.product); return; }
     // Цеха больше не кликабельны напрямую — производство полностью автоматическое

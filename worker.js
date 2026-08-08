@@ -42,10 +42,13 @@ const VK_API_VERSION = '5.199';
 const PROMO_REWARD_TYPES = ['coins', 'crystals', 'starterPack', 'vipStatus', 'secretLab'];
 
 // ── Каталог платных предметов ────────────────────────────────────
-// ВАЖНО: price указан в внутренней валюте VK ("голоса"), а не в рублях!
-// Это ПРИМЕРНЫЕ значения — проверь актуальный курс голосов к рублю в своём
-// личном кабинете разработчика (раздел "Платежи") и поправь под реальные
-// 99₽/299₽/199₽/59₽ ПЕРЕД тем как включать боевой режим платежей.
+// price — В ГОЛОСАХ ВКонтакте (внутренняя валюта VK), НЕ в рублях. Клиент
+// (index.html, IAP_PRODUCTS) показывает игроку ровно это число голосов —
+// конвертировать в рубли для отображения не нужно и НЕЛЬЗЯ (правила VK
+// Mini Apps требуют показывать цену в валюте платформы). Меняешь число
+// здесь — обязательно поменяй такое же число в voicesLabel(...) у
+// соответствующего товара в IAP_PRODUCTS (index.html), чтобы игрок видел
+// именно ту цену, которая реально спишется.
 // permanent:true — разовая покупка (флаг на аккаунте), false — можно купить
 // несколько раз (например пачку монет).
 const PAYMENT_CATALOG = {
@@ -54,6 +57,9 @@ const PAYMENT_CATALOG = {
   secret_lab:   { title: 'Секретная лаборатория', price: 80,  permanent: true  },
   coin_pack:    { title: 'Мешок монет',           price: 25,  permanent: false },
   auto_pilot:   { title: 'Автопилот завода',      price: 60,  permanent: true  },
+  theme_aurora: { title: 'Тема «Аврора»',         price: 28,  permanent: true  },
+  theme_magma:  { title: 'Тема «Магма»',          price: 28,  permanent: true  },
+  season_pass:  { title: 'Сезонный пропуск',      price: 75,  permanent: false },
 };
 
 export default {
