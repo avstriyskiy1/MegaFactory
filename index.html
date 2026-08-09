@@ -266,6 +266,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
 .season-cell.ready{opacity:1;background:rgba(0,201,167,.12);border:1px solid var(--teal);color:var(--teal);}
 .season-cell.claimed{opacity:.5;background:rgba(255,255,255,.03);}
 .season-cell.locked-premium{opacity:.3;cursor:default;}
+.season-cell.exclusive{border:1px solid #ffd76a;background:rgba(255,215,106,.1);font-weight:700;color:#ffd76a;}
+.season-cell.exclusive.claimed{opacity:.6;}
 
 /* DAILY STREAK */
 .streak-desc{font-size:12px;color:var(--muted);text-align:center;padding:4px 0 10px;}
@@ -997,7 +999,7 @@ const I18N = {
     iapToastThemeMagma: '🔥 Тема «Магма» открыта — выбери её в Настройках!',
     iapCosmeticBadge: 'КОСМЕТИКА',
     iapSeasonPass: '🎫 Сезонный пропуск',
-    iapSeasonPassDesc: 'Открывает премиум-награды на всех уровнях сезона — до конца текущего сезона (14 дней)',
+    iapSeasonPassDesc: 'Открывает премиум-награды на всех уровнях сезона, включая эксклюзивные — действует до конца текущего сезона',
     iapSeasonBadge: 'СЕЗОН',
     iapToastSeasonPass: '🎫 Премиум-трек открыт до конца сезона!',
     settingsAutoBuy: '🤖 Автопокупка цехов',
@@ -1107,11 +1109,17 @@ const MACHINES_DEF = [
   { id:13, name:'Портал в измерение',   emoji:'🌀', baseCost:2970000000000,    baseReward:4700000000000,    baseSpeed:310000},
   { id:14, name:'Машина времени',       emoji:'⏳', baseCost:22600000000000,   baseReward:46500000000000,   baseSpeed:385000},
   { id:15, name:'Ядро сингулярности',   emoji:'🌌', baseCost:172000000000000,  baseReward:460000000000000,  baseSpeed:470000},
-  // Платный цех — разблокируется через IAP. ВАЖНО: id всегда 10, никогда не
-  // переиспользуй и не меняй его — в сохранениях игроков уже есть прогресс,
-  // привязанный именно к этому номеру. Место в списке (последнее) определяется
-  // порядком в этом массиве, а не значением id.
-  { id:10, name:'Секретная лаборатория', emoji:'🧪', baseCost:0, baseReward:50, baseSpeed:8000, premium:true },
+  // Платные / особые цеха — их id НИКОГДА не переиспользуй и не меняй: в
+  // сохранениях игроков уже есть прогресс, привязанный именно к этим
+  // номерам. Место в списке (последние) определяется порядком в этом
+  // массиве, а не значением id.
+  { id:10, name:'Секретная лаборатория', emoji:'🧪', baseCost:0, baseReward:50, baseSpeed:8000, premium:true, buyProductId:'secret_lab' },
+  // Эксклюзив сезонного пропуска — НЕ продаётся за голоса напрямую, ставится
+  // owned=true только через claimSeasonTier(15,'premium') ниже. seasonExclusive
+  // указывает buildMachineCard вообще не рисовать карточку "купи", пока не
+  // открыт — это не то же самое, что "ещё не куплен", это то же самое, что
+  // "ещё не заработан".
+  { id:16, name:'Сезонный цех', emoji:'🎖️', baseCost:0, baseReward:50, baseSpeed:9000, premium:true, seasonExclusive:true },
 ];
 
 // cost  = базовая цена улучшения
@@ -1329,6 +1337,14 @@ async function buyProduct(id) {
   const prod = IAP_PRODUCTS.find(p => p.id === id);
   if (!prod) { console.error('[IAP] Товар не найден:', id); return; }
   if (prod.once && iapFlagOwned(id)) return; // уже куплено
+  // Сезонный пропуск — не обычный расходник вроде пачки монет (тот можно
+  // покупать сколько угодно раз): повторная покупка в рамках уже
+  // оплаченного сезона не даёт вообще ничего нового, поэтому явно не даём
+  // игроку случайно заплатить второй раз за то же самое.
+  if (id === 'season_pass' && seasonHasPremium()) {
+    showToast('🎫 Премиум-трек уже открыт в этом сезоне');
+    return;
+  }
   playSound('click');
 
   if (PLATFORM !== 'vk' || !vkReady) {
@@ -1391,22 +1407,54 @@ async function syncPurchases(retryHard) {
       // просто перестаёт включать item в data.purchases (см. worker.js
       // handleMyPurchases), если у товара раньше был флаг true, а теперь
       // сервер его не подтверждает — считаем это возвратом и снимаем флаг.
+      // Каждый onBuy()/onRevoke() обёрнут отдельным try/catch — ошибка в
+      // одном товаре не должна мешать применить остальные и не должна
+      // прерывать цикл до saveGame() ниже.
       IAP_PRODUCTS.filter(p => p.once && p.flag).forEach(prod => {
-        const nowOwned = !!data.purchases[prod.id];
-        if (nowOwned && !G.purchases[prod.flag]) {
-          prod.onBuy(); changed = true;
-        } else if (!nowOwned && G.purchases[prod.flag]) {
-          G.purchases[prod.flag] = false;
-          if (typeof prod.onRevoke === 'function') prod.onRevoke();
-          changed = true;
-        }
+        try {
+          const nowOwned = !!data.purchases[prod.id];
+          if (nowOwned && !G.purchases[prod.flag]) {
+            prod.onBuy(); changed = true;
+          } else if (!nowOwned && G.purchases[prod.flag]) {
+            G.purchases[prod.flag] = false;
+            if (typeof prod.onRevoke === 'function') prod.onRevoke();
+            changed = true;
+          }
+        } catch(e) { console.error('[IAP] Ошибка применения покупки', prod.id, e); }
       });
+
+      // Расходники (пачка монет, сезонный пропуск) приходят через pending —
+      // сервер теперь НЕ удаляет их сам при выдаче (см. handleMyPurchases в
+      // worker.js — раньше удалял сразу, и любой сбой на клиенте прямо тут
+      // означал безвозвратную потерю награды). Идемпотентность обеспечиваем
+      // здесь: сверяемся по orderId, чтобы не начислить одно и то же дважды,
+      // а после успешного применения явно подтверждаем через /ack-purchases —
+      // только тогда сервер уберёт запись у себя.
+      if (!G.claimedOrderIds) G.claimedOrderIds = [];
+      const ackIds = [];
       (data.pending || []).forEach(p => {
+        if (G.claimedOrderIds.includes(String(p.orderId))) { ackIds.push(p.orderId); return; } // уже применяли раньше — просто подчистим на сервере
         const prod = IAP_PRODUCTS.find(pp => pp.id === p.item);
-        if (prod) { prod.onBuy(); changed = true; }
+        if (!prod) return;
+        try {
+          prod.onBuy();
+          changed = true;
+          G.claimedOrderIds.push(String(p.orderId));
+          ackIds.push(p.orderId);
+        } catch(e) { console.error('[IAP] Ошибка выдачи товара', p.item, e); }
       });
 
       if (changed) { playSound('levelup'); fullRender(); saveGame(); }
+      if (ackIds.length) {
+        // Подтверждение — fire-and-forget: если оно не дойдёт, сервер просто
+        // пришлёт те же pending ещё раз в следующий раз, а клиент их тихо
+        // пропустит по G.claimedOrderIds (уже отмечены выше) — не страшно.
+        fetch(workerUrl('/ack-purchases'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ launchParams, orderIds: ackIds }),
+        }).catch(()=>{});
+      }
       if (changed || !retryHard) return;
     } catch(e) { console.warn('[IAP] Ошибка синхронизации покупок:', e); }
   }
@@ -1416,7 +1464,11 @@ function renderIAP() {
   const el = document.getElementById('iapList');
   if (!el) return;
   el.innerHTML = IAP_PRODUCTS.map(prod => {
-    const owned  = prod.once && iapFlagOwned(prod.id);
+    // season_pass — не разовая покупка (once:false, можно оформить снова в
+    // следующем сезоне), но и не обычный расходник вроде пачки монет —
+    // в рамках ОДНОГО сезона он ведёт себя как разовая покупка, поэтому
+    // "куплено" здесь считается отдельной проверкой, а не только по флагу.
+    const owned = (prod.once && iapFlagOwned(prod.id)) || (prod.id === 'season_pass' && seasonHasPremium());
     return `<div class="iap-item ${prod.type}${owned?' owned':''}">
       <div class="iap-info">
         <div class="iap-name">${t(prod.nameKey)}${owned?' ✓':''}${prod.badgeKey && !owned ? `<span class="iap-badge">${t(prod.badgeKey)}</span>` : ''}</div>
@@ -2042,7 +2094,7 @@ function updateEventBanner() {
 // времени в игре — см. addSeasonSP() и её вызовы в соответствующих claim-
 // функциях. Премиум-трек — отдельная (повторная, за каждый новый сезон)
 // покупка через тот же честный VK Pay пайплайн, что и остальные IAP.
-const SEASON_EPOCH      = new Date('2026-01-05T00:00:00Z').getTime();
+const SEASON_EPOCH      = new Date('2026-08-09T00:00:00Z').getTime(); // текущий момент — так первый сезон, который увидят игроки, будет "Сезон 1", а не сдвинутый на много циклов вперёд от произвольной даты
 const SEASON_LENGTH_MS  = 14 * 24 * 60 * 60 * 1000;
 const SEASON_TIER_COUNT = 15;
 const SEASON_TIER_SP    = 40; // очков сезона на каждый следующий уровень
@@ -2099,7 +2151,14 @@ function seasonFreeReward(tier) {
 function seasonPremiumReward(tier) {
   const coins = Math.max(300, Math.round(cps() * (60 + tier * 30)));
   const crystal = (tier % 5 === 0) ? Math.round(tier / 5) * 2 : (tier % 3 === 0 ? 1 : 0);
-  return { coins, crystal };
+  // Эксклюзивы премиум-трека — то, чего нет ни за деньги напрямую, ни на
+  // бесплатном треке: на 10 уровне тема оформления, на макс. (15) —
+  // отдельный цех. Оба остаются навсегда, даже после того как сезон
+  // закончится (как и положено наградам боевого пропуска).
+  let exclusive = null;
+  if (tier === 10) exclusive = { type:'theme', flag:'seasonExclusiveThemeUnlocked', label:'🎖️ Тема «Чемпион сезона»' };
+  if (tier === SEASON_TIER_COUNT) exclusive = { type:'machine', flag:'seasonExclusiveMachineUnlocked', label:'🏆 Эксклюзивный цех' };
+  return { coins, crystal, exclusive };
 }
 
 // ── ЗАДАНИЯ СЕЗОННОГО ПРОПУСКА ──────────────────────────────────────
@@ -2227,11 +2286,29 @@ function claimSeasonTier(tier, track) {
   const reward = track === 'premium' ? seasonPremiumReward(tier) : seasonFreeReward(tier);
   G.coins += reward.coins;
   if (reward.crystal) { G.crystals = (G.crystals||0)+reward.crystal; G.lifetimeCrystals = (G.lifetimeCrystals||0)+reward.crystal; }
+  let exclusiveGranted = false;
+  if (track === 'premium' && reward.exclusive && !G[reward.exclusive.flag]) {
+    G[reward.exclusive.flag] = true;
+    exclusiveGranted = true;
+    if (reward.exclusive.type === 'machine') {
+      // Тот же принцип расчёта силы, что и у Секретной лаборатории — сила
+      // считается от текущей экономики игрока в момент получения, а не
+      // фиксированным числом (иначе на позднем старте награда будет
+      // смехотворно маленькой, а на раннем — сломает баланс).
+      const m = getMachine(16);
+      m.owned = true;
+      m.auto = true;
+      const ref = getMachine(9); // Орбитальный цех как ориентир силы
+      const refDps = ref.owned ? (ref.reward / ref.speed * 1000) : (baseCps() * 0.3 || 5);
+      m.reward = Math.max(50, Math.round(refDps * (m.speed/1000) * 2.2)); // чуть сильнее лаборатории — это эксклюзив за прогрессию, не за деньги
+    }
+  }
   claimedList.push(tier);
   playSound('levelup');
   goldenGlow(document.getElementById('hCoins'));
-  showToast(`🎫 Уровень ${tier}: +${fmt(reward.coins)} монет${reward.crystal?` +${reward.crystal} 💎`:''}`);
+  showToast(`🎫 Уровень ${tier}: +${fmt(reward.coins)} монет${reward.crystal?` +${reward.crystal} 💎`:''}${exclusiveGranted?` + ${reward.exclusive.label}!`:''}`);
   renderSeasonPass();
+  if (exclusiveGranted) { fullRender(); renderThemePicker(); }
   updateMenuBadge();
   saveGame();
 }
@@ -2283,9 +2360,14 @@ function renderSeasonPass() {
     const premClaimed = (G.seasonPremiumClaimed||[]).includes(tier);
     const freeR = seasonFreeReward(tier);
     const premR = seasonPremiumReward(tier);
+    const isExclusiveTier = !!premR.exclusive;
 
     const freeCellClass = freeClaimed ? 'claimed' : (unlocked ? 'ready' : '');
-    const premCellClass = premClaimed ? 'claimed' : (!hasPremium ? 'locked-premium' : (unlocked ? 'ready' : ''));
+    const premCellClass = (premClaimed ? 'claimed' : (!hasPremium ? 'locked-premium' : (unlocked ? 'ready' : ''))) + (isExclusiveTier ? ' exclusive' : '');
+
+    const premText = premClaimed
+      ? (isExclusiveTier ? `✓ ${premR.exclusive.type==='theme'?'🎖️':'🏆'}` : '✓')
+      : `${hasPremium?'':'🔒 '}${isExclusiveTier ? premR.exclusive.label + ' + ' : ''}💰${fmt(premR.coins)}${premR.crystal?` 💎${premR.crystal}`:''}`;
 
     rows.push(`<div class="season-tier-row${unlocked?' unlocked':''}">
       <div class="season-tier-num">${tier}</div>
@@ -2293,9 +2375,7 @@ function renderSeasonPass() {
         ${freeClaimed ? '✓' : `💰${fmt(freeR.coins)}${freeR.crystal?` 💎${freeR.crystal}`:''}`}
       </div>
       <div class="season-cell ${premCellClass}" onclick="${hasPremium?`claimSeasonTier(${tier},'premium')`:''}">
-        ${premClaimed
-          ? '✓'
-          : `${hasPremium?'':'🔒 '}💰${fmt(premR.coins)}${premR.crystal?` 💎${premR.crystal}`:''}`}
+        ${premText}
       </div>
     </div>`);
   }
@@ -2411,6 +2491,9 @@ function defaultState() {
     weekly: null, notifAllowed: false, hapticEnabled: true,
     firstPlayedAt: Date.now(),
     purchases: { starterPack: false, vipStatus: false, secretLab: false, autoPilot: false, themeAurora: false, themeMagma: false },
+    claimedOrderIds: [], // orderId уже применённых pending-покупок — для идемпотентности (см. syncPurchases)
+    seasonExclusiveMachineUnlocked: false, // навсегда, даже после смены сезона — заработано за 15 ур. премиум-трека
+    seasonExclusiveThemeUnlocked: false,   // навсегда — заработано за 10 ур. премиум-трека
     machines: MACHINES_DEF.map(d=>({
       id:d.id, level:1, owned:false, auto:true,
       progress:0, reward:d.baseReward, speed:d.baseSpeed,
@@ -2729,6 +2812,9 @@ function doPrestige() {
   const seasonQuests = G.seasonQuests;
   const lifetimeUpgrades = G.lifetimeUpgrades;
   const lifetimeBuys = G.lifetimeBuys;
+  const claimedOrderIds = G.claimedOrderIds;
+  const seasonExclusiveMachineUnlocked = G.seasonExclusiveMachineUnlocked;
+  const seasonExclusiveThemeUnlocked = G.seasonExclusiveThemeUnlocked;
   G = defaultState();
   G.prestigeMult   = mult;
   G.prestigeCount  = cnt;
@@ -2776,8 +2862,12 @@ function doPrestige() {
   G.seasonQuests          = seasonQuests;
   G.lifetimeUpgrades      = lifetimeUpgrades;
   G.lifetimeBuys          = lifetimeBuys;
+  G.claimedOrderIds       = claimedOrderIds;
+  G.seasonExclusiveMachineUnlocked = seasonExclusiveMachineUnlocked;
+  G.seasonExclusiveThemeUnlocked   = seasonExclusiveThemeUnlocked;
   G.energy = energyMax();
   if (purchases.secretLab) { const ml=getMachine(10); ml.owned=true; ml.auto=true; }
+  if (seasonExclusiveMachineUnlocked) { const sm=getMachine(16); sm.owned=true; sm.auto=true; }
   closePrestige();
   fullRender();
   saveGame();
@@ -2909,22 +2999,27 @@ function buildMachineCard(m) {
   const d = getDef(m.id);
 
   if (!m.owned) {
-    // Платный цех — показываем отдельно с кнопкой IAP
+    // Платный цех — показываем отдельно с кнопкой IAP (если он вообще
+    // покупается за голоса — у seasonExclusive такой кнопки нет в принципе,
+    // получить его можно только пройдя премиум-трек сезонного пропуска).
     if (d.premium) {
-      const bought = G.purchases?.secretLab;
+      if (d.seasonExclusive) return ''; // не показываем карточку вообще, пока не заработан — не "куплен ли", а "заработан ли"
+      const prod = IAP_PRODUCTS.find(p => p.id === d.buyProductId);
+      if (!prod) return '';
+      const bought = G.purchases?.[prod.flag];
       if (bought) return ''; // куплен — уже owned, не попадёт сюда
       return `<div class="mcard" style="border-color:#7c5cff;background:linear-gradient(135deg,rgba(124,92,255,.1),rgba(50,30,120,.08))" data-mid="${m.id}" data-premium="1">
         <div class="mcard-head">
           <div class="mcard-icon" style="border-color:#7c5cff;font-size:22px">${d.emoji}</div>
           <div style="flex:1">
             <div class="mcard-name" style="color:#a090ff">${d.name}</div>
-            <div class="mcard-lvl">${t('iapLabBadge')} · ${t('premiumOnly')}</div>
+            <div class="mcard-lvl">${t(prod.badgeKey || 'iapLabBadge')} · ${t('premiumOnly')}</div>
           </div>
         </div>
         <div class="mcard-reward" style="color:#a090ff">+${fmt(d.baseReward * incomeMult())} ${t('coins')} ${t('perCycle')}</div>
-        <button class="btn-buy-big" data-action="buypremium" data-product="secret_lab"
+        <button class="btn-buy-big" data-action="buypremium" data-product="${prod.id}"
           style="background:#7c5cff;margin-top:8px;pointer-events:all;cursor:pointer">
-          💎 ${t('iapLab')} — ${voicesLabel(80)}
+          💎 ${t(prod.nameKey)} — ${prod.price}
         </button>
       </div>`;
     }
@@ -3870,6 +3965,10 @@ const THEMES = [
     unlock: () => !!(G.purchases && G.purchases.vipStatus),
     hint: 'Открывается с VIP-статусом',
     vars: { '--accent':'#ffd700', '--accent2':'#b8860b', '--teal':'#f5deb3' } },
+  { id:'champion', name:'Чемпион сезона', icon:'🎖️',
+    unlock: () => !!G.seasonExclusiveThemeUnlocked,
+    hint: 'Эксклюзив — 10 уровень премиум-трека сезонного пропуска',
+    vars: { '--accent':'#ffd76a', '--accent2':'#c9a000', '--teal':'#7fffb0' } },
 ];
 
 function setThemeVars(id) {

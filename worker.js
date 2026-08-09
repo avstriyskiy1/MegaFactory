@@ -144,6 +144,8 @@ export default {
         return handleLoadGame(userId, env, corsHeaders);
       case '/my-purchases':
         return handleMyPurchases(userId, env, corsHeaders);
+      case '/ack-purchases':
+        return handleAckPurchases(body, userId, env, corsHeaders);
       case '/friends-scores':
         return handleFriendsScores(body, userId, env, corsHeaders);
       case '/register-notifications':
@@ -567,7 +569,18 @@ async function vkPaymentsSign(params, secret) {
 // ── /my-purchases ────────────────────────────────────────────────
 // Игра спрашивает отсюда, что реально куплено (после успешной оплаты воркер
 // уже записал это через handlePaymentNotification выше). pending — разовые
-// награды-расходники (например пачка монет), выдаются один раз и стираются.
+// награды-расходники (например пачка монет, сезонный пропуск).
+//
+// ВАЖНО: раньше pending-очередь удалялась из KV СРАЗУ при первом же чтении —
+// то есть выдавалась строго один раз. Если клиент по любой причине не успевал
+// применить награду именно в этот момент (исключение в JS, закрытие вкладки
+// прямо во время обработки, потеря сети до saveGame) — запись была уже
+// стёрта на сервере, и повторный запрос её просто не видел: награда
+// пропадала навсегда, без какого-либо способа её вернуть. Теперь список НЕ
+// удаляем — отдаём его при каждом запросе, а идемпотентность (чтобы одна и
+// та же покупка не зачислилась повторно) обеспечивает клиент, сверяясь по
+// orderId (см. G.claimedOrderIds в index.html). Так это превращается в
+// честную доставку "минимум один раз" вместо хрупкой "максимум один раз".
 async function handleMyPurchases(userId, env, corsHeaders) {
   const purchases = {};
   for (const item of Object.keys(PAYMENT_CATALOG)) {
@@ -578,8 +591,28 @@ async function handleMyPurchases(userId, env, corsHeaders) {
   const pendingKey = `pending:${userId}`;
   const raw = await env.REFERRALS.get(pendingKey);
   const pending = raw ? JSON.parse(raw) : [];
-  if (pending.length) await env.REFERRALS.delete(pendingKey);
   return json({ ok: true, purchases, pending }, 200, corsHeaders);
+}
+
+// ── /ack-purchases ────────────────────────────────────────────────
+// Клиент вызывает это ПОСЛЕ того, как реально применил награду локально
+// (начислил монеты/открыл пропуск и т.п.) — только тогда убираем запись из
+// очереди на сервере. Пока подтверждения не было, /my-purchases продолжит
+// отдавать её снова и снова при каждом запросе — это осознанно (см.
+// комментарий у handleMyPurchases выше): лучше лишний раз вернуть то, что
+// клиент уже умеет игнорировать как повторное (сверяет по orderId), чем
+// один раз ошибиться и потерять покупку навсегда.
+async function handleAckPurchases(body, userId, env, corsHeaders) {
+  const orderIds = Array.isArray(body?.orderIds) ? body.orderIds.map(String) : [];
+  if (!orderIds.length) return json({ ok: true }, 200, corsHeaders);
+
+  const pendingKey = `pending:${userId}`;
+  const raw = await env.REFERRALS.get(pendingKey);
+  const pending = raw ? JSON.parse(raw) : [];
+  const remaining = pending.filter(p => !orderIds.includes(String(p.orderId)));
+  if (remaining.length) await env.REFERRALS.put(pendingKey, JSON.stringify(remaining));
+  else await env.REFERRALS.delete(pendingKey);
+  return json({ ok: true }, 200, corsHeaders);
 }
 
 function json(data, status, headers) {
