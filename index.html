@@ -240,7 +240,15 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
 @keyframes achTilePulse{0%,100%{box-shadow:0 0 0 0 rgba(255,255,255,0);}50%{box-shadow:0 0 0 4px var(--tier);}}
 
 /* Сезонный пропуск */
-.season-summary{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:12px;text-align:center;}
+.season-summary{background:linear-gradient(135deg,rgba(62,201,255,.08),rgba(123,47,247,.06));border:1px solid rgba(62,201,255,.25);border-radius:10px;padding:14px;margin-bottom:12px;text-align:center;}
+.season-level-row{display:flex;align-items:center;gap:10px;margin:10px 0 8px;}
+.season-level-badge{flex-shrink:0;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#000;font-weight:800;font-size:12px;padding:7px 10px;border-radius:8px;white-space:nowrap;}
+.season-level-bar-wrap{position:relative;flex:1;height:22px;background:var(--bg3);border-radius:11px;overflow:hidden;border:1px solid var(--border);}
+.season-level-bar{position:absolute;top:0;left:0;bottom:0;background:linear-gradient(90deg,#3ec9ff,#7b2ff7);transition:width .3s;}
+.season-level-bar-label{position:relative;z-index:1;height:100%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.7);white-space:nowrap;padding:0 4px;}
+.season-subtabs{display:flex;gap:8px;margin:2px 0 10px;}
+.season-subtab{flex:1;padding:9px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--muted);font-family:'Exo 2',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;}
+.season-subtab.active{border-color:#3ec9ff;color:#3ec9ff;background:rgba(62,201,255,.08);}
 .season-block-title{font-size:12px;font-weight:600;color:var(--muted);letter-spacing:.02em;margin:14px 0 8px;}
 .season-title{font-size:16px;font-weight:700;color:var(--accent);}
 .season-sub{font-size:12px;color:var(--muted);margin:4px 0 10px;}
@@ -588,6 +596,16 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
         </div>
       </div>
 
+      <div class="tab-pane" id="pane-season">
+        <div class="sec-hdr">🎫 Сезонный пропуск</div>
+        <div class="season-summary" id="seasonSummary"></div>
+        <div class="season-subtabs">
+          <button class="season-subtab active" id="seasonSubtabQuests" onclick="switchSeasonSubtab('quests')">🎯 Задания</button>
+          <button class="season-subtab" id="seasonSubtabRewards" onclick="switchSeasonSubtab('rewards')">🎫 Награды</button>
+        </div>
+        <div class="quest-list" id="seasonQuestsList"></div>
+        <div class="season-track" id="seasonTierList" style="display:none"></div>
+      </div>
       <div class="tab-pane" id="pane-lb">
         <div class="sec-hdr">Таблица лидеров</div>
         <div class="lb-global-box">
@@ -636,14 +654,13 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
             <div class="menu-card-arrow">›</div>
           </div>
 
-          <!-- Сезонный пропуск -->
-          <div class="menu-card" onclick="openMenuSection('season')">
-            <div class="menu-card-icon">🎫</div>
+          <!-- Статистика -->
+          <div class="menu-card" onclick="openMenuSection('stats')">
+            <div class="menu-card-icon">📊</div>
             <div class="menu-card-info">
-              <div class="menu-card-title">Сезонный пропуск</div>
-              <div class="menu-card-sub">15 уровней наград за 14 дней</div>
+              <div class="menu-card-title">Статистика</div>
+              <div class="menu-card-sub">Твой прогресс целиком</div>
             </div>
-            <span class="tab-badge menu-badge" id="seasonBadge"></span>
             <div class="menu-card-arrow">›</div>
           </div>
 
@@ -685,16 +702,6 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
             <div class="menu-card-info">
               <div class="menu-card-title">Промокоды</div>
               <div class="menu-card-sub">Введи код — получи награду</div>
-            </div>
-            <div class="menu-card-arrow">›</div>
-          </div>
-
-          <!-- Статистика -->
-          <div class="menu-card" onclick="openMenuSection('stats')">
-            <div class="menu-card-icon">📊</div>
-            <div class="menu-card-info">
-              <div class="menu-card-title">Статистика</div>
-              <div class="menu-card-sub">Твой прогресс целиком</div>
             </div>
             <div class="menu-card-arrow">›</div>
           </div>
@@ -774,12 +781,6 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
           </div>
         </div>
 
-        <!-- Секция: Статистика -->
-        <div id="menuSecStats" style="display:none">
-          <button class="menu-back-btn" onclick="closeMenuSection('stats')">‹ Назад</button>
-          <div id="statsList"></div>
-        </div>
-
         <!-- Секция: Промокоды -->
         <div id="menuSecPromo" style="display:none">
           <button class="menu-back-btn" onclick="closeMenuSection('promo')">‹ Назад</button>
@@ -821,14 +822,10 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
           <div id="weeklyChallengeBox"></div>
         </div>
 
-        <!-- Секция: Сезонный пропуск -->
-        <div id="menuSecSeason" style="display:none">
-          <button class="menu-back-btn" onclick="closeMenuSection('season')">‹ Назад</button>
-          <div class="season-summary" id="seasonSummary"></div>
-          <div class="season-block-title">🎯 Задания сезона</div>
-          <div class="quest-list" id="seasonQuestsList"></div>
-          <div class="season-block-title">🎫 Уровни пропуска</div>
-          <div class="season-track" id="seasonTierList"></div>
+        <!-- Секция: Статистика -->
+        <div id="menuSecStats" style="display:none">
+          <button class="menu-back-btn" onclick="closeMenuSection('stats')">‹ Назад</button>
+          <div id="statsList"></div>
         </div>
 
         <!-- Секция: Достижения -->
@@ -884,6 +881,10 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
       ">
         <span class="tab-icon">☰</span><span class="tab-label" id="tabMenuLabel">Меню</span>
         <span class="tab-badge" id="menuBadge"></span>
+      </button>
+      <button class="tab-btn" id="tab-season" onclick="switchTab('season'); renderSeasonPass()">
+        <span class="tab-icon">🎫</span><span class="tab-label">Пропуск</span>
+        <span class="tab-badge" id="seasonBadge"></span>
       </button>
       <button class="tab-btn" id="tab-lb" onclick="switchTab('lb'); updateGlobalLbStat()">
         <span class="tab-icon">🏆</span><span class="tab-label">Рейтинг</span>
@@ -1328,6 +1329,7 @@ async function buyProduct(id) {
   const prod = IAP_PRODUCTS.find(p => p.id === id);
   if (!prod) { console.error('[IAP] Товар не найден:', id); return; }
   if (prod.once && iapFlagOwned(id)) return; // уже куплено
+  playSound('click');
 
   if (PLATFORM !== 'vk' || !vkReady) {
     showToast('Покупки доступны только внутри VK');
@@ -1342,8 +1344,17 @@ async function buyProduct(id) {
     // Открываем настоящее платёжное окно VK — деньги реально списываются
     // тут, награда же выдаётся только после подтверждения от сервера ниже
     // (сервер получает независимое уведомление напрямую от VK).
+    //
+    // ВАЖНО: у VKWebAppShowOrderBox результат приходит в поле "status"
+    // (например 'success'/'cancel'/'fail'), а НЕ "success: true" — это
+    // подтверждено и официальным примером VK, и мок-тестами vk-bridge.
+    // Раньше тут проверялось result.success !== true, что было ВСЕГДА
+    // истинным (такого поля в ответе просто нет), поэтому функция
+    // считала любую, даже успешную, оплату отменённой и не запускала
+    // синхронизацию покупок ниже — платёж проходил, а игра об этом
+    // просто никогда не узнавала.
     const result = await vkBridge.send('VKWebAppShowOrderBox', { type: 'item', item: id });
-    if (!result || result.success !== true) return; // отменил или ошибка
+    if (!result || result.status === 'cancel' || result.status === 'fail') return; // отменил или ошибка
     showToast('⏳ Обрабатываем платёж...');
     await syncPurchases(true);
   } catch(e) {
@@ -1471,6 +1482,7 @@ function updateGlobalLbStat() {
 
 // Открывает нативное окно VK с рейтингом среди всех игроков приложения
 async function showGlobalLeaderboard() {
+  playSound('click');
   if (PLATFORM !== 'vk' || !vkReady) {
     showToast('Доступно только внутри VK');
     return;
@@ -1509,12 +1521,24 @@ async function saveVK(data) {
   try {
     const launchParams = await getLaunchParamsString();
     if (!launchParams) return;
-    await fetch(workerUrl('/save-game'), {
+    const res = await fetch(workerUrl('/save-game'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ launchParams, data }),
       keepalive: true, // запрос не оборвётся, если вкладка/приложение закроется прямо во время отправки
     });
+    // ВАЖНО: fetch() резолвится успешно даже если сервер ответил ошибкой
+    // (403/500 и т.п.) — падает только при настоящем сетевом сбое. Раньше
+    // ответ вообще не проверялся, поэтому если сервер по любой причине
+    // отклонял сохранение (например, не совпала подпись), клиент считал
+    // сохранение успешным и никак об этом не узнавал — а разбираться,
+    // почему прогресс "пропадает", потом приходится вслепую. Теперь при
+    // не-OK ответе честно предупреждаем в консоли.
+    if (!res.ok) {
+      let reason = res.status;
+      try { reason = (await res.json()).error || reason; } catch(e) {}
+      console.warn('[VK] Сервер отклонил облачное сохранение:', reason);
+    }
   } catch(e) { console.warn('[VK] Ошибка облачного сохранения:', e); }
 }
 
@@ -1529,7 +1553,10 @@ async function loadVKSave() {
       body: JSON.stringify({ launchParams }),
     });
     const data = await res.json();
-    if (!data.ok || !data.save) return false;
+    if (!data.ok || !data.save) {
+      if (!data.ok) console.warn('[VK] Сервер отклонил load-game:', data.error || data);
+      return false;
+    }
     const cloud = JSON.parse(data.save);
     const local = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null');
     // Сравниваем по времени последнего сохранения, а не по количеству монет —
@@ -1599,6 +1626,7 @@ async function adOpenMachine(id) {
   // Добавляем монеты ровно до стоимости цеха
   await watchAdThen(() => {
     G.coins = Math.max(G.coins, d.baseCost);
+    playSound('buy');
     showToast(t('toastFillCoin'));
     fullRender();
   });
@@ -1611,6 +1639,7 @@ async function adFreeUpgrade(id) {
     const cost = machineUpgCost(id);
     G.coins = Math.max(G.coins, cost);
     adFreeUpgEnd = Date.now() + AD_FREE_UPG_CD;
+    playSound('upgrade');
     showToast(t('toastFillUpg'));
     fullRender();
   });
@@ -1621,6 +1650,7 @@ async function adFreeShopUpg(id) {
   await watchAdThen(() => {
     const cost = getUpgCost(id);
     G.coins = Math.max(G.coins, cost);
+    playSound('upgrade');
     showToast(t('toastFillShop'));
     fullRender();
   });
@@ -1686,7 +1716,7 @@ function startAmbientMusicNow(ctx) {
 
   const master = ctx.createGain();
   master.gain.setValueAtTime(0.0001, ctx.currentTime);
-  master.gain.linearRampToValueAtTime(0.05, ctx.currentTime + 3); // плавный фейд-ин, тихо
+  master.gain.linearRampToValueAtTime(0.16, ctx.currentTime + 3); // плавный фейд-ин — раньше было 0.05, почти не слышно даже на полной громкости устройства
   master.connect(ctx.destination);
 
   // Медленно "плывущий" фильтр — единственный источник движения в звуке,
@@ -2217,10 +2247,29 @@ function renderSeasonPass() {
   const daysLeft = Math.max(0, Math.ceil((bounds.end - Date.now()) / (24*60*60*1000)));
   const hasPremium = seasonHasPremium();
 
+  // Текущий уровень = самый высокий уже разблокированный (0, если ещё ни
+  // одного). Показываем не просто "очков сезона: N" (само по себе число
+  // мало что говорит без контекста), а прогресс именно ДО СЛЕДУЮЩЕГО уровня.
+  let curTier = 0;
+  while (curTier < SEASON_TIER_COUNT && seasonTierUnlocked(curTier + 1)) curTier++;
+  const isMax = curTier >= SEASON_TIER_COUNT;
+  const nextTier  = Math.min(curTier + 1, SEASON_TIER_COUNT);
+  const prevNeed  = seasonTierSPRequired(curTier);
+  const nextNeed  = seasonTierSPRequired(nextTier);
+  const sp        = G.seasonSP || 0;
+  const segPct    = isMax ? 100 : Math.min(100, Math.round((sp - prevNeed) / (nextNeed - prevNeed) * 100));
+
   if (summary) {
     summary.innerHTML = `
       <div class="season-title">🎫 Сезон ${seasonNumber(G.seasonIndex)}</div>
-      <div class="season-sub">Осталось ${daysLeft} дн. · Очков сезона: ${G.seasonSP||0}</div>
+      <div class="season-sub">Осталось ${daysLeft} дн.</div>
+      <div class="season-level-row">
+        <div class="season-level-badge">Ур. ${curTier}</div>
+        <div class="season-level-bar-wrap">
+          <div class="season-level-bar" style="width:${segPct}%"></div>
+          <div class="season-level-bar-label">${isMax ? '🏁 Максимальный уровень!' : `${fmt(sp - prevNeed)}/${fmt(nextNeed - prevNeed)} до ур. ${nextTier}`}</div>
+        </div>
+      </div>
       ${hasPremium
         ? '<div class="season-premium-badge">✨ Премиум-трек активен до конца сезона</div>'
         : '<button class="btn-claim" onclick="buyProduct(\'season_pass\')">🎫 Открыть премиум-трек</button>'}
@@ -2251,6 +2300,24 @@ function renderSeasonPass() {
     </div>`);
   }
   list.innerHTML = `<div class="season-track-hdr"><span>Уровень</span><span>Бесплатно</span><span>Премиум ${hasPremium?'✨':'🔒'}</span></div>` + rows.join('');
+  switchSeasonSubtab(seasonSubtab); // применяем видимость вкладок Задания/Награды и после перерисовки
+}
+
+// Переключатель "Задания"/"Награды" внутри пропуска — раньше оба блока
+// просто шли один под другим сплошным списком (задания + все 15 уровней
+// сразу), теперь показываем по одному за раз через вкладки-переключатели.
+let seasonSubtab = 'quests';
+function switchSeasonSubtab(which) {
+  if (which !== seasonSubtab) playSound('click');
+  seasonSubtab = which;
+  const qBtn = document.getElementById('seasonSubtabQuests');
+  const rBtn = document.getElementById('seasonSubtabRewards');
+  const qList = document.getElementById('seasonQuestsList');
+  const rList = document.getElementById('seasonTierList');
+  if (qBtn) qBtn.classList.toggle('active', which==='quests');
+  if (rBtn) rBtn.classList.toggle('active', which==='rewards');
+  if (qList) qList.style.display = which==='quests' ? '' : 'none';
+  if (rList) rList.style.display = which==='rewards' ? '' : 'none';
 }
 
 function getAdMultiplier() {
@@ -2284,6 +2351,7 @@ function onAdRewarded() {
   adBonusEnd = Date.now() + AD_BONUS_DURATION;
   adCooldownEnd = Date.now() + AD_COOLDOWN;
   trackQuest('qtAd', 1);
+  playSound('levelup');
   showToast(t('toastAdBonus'));
   updateAdButton();
 }
@@ -2774,6 +2842,7 @@ function checkMilestones() {
 
 let currentTab='factory';
 function switchTab(tab) {
+  if (tab !== currentTab) playSound('click');
   currentTab=tab;
   document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
@@ -2851,7 +2920,6 @@ function buildMachineCard(m) {
             <div class="mcard-name" style="color:#a090ff">${d.name}</div>
             <div class="mcard-lvl">${t('iapLabBadge')} · ${t('premiumOnly')}</div>
           </div>
-          <div style="font-size:11px;color:#a090ff;font-weight:600">${voicesLabel(80)}</div>
         </div>
         <div class="mcard-reward" style="color:#a090ff">+${fmt(d.baseReward * incomeMult())} ${t('coins')} ${t('perCycle')}</div>
         <button class="btn-buy-big" data-action="buypremium" data-product="secret_lab"
@@ -3190,6 +3258,7 @@ function claimOffline() {
   G.coins += pendingOfflineCoins;
   pendingOfflineCoins = 0;
   document.getElementById('offlineModal').classList.remove('show');
+  playSound('levelup');
   goldenGlow(document.getElementById('hCoins'));
   // Частицы из центра экрана
   spawnParticles(window.innerWidth/2, window.innerHeight/2, 16, '#F0A500');
@@ -3203,6 +3272,7 @@ async function claimOfflineAd() {
     G.coins += pendingOfflineCoins * 2;
     pendingOfflineCoins = 0;
     document.getElementById('offlineModal').classList.remove('show');
+    playSound('levelup');
     showToast('📺 Офлайн доход ×2!');
     renderHeader();
     saveGame();
@@ -3296,6 +3366,7 @@ async function redeemPromoCode() {
   const btn      = document.getElementById('promoRedeemBtn');
   const code = (input.value || '').trim().toUpperCase();
   if (!code) return;
+  playSound('click');
 
   if (PLATFORM !== 'vk' || !vkReady) {
     statusEl.textContent = 'Доступно только внутри VK';
@@ -3345,16 +3416,19 @@ async function redeemPromoCode() {
       };
       statusEl.textContent = messages[data.error] || 'Не удалось активировать промокод';
       statusEl.className = 'promo-status error';
+      playSound('error');
     }
   } catch (e) {
     statusEl.textContent = 'Ошибка сети — попробуй позже';
     statusEl.className = 'promo-status error';
+    playSound('error');
   }
   btn.disabled = false;
 }
 
 function applyPromoReward(reward) {
   const { type, value } = reward;
+  playSound('levelup');
   if (type === 'coins') {
     G.coins += value;
     showToast('🎉 +' + fmt(value) + ' ' + t('coins') + '!');
@@ -3494,6 +3568,7 @@ function drawProgressCard() {
 }
 
 async function shareReferralLink() {
+  playSound('click');
   const code = getMyRefCode();
   const url  = 'https://vk.com/app54630379#ref=' + code;
   const shareText = t('refShareText');
@@ -3614,6 +3689,7 @@ function renderFriends() {
 async function renderFriendsRanking() {
   const el = document.getElementById('friendsRankingList');
   if (!el) return;
+  playSound('click');
   // Единый рендер состояния "не получилось" — везде с кнопкой повтора,
   // чтобы транспортная ошибка/временный сбой сети не оставляли тупик:
   // ткнул "Загрузить топ" → не получилось → и без этой кнопки раздел
@@ -3737,6 +3813,7 @@ function manualProduce(evt) {
   if (G.energy == null) G.energy = energyMax();
   if (G.energy < 1) return;
   G.energy -= 1;
+  playSound('click');
 
   const now = Date.now();
   comboCount = (now - lastClickAt <= COMBO_WINDOW) ? Math.min(COMBO_MAX, comboCount + 1) : 1;
@@ -3829,6 +3906,7 @@ function renderThemePicker() {
 
 // ── НАСТРОЙКИ (звук, уведомления, сохранение) ──────────────────────
 async function toggleNotifications() {
+  playSound('click');
   if (PLATFORM !== 'vk' || !vkReady) {
     showToast('Доступно только внутри VK');
     return;
@@ -4210,6 +4288,7 @@ function handleAchTileClick(id) {
   const st = achState(id);
   const progress = Math.min(achProgress(def), def.target);
   if (!st.claimed && progress >= def.target) { claimAchievement(id); return; }
+  playSound('click');
   const pct = Math.min(100, Math.round(progress/def.target*100));
   showToast(`${def.icon} ${t(def.id+'_n')} — ${fmt(progress)}/${fmt(def.target)}${st.claimed ? ' ✓' : ' ('+pct+'%)'}`);
 }
@@ -4265,27 +4344,26 @@ let currentMenuSection = null;
 
 function openMenuSection(section) {
   if (section==='streak' && !streakUnlocked()) return; // ещё не куплен первый цех
+  playSound('click');
   currentMenuSection = section;
   document.getElementById('menuSecStreak').style.display  = section==='streak'  ? 'block':'none';
   document.getElementById('menuSecSkills').style.display  = section==='skills'  ? 'block':'none';
   document.getElementById('menuSecPromo').style.display   = section==='promo'   ? 'block':'none';
-  document.getElementById('menuSecStats').style.display   = section==='stats'   ? 'block':'none';
   document.getElementById('menuSecTrophy').style.display  = section==='trophy'  ? 'block':'none';
   document.getElementById('menuSecTheme').style.display   = section==='theme'   ? 'block':'none';
   document.getElementById('menuSecDaily').style.display   = section==='daily'   ? 'block':'none';
   document.getElementById('menuSecWeekly').style.display  = section==='weekly'  ? 'block':'none';
-  document.getElementById('menuSecSeason').style.display  = section==='season'  ? 'block':'none';
+  document.getElementById('menuSecStats').style.display   = section==='stats'   ? 'block':'none';
   document.getElementById('menuSecAch').style.display     = section==='ach'     ? 'block':'none';
   document.getElementById('menuSecFriends').style.display = section==='friends' ? 'block':'none';
   document.querySelector('.menu-hub').style.display = 'none';
   if (section==='streak')  { renderDailyStreak(); if (!G.seenStreakFeature) { G.seenStreakFeature = true; updateMenuBadge(); saveGame(); } }
   if (section==='skills')  { renderSkillTree();   if (!G.seenSkillsFeature) { G.seenSkillsFeature = true; updateMenuBadge(); saveGame(); } }
-  if (section==='stats')   renderStats();
   if (section==='trophy')  renderTrophyRoom();
   if (section==='theme')   { renderThemePicker(); renderSettingsPanel(); }
   if (section==='daily')   renderQuests();
   if (section==='weekly')  renderWeeklyChallenge();
-  if (section==='season')  renderSeasonPass();
+  if (section==='stats')   renderStats();
   if (section==='ach')     renderAchievements();
   // renderFriendsRanking() сюда намеренно НЕ вызывается — этот запрос дёргает
   // VKWebAppGetFriends, который показывает нативный диалог "разрешить доступ
@@ -4297,16 +4375,16 @@ function openMenuSection(section) {
 }
 
 function closeMenuSection() {
+  playSound('click');
   currentMenuSection = null;
   document.getElementById('menuSecStreak').style.display  = 'none';
   document.getElementById('menuSecSkills').style.display  = 'none';
   document.getElementById('menuSecPromo').style.display   = 'none';
-  document.getElementById('menuSecStats').style.display   = 'none';
   document.getElementById('menuSecTrophy').style.display  = 'none';
   document.getElementById('menuSecTheme').style.display   = 'none';
   document.getElementById('menuSecDaily').style.display   = 'none';
   document.getElementById('menuSecWeekly').style.display  = 'none';
-  document.getElementById('menuSecSeason').style.display  = 'none';
+  document.getElementById('menuSecStats').style.display   = 'none';
   document.getElementById('menuSecAch').style.display     = 'none';
   document.getElementById('menuSecFriends').style.display = 'none';
   document.querySelector('.menu-hub').style.display = 'flex';
@@ -4427,6 +4505,7 @@ function nextTutorialSlide() {
 }
 
 function skipTutorial() {
+  playSound('click');
   document.getElementById('tutorialModal').classList.remove('show');
   G.tutorialSeen = true;
   saveGame();
@@ -4852,12 +4931,13 @@ function tick(now) {
     }
     if (currentTab==='menu' && currentMenuSection && !uiIsBusy()) {
       if (currentMenuSection==='streak')  renderDailyStreak();
-      if (currentMenuSection==='stats')   renderStats();
       if (currentMenuSection==='daily')   renderQuests();
       if (currentMenuSection==='weekly')  renderWeeklyChallenge();
+      if (currentMenuSection==='stats')   renderStats();
       if (currentMenuSection==='ach')     renderAchievements();
       if (currentMenuSection==='friends') renderFriends();
     }
+    if (currentTab==='season' && !uiIsBusy()) renderSeasonPass();
   }
 
   tickRender(now);
