@@ -39,7 +39,12 @@
  */
 
 const VK_API_VERSION = '5.199';
-const PROMO_REWARD_TYPES = ['coins', 'crystals', 'starterPack', 'vipStatus', 'secretLab'];
+const PROMO_REWARD_TYPES = [
+  'coins', 'crystals',
+  'starterPack', 'vipStatus', 'secretLab', 'autoPilot',
+  'themeAurora', 'themeMagma', 'themeChampion',
+  'seasonExclusiveMachine', 'seasonPass',
+];
 
 // ── Каталог платных предметов ────────────────────────────────────
 // price — В ГОЛОСАХ ВКонтакте (внутренняя валюта VK), НЕ в рублях. Клиент
@@ -104,6 +109,11 @@ export default {
         case '/admin/codes/create': return handleAdminCreateCode(body, env, corsHeaders);
         case '/admin/codes/update': return handleAdminUpdateCode(body, env, corsHeaders);
         case '/admin/codes/delete': return handleAdminDeleteCode(body, env, corsHeaders);
+        case '/admin/players/get':    return handleAdminGetPlayer(body, env, corsHeaders);
+        case '/admin/players/adjust': return handleAdminAdjustPlayer(body, env, corsHeaders);
+        case '/admin/players/grant':  return handleAdminGrantItem(body, env, corsHeaders);
+        case '/admin/players/revoke': return handleAdminRevokeItem(body, env, corsHeaders);
+        case '/admin/players/delete': return handleAdminDeletePlayer(body, env, corsHeaders);
         default: return json({ error: 'not_found' }, 404, corsHeaders);
       }
     }
@@ -447,6 +457,219 @@ async function handleAdminDeleteCode(body, env, corsHeaders) {
   if (!code) return json({ error: 'invalid_code' }, 400, corsHeaders);
   const key = `promo:${String(code).trim().toUpperCase()}`;
   await env.REFERRALS.delete(key);
+  return json({ ok: true }, 200, corsHeaders);
+}
+
+// ══════════════════════════════════════════════════════════════════
+// АДМИНКА: УПРАВЛЕНИЕ АККАУНТАМИ ИГРОКОВ
+// ══════════════════════════════════════════════════════════════════
+// userId — это vk_user_id, тот самый, что виден в VK (можно спросить у
+// игрока напрямую, либо посмотреть в его отзыве/жалобе, если она пришла
+// через VK). Все операции ниже работают НАПРЯМУЮ с сохранением в KV —
+// в обход обычного игрового флоу, так что будь аккуратен: это настоящие
+// боевые данные реальных игроков.
+
+// Та же эпоха отсчёта сезона, что и в index.html (SEASON_EPOCH/
+// SEASON_LENGTH_MS) — продублирована здесь только для того, чтобы админка
+// могла выдать премиум-трек ИМЕННО на текущий сезон, а не выдумывать номер.
+// Если поменяешь эпоху в index.html — поменяй и здесь, иначе выданный
+// вручную пропуск может не совпасть с тем сезоном, что видит игрок.
+const SEASON_EPOCH_MS = new Date('2026-08-09T00:00:00Z').getTime();
+const SEASON_LENGTH_MS_ADMIN = 14 * 24 * 60 * 60 * 1000;
+function currentSeasonIndexServer() {
+  return Math.floor((Date.now() - SEASON_EPOCH_MS) / SEASON_LENGTH_MS_ADMIN);
+}
+
+async function loadSaveObj(env, userId) {
+  const raw = await env.REFERRALS.get(`save:${userId}`);
+  if (!raw) return null;
+  try { return JSON.parse(raw); } catch(e) { return null; }
+}
+
+// Разовые предметы, которые можно выдать/забрать через админку. У части из
+// них есть отдельный "постоянный" ключ purchase:<userId>:<purchaseKey> —
+// это то, на что ориентируется syncPurchases() на клиенте при каждом
+// старте игры (см. index.html), поэтому если поменять флаг ТОЛЬКО в
+// сохранении, а этот ключ не тронуть — при следующей синхронизации клиент
+// сам откатит изменение обратно, посчитав это возвратом оплаты. Так что
+// для этих предметов трогаем оба места. У чисто игровых эксклюзивов
+// (тема/цех сезонного пропуска) такого отдельного ключа нет — они целиком
+// живут внутри самого сохранения.
+const GRANTABLE_ITEMS = {
+  starterPack:            { purchaseKey: 'starter_pack', saveFlag: 'purchases.starterPack' },
+  vipStatus:              { purchaseKey: 'vip_status',   saveFlag: 'purchases.vipStatus' },
+  secretLab:              { purchaseKey: 'secret_lab',   saveFlag: 'purchases.secretLab',   machineId: 10 },
+  autoPilot:              { purchaseKey: 'auto_pilot',   saveFlag: 'purchases.autoPilot' },
+  themeAurora:            { purchaseKey: 'theme_aurora', saveFlag: 'purchases.themeAurora' },
+  themeMagma:             { purchaseKey: 'theme_magma',  saveFlag: 'purchases.themeMagma' },
+  themeChampion:          { saveFlag: 'seasonExclusiveThemeUnlocked' },
+  seasonExclusiveMachine: { saveFlag: 'seasonExclusiveMachineUnlocked', machineId: 16 },
+};
+
+function getDeep(obj, path) {
+  return path.split('.').reduce((o, k) => (o == null ? o : o[k]), obj);
+}
+function setDeep(obj, path, value) {
+  const parts = path.split('.');
+  let cur = obj;
+  for (let i = 0; i < parts.length - 1; i++) {
+    if (typeof cur[parts[i]] !== 'object' || cur[parts[i]] === null) cur[parts[i]] = {};
+    cur = cur[parts[i]];
+  }
+  cur[parts[parts.length - 1]] = value;
+}
+
+// ── /admin/players/get ───────────────────────────────────────────
+// Отдаёт сохранение целиком (распарсенным) плюс список подтверждённых
+// разовых покупок — админка дальше сама решает, что из этого показывать
+// и редактировать.
+async function handleAdminGetPlayer(body, env, corsHeaders) {
+  const userId = String(body.userId || '').trim();
+  if (!userId) return json({ error: 'missing_userId' }, 400, corsHeaders);
+
+  const save = await loadSaveObj(env, userId);
+  const purchases = {};
+  for (const item of Object.keys(PAYMENT_CATALOG)) {
+    if (!PAYMENT_CATALOG[item].permanent) continue;
+    const owned = await env.REFERRALS.get(`purchase:${userId}:${item}`);
+    if (owned) purchases[item] = true;
+  }
+  const invitedCount = parseInt((await env.REFERRALS.get(`invited_count:${userId}`)) || '0', 10);
+  return json({ ok: true, exists: !!save, save, purchases, invitedCount }, 200, corsHeaders);
+}
+
+// ── /admin/players/adjust ────────────────────────────────────────
+// Точечная правка одного поля сохранения по имени (можно "вложенное" через
+// точку, например "purchases.vipStatus") — для монет/кристаллов/престижа
+// и вообще любой характеристики, для которой не заведена отдельная кнопка
+// grant/revoke ниже. mode: 'set' — заменить значение, 'add' — прибавить
+// (только для чисел).
+async function handleAdminAdjustPlayer(body, env, corsHeaders) {
+  const userId = String(body.userId || '').trim();
+  const { field, value, mode } = body;
+  if (!userId || !field) return json({ error: 'missing_params' }, 400, corsHeaders);
+
+  // Полная перезамена сохранения целиком — использует admin.html при
+  // сохранении из "сырого" JSON-редактора. field в этом случае — просто
+  // маркер '__root__', реальные данные лежат в value.
+  if (mode === 'set_root') {
+    if (typeof value !== 'object' || value === null) {
+      return json({ error: 'invalid_root_value' }, 400, corsHeaders);
+    }
+    await env.REFERRALS.put(`save:${userId}`, JSON.stringify(value));
+    return json({ ok: true, save: value }, 200, corsHeaders);
+  }
+
+  const save = await loadSaveObj(env, userId);
+  if (!save) return json({ error: 'no_save' }, 404, corsHeaders);
+
+  if (mode === 'add') {
+    const current = Number(getDeep(save, field)) || 0;
+    setDeep(save, field, current + Number(value));
+  } else {
+    setDeep(save, field, value);
+  }
+
+  await env.REFERRALS.put(`save:${userId}`, JSON.stringify(save));
+  return json({ ok: true, save }, 200, corsHeaders);
+}
+
+// ── /admin/players/grant ─────────────────────────────────────────
+async function handleAdminGrantItem(body, env, corsHeaders) {
+  const userId = String(body.userId || '').trim();
+  const item = body.item;
+  if (!userId || !item) return json({ error: 'missing_params' }, 400, corsHeaders);
+
+  if (item === 'seasonPass') {
+    const save = await loadSaveObj(env, userId);
+    if (!save) return json({ error: 'no_save' }, 404, corsHeaders);
+    const idx = currentSeasonIndexServer();
+    save.seasonIndex = idx;
+    save.seasonPremiumForIndex = idx;
+    await env.REFERRALS.put(`save:${userId}`, JSON.stringify(save));
+    return json({ ok: true, save }, 200, corsHeaders);
+  }
+
+  const meta = GRANTABLE_ITEMS[item];
+  if (!meta) return json({ error: 'unknown_item' }, 400, corsHeaders);
+
+  if (meta.purchaseKey) await env.REFERRALS.put(`purchase:${userId}:${meta.purchaseKey}`, '1');
+
+  const save = await loadSaveObj(env, userId);
+  if (save) {
+    setDeep(save, meta.saveFlag, true);
+    // Сам цех (owned=true) клиент досогласует САМ при следующей загрузке —
+    // см. applyLoaded() в index.html: если флаг true, а цех ещё не owned,
+    // клиент это исправляет. Поэтому тут трогать save.machines не нужно —
+    // и безопаснее (не приходится руками собирать корректный объект цеха).
+    await env.REFERRALS.put(`save:${userId}`, JSON.stringify(save));
+  }
+  return json({ ok: true, appliedToSave: !!save }, 200, corsHeaders);
+}
+
+// ── /admin/players/revoke ────────────────────────────────────────
+async function handleAdminRevokeItem(body, env, corsHeaders) {
+  const userId = String(body.userId || '').trim();
+  const item = body.item;
+  if (!userId || !item) return json({ error: 'missing_params' }, 400, corsHeaders);
+
+  if (item === 'seasonPass') {
+    const save = await loadSaveObj(env, userId);
+    if (save) {
+      save.seasonPremiumForIndex = null;
+      await env.REFERRALS.put(`save:${userId}`, JSON.stringify(save));
+    }
+    return json({ ok: true, appliedToSave: !!save }, 200, corsHeaders);
+  }
+
+  const meta = GRANTABLE_ITEMS[item];
+  if (!meta) return json({ error: 'unknown_item' }, 400, corsHeaders);
+
+  if (meta.purchaseKey) await env.REFERRALS.delete(`purchase:${userId}:${meta.purchaseKey}`);
+
+  const save = await loadSaveObj(env, userId);
+  if (save) {
+    setDeep(save, meta.saveFlag, false);
+    // В отличие от выдачи, забирание цеха НЕ подстраховано клиентом
+    // автоматически (клиент умеет только досогласовывать в сторону "выдать",
+    // не "забрать" — иначе случайный сбой синхронизации мог бы отобрать уже
+    // законно выданное). Поэтому тут явно снимаем owned с самого цеха, если
+    // он есть в сохранении.
+    if (meta.machineId != null && Array.isArray(save.machines)) {
+      const m = save.machines.find(mm => mm.id === meta.machineId);
+      if (m) { m.owned = false; m.auto = false; }
+    }
+    await env.REFERRALS.put(`save:${userId}`, JSON.stringify(save));
+  }
+  return json({ ok: true, appliedToSave: !!save }, 200, corsHeaders);
+}
+
+// ── /admin/players/delete ────────────────────────────────────────
+// Полное удаление аккаунта: сохранение, все разовые покупки, pending-
+// очередь, счётчик рекламных уведомлений, "последний раз видели",
+// сырой счёт для рейтинга, факт что кого-то пригласили. НЕ трогаем
+// refcode:<код> → userId (обратную запись "чей это реферальный код") —
+// её нет смысла чистить: без сохранения аккаунт всё равно не восстановить,
+// а найти этот ключ по userId без полного перебора KV нельзя (это не
+// критично — осиротевший код просто никогда больше ни на что не сработает).
+async function handleAdminDeletePlayer(body, env, corsHeaders) {
+  const userId = String(body.userId || '').trim();
+  if (!userId) return json({ error: 'missing_userId' }, 400, corsHeaders);
+
+  const keysToDelete = [
+    `save:${userId}`,
+    `pending:${userId}`,
+    `last_seen:${userId}`,
+    `notif_sent:${userId}`,
+    `notif_allowed:${userId}`,
+    `score_raw:${userId}`,
+    `referred:${userId}`,
+    `invited_count:${userId}`,
+  ];
+  for (const item of Object.keys(PAYMENT_CATALOG)) {
+    keysToDelete.push(`purchase:${userId}:${item}`);
+  }
+  await Promise.all(keysToDelete.map(k => env.REFERRALS.delete(k)));
   return json({ ok: true }, 200, corsHeaders);
 }
 

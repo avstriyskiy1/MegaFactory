@@ -877,16 +877,16 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
         <span class="tab-icon">🛒</span><span class="tab-label">Магазин</span>
         <span class="tab-badge" id="shopBadge"></span>
       </button>
+      <button class="tab-btn" id="tab-season" onclick="switchTab('season'); renderSeasonPass()">
+        <span class="tab-icon">🎫</span><span class="tab-label">Пропуск</span>
+        <span class="tab-badge" id="seasonBadge"></span>
+      </button>
       <button class="tab-btn" id="tab-menu" onclick="
         if(currentTab==='menu' && currentMenuSection){ closeMenuSection(); }
         else { switchTab('menu'); }
       ">
         <span class="tab-icon">☰</span><span class="tab-label" id="tabMenuLabel">Меню</span>
         <span class="tab-badge" id="menuBadge"></span>
-      </button>
-      <button class="tab-btn" id="tab-season" onclick="switchTab('season'); renderSeasonPass()">
-        <span class="tab-icon">🎫</span><span class="tab-label">Пропуск</span>
-        <span class="tab-badge" id="seasonBadge"></span>
       </button>
       <button class="tab-btn" id="tab-lb" onclick="switchTab('lb'); updateGlobalLbStat()">
         <span class="tab-icon">🏆</span><span class="tab-label">Рейтинг</span>
@@ -3545,10 +3545,36 @@ function applyPromoReward(reward) {
       m.reward = Math.max(50, Math.round(refDps * (m.speed / 1000) * 1.5));
       showToast('🎉 Секретная лаборатория разблокирована!');
     }
+  } else if (type === 'autoPilot') {
+    if (!G.purchases.autoPilot) { G.purchases.autoPilot = true; showToast('🎉 Автопилот завода разблокирован!'); }
+  } else if (type === 'themeAurora') {
+    if (!G.purchases.themeAurora) { G.purchases.themeAurora = true; showToast('🎉 Тема «Аврора» разблокирована!'); }
+  } else if (type === 'themeMagma') {
+    if (!G.purchases.themeMagma) { G.purchases.themeMagma = true; showToast('🎉 Тема «Магма» разблокирована!'); }
+  } else if (type === 'themeChampion') {
+    if (!G.seasonExclusiveThemeUnlocked) { G.seasonExclusiveThemeUnlocked = true; showToast('🎉 Эксклюзивная тема «Чемпион сезона» разблокирована!'); }
+  } else if (type === 'seasonExclusiveMachine') {
+    if (!G.seasonExclusiveMachineUnlocked) {
+      G.seasonExclusiveMachineUnlocked = true;
+      const m = getMachine(16);
+      m.owned = true; m.auto = true;
+      const ref = getMachine(9);
+      const refDps = ref.owned ? (ref.reward / ref.speed * 1000) : (baseCps() * 0.3 || 5);
+      m.reward = Math.max(50, Math.round(refDps * (m.speed / 1000) * 2.2));
+      showToast('🎉 Эксклюзивный сезонный цех разблокирован!');
+    }
+  } else if (type === 'seasonPass') {
+    ensureSeasonFresh();
+    if (!seasonHasPremium()) {
+      G.seasonPremiumForIndex = G.seasonIndex;
+      showToast('🎉 Премиум-трек сезонного пропуска открыт!');
+      renderSeasonPass();
+    }
   }
   playSound('levelup');
   goldenGlow(document.getElementById('hCoins'));
   fullRender();
+  renderThemePicker();
   saveGame();
 }
 
@@ -5101,6 +5127,18 @@ function applyLoaded(saved) {
   maxHonestCrystals = Math.ceil(maxHonestCrystals);
   if (G.crystals > maxHonestCrystals)         G.crystals = maxHonestCrystals;
   if (G.lifetimeCrystals > maxHonestCrystals) G.lifetimeCrystals = maxHonestCrystals;
+  // Подстраховка: если флаг покупки/эксклюзива уже true, а сам цех почему-то
+  // ещё не owned (например, награда выдана через админку или промокод в
+  // обход обычного клиентского флоу onBuy()) — досогласуем при каждой
+  // загрузке. Раньше это делалось только при престиже (см. doPrestige).
+  if (G.purchases?.secretLab) {
+    const ml = G.machines.find(m => m.id === 10);
+    if (ml && !ml.owned) { ml.owned = true; ml.auto = true; }
+  }
+  if (G.seasonExclusiveMachineUnlocked) {
+    const sm = G.machines.find(m => m.id === 16);
+    if (sm && !sm.owned) { sm.owned = true; sm.auto = true; }
+  }
 }
 
 // ── INIT ─────────────────────────────────────────────────────────
