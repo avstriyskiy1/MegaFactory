@@ -556,6 +556,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
   </div>
   <div class="rush-banner" id="rushBanner" style="display:none">🚨 Час пик! Доход ×2 — осталось <b id="rushTimer">0:00</b></div>
   <div class="event-banner" id="eventBanner" style="display:none"></div>
+  <div class="event-banner" id="paymentBanner" style="display:none;background:linear-gradient(90deg,#2f6fd6,#1f5c9e)"></div>
   <div class="layout">
     <div class="tab-content">
       <div class="tab-pane active" id="pane-factory">
@@ -1371,9 +1372,23 @@ async function buyProduct(id) {
     // просто никогда не узнавала.
     const result = await vkBridge.send('VKWebAppShowOrderBox', { type: 'item', item: id });
     if (!result || result.status === 'cancel' || result.status === 'fail') return; // отменил или ошибка
-    showToast('⏳ Обрабатываем платёж...');
-    await syncPurchases(true);
+    // Тост тут раньше был плохим выбором: он сам по себе пропадает через
+    // пару секунд, а подтверждение от VK до нашего сервера иногда идёт
+    // МИНУТАМИ — игрок видел "Обрабатываем платёж...", тост исчезал, и
+    // дальше несколько минут выглядело так, будто вообще ничего не
+    // происходит (хотя платёж уже прошёл и просто ждёт своего вебхука).
+    // Баннер вместо тоста держится на экране столько, сколько реально
+    // идёт попытка — так честно видно, что игра всё ещё этим занята.
+    showPaymentBanner('⏳ Обрабатываем платёж — иногда занимает несколько минут, оставайся в игре');
+    const applied = await syncPurchases(true);
+    hidePaymentBanner();
+    if (applied) {
+      showToast('✅ Готово!');
+    } else {
+      showToast('⏳ Платёж пока не подтверждён VK — если спишется, награда придёт сама при следующем заходе в игру');
+    }
   } catch(e) {
+    hidePaymentBanner();
     console.warn('[IAP] Покупка отменена или не удалась:', e);
   }
 }
@@ -1382,12 +1397,27 @@ async function buyProduct(id) {
 // применяет награду локально. retryHard — при только что совершённой
 // покупке уведомление от VK может дойти до сервера с небольшой задержкой,
 // поэтому пробуем несколько раз с паузами вместо одного мгновенного запроса.
-async function syncPurchases(retryHard) {
-  if (PLATFORM !== 'vk' || !vkReady || !GLOBAL_LB_ENDPOINT) return;
-  const launchParams = await getLaunchParamsString();
-  if (!launchParams) return;
+// Спрашивает у сервера что реально куплено (после настоящей оплаты) и
+// применяет награду локально. retryHard — при только что совершённой
+// покупке уведомление от VK до нашего сервера иногда доходит с задержкой
+// В НЕСКОЛЬКО МИНУТ (это сторона VK, тут мы не можем ускорить) — поэтому
+// пробуем не пару раз за 10 секунд, а плавно расширяющимися паузами вплоть
+// до ~5 минут суммарно, оставаясь в фоне и не мешая играть. Возвращает
+// true, если что-то реально применили (использует buyProduct ниже, чтобы
+// показать честный итог, а не просто "мы попробовали").
+function buildPurchaseRetryDelays() {
+  const delays = [0, 2000, 4000, 8000, 15000]; // быстрые попытки первые ~30с — вдруг вебхук уже пришёл
+  let total = delays.reduce((a, b) => a + b, 0);
+  while (total < 5 * 60 * 1000) { delays.push(20000); total += 20000; } // дальше раз в 20с до ~5 минут
+  return delays;
+}
 
-  const delays = retryHard ? [0, 1500, 3000, 5000] : [0];
+async function syncPurchases(retryHard) {
+  if (PLATFORM !== 'vk' || !vkReady || !GLOBAL_LB_ENDPOINT) return false;
+  const launchParams = await getLaunchParamsString();
+  if (!launchParams) return false;
+
+  const delays = retryHard ? buildPurchaseRetryDelays() : [0];
   for (const delay of delays) {
     if (delay) await new Promise(r => setTimeout(r, delay));
     try {
@@ -1455,9 +1485,11 @@ async function syncPurchases(retryHard) {
           body: JSON.stringify({ launchParams, orderIds: ackIds }),
         }).catch(()=>{});
       }
-      if (changed || !retryHard) return;
+      if (changed) return true;
+      if (!retryHard) return false;
     } catch(e) { console.warn('[IAP] Ошибка синхронизации покупок:', e); }
   }
+  return false;
 }
 
 function renderIAP() {
@@ -1568,15 +1600,52 @@ let vkReady = false;
 // работала). Используем тот же воркер, что и для рейтинга/промокодов —
 // там лимитов по размеру практически нет.
 let lastCloudSaveAt = 0;
+// Поля, которые синхронизируются как ДЕЛЬТА с прошлой успешной отправки, а
+// не абсолютным значением — список должен совпадать с одноимённым
+// DELTA_SYNC_FIELDS в worker.js. Подробное объяснение зачем — там же.
+const DELTA_SYNC_FIELDS = [
+  'coins', 'crystals', 'lifetimeCoins', 'lifetimeCrystals',
+  'lifetimeClicks', 'lifetimeAds', 'sold', 'lifetimeUpgrades', 'lifetimeBuys',
+  'totalDailyClaims', 'totalDaysPlayed', 'weeklyCompleted', 'questsCompleted', 'promoCodesRedeemed',
+];
+
+function computeDeltaSyncPayload() {
+  if (!G.deltaSyncBaseline) G.deltaSyncBaseline = {};
+  const deltas = {};
+  DELTA_SYNC_FIELDS.forEach(f => {
+    deltas[f] = (Number(G[f]) || 0) - (Number(G.deltaSyncBaseline[f]) || 0);
+  });
+  return deltas;
+}
+
+// Сервер присылает обратно уже СЛИТОЕ состояние (с учётом того, что успело
+// прийти от других устройств) — принимаем его как новую точку отсчёта.
+// Помимо самих значений, обновляем deltaSyncBaseline: следующая дельта
+// должна считаться от того, что сервер только что подтвердил, а не от
+// того, что было у нас до отправки — иначе можно задвоить или потерять
+// чей-то вклад при следующей синхронизации.
+function adoptMergedSave(merged) {
+  DELTA_SYNC_FIELDS.forEach(f => { if (merged[f] !== undefined) G[f] = merged[f]; });
+  if (Array.isArray(merged.machines)) {
+    merged.machines.forEach(mm => {
+      const local = G.machines.find(m => m.id === mm.id);
+      if (local) { local.owned = mm.owned; local.level = mm.level; local.reward = mm.reward; local.speed = mm.speed; }
+    });
+  }
+  if (!G.deltaSyncBaseline) G.deltaSyncBaseline = {};
+  DELTA_SYNC_FIELDS.forEach(f => { G.deltaSyncBaseline[f] = G[f]; });
+}
+
 async function saveVK(data) {
   if (!vkReady || PLATFORM !== 'vk' || !GLOBAL_LB_ENDPOINT) return;
   try {
     const launchParams = await getLaunchParamsString();
     if (!launchParams) return;
+    const deltas = computeDeltaSyncPayload();
     const res = await fetch(workerUrl('/save-game'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ launchParams, data }),
+      body: JSON.stringify({ launchParams, data, deltas }),
       keepalive: true, // запрос не оборвётся, если вкладка/приложение закроется прямо во время отправки
     });
     // ВАЖНО: fetch() резолвится успешно даже если сервер ответил ошибкой
@@ -1590,7 +1659,11 @@ async function saveVK(data) {
       let reason = res.status;
       try { reason = (await res.json()).error || reason; } catch(e) {}
       console.warn('[VK] Сервер отклонил облачное сохранение:', reason);
+      return;
     }
+    let respData = null;
+    try { respData = await res.json(); } catch(e) {}
+    if (respData && respData.ok && respData.save) adoptMergedSave(respData.save);
   } catch(e) { console.warn('[VK] Ошибка облачного сохранения:', e); }
 }
 
@@ -1621,6 +1694,41 @@ async function loadVKSave() {
     }
     return false;
   } catch(e) { console.warn('[VK] Ошибка загрузки облака:', e); return false; }
+}
+
+// ── ПЕРИОДИЧЕСКАЯ ПОДТЯЖКА ОБЛАКА ВО ВРЕМЯ ИГРЫ ─────────────────────
+// loadVKSave() выше отрабатывает только один раз — при самом старте игры.
+// Если игрок открыл игру ОДНОВРЕМЕННО на двух устройствах, ни одна из двух
+// уже открытых сессий не узнает, что на другой что-то изменилось, пока её
+// не закроют и не откроют заново — а это и есть жалоба "не синхронизируется
+// при одновременной игре".
+//
+// Раньше здесь была отдельная функция, которая делала "сырой" GET и, если
+// облачная версия оказывалась новее по времени, целиком подменяла ей
+// текущее состояние — включая деньги/статистику. Это было ОПАСНО именно
+// для тех полей, которые теперь синхронизируются дельтами (см.
+// DELTA_SYNC_FIELDS/saveVK выше): между последним сохранением и этим
+// фоновым запросом локальная сессия могла успеть заработать ещё немного
+// монет, и "сырая" загрузка чужого снимка их бы стёрла, ничего не
+// прибавив обратно, — то есть сама подтяжка могла УСТРОИТЬ потерю
+// прогресса, которую должна была чинить.
+//
+// Правильнее — просто форсировать обычное сохранение мимо троттлинга:
+// saveVK() и так на каждый вызов честно СЛИВАЕТСЯ с сервером (сервер
+// прибавляет нашу дельту к тому, что реально там лежит, а не затирает),
+// так что периодический пуш сам по себе подтягивает чужой вклад в
+// аддитивные поля без всякого риска отката. Для полей вне списка дельт
+// (тема, задания, сезонный прогресс, настройки) это по-прежнему модель
+// "самое свежее сохранение целиком" — тут честного пообъектного merge без
+// вебсокетов и полноценного event-sourcing по каждому полю не построить,
+// это осознанный текущий предел, а не забытый баг.
+async function forceCloudResync() {
+  if (!vkReady || PLATFORM !== 'vk' || !GLOBAL_LB_ENDPOINT) return;
+  lastCloudSaveAt = Date.now();
+  G.lastSaved = Date.now();
+  const data = JSON.stringify(G);
+  localStorage.setItem(SAVE_KEY, data);
+  await saveVK(data);
 }
 
 // ── ОБЛАЧНЫЕ СОХРАНЕНИЯ — единая точка ──────────────────────────
@@ -2500,6 +2608,7 @@ function defaultState() {
     })),
     upgrades: UPGRADES_DEF.map(d=>({id:d.id, level:0})),
     milestonesHit:[],
+    deltaSyncBaseline: {}, // точка отсчёта для дельта-синхронизации монет/кристаллов/статистики (см. computeDeltaSyncPayload)
   };
 }
 let G = defaultState();
@@ -2881,6 +2990,20 @@ function showToast(msg) {
   t.textContent=msg; t.classList.add('show');
   clearTimeout(toastTimer);
   toastTimer=setTimeout(()=>t.classList.remove('show'),2500);
+}
+// В отличие от showToast(), этот баннер НЕ исчезает сам через пару секунд —
+// специально для долгих фоновых процессов вроде ожидания подтверждения
+// платежа (до нескольких минут), где мигающий и пропадающий тост создаёт
+// ложное ощущение, что игра зависла или про действие "забыла".
+function showPaymentBanner(text) {
+  const el = document.getElementById('paymentBanner');
+  if (!el) return;
+  el.textContent = text;
+  el.style.display = 'block';
+}
+function hidePaymentBanner() {
+  const el = document.getElementById('paymentBanner');
+  if (el) el.style.display = 'none';
 }
 function spawnPop(x,y,text) {
   const el=document.createElement('div');
@@ -5049,6 +5172,15 @@ function tick(now) {
     maybeTriggerRandomEvent(now);
     updateEventBanner();
     if (G.purchases?.autoPilot) runAutoPilot();
+    // Раз в ~90 секунд — не чаще, это не критичный по времени процесс —
+    // форсируем облачную синхронизацию мимо обычного троттлинга (см.
+    // forceCloudResync выше). Это и есть механизм "не ждать до перезахода",
+    // если игра открыта одновременно на двух устройствах.
+    if (!tick.lastCloudResync) tick.lastCloudResync = now; // не в первые секунды сессии
+    if (now - tick.lastCloudResync > 90000) {
+      tick.lastCloudResync = now;
+      forceCloudResync();
+    }
     if (comboCount > 0 && now - lastClickAt > COMBO_WINDOW) {
       comboCount = 0;
       const badge = document.getElementById('comboBadge');
@@ -5139,6 +5271,13 @@ function applyLoaded(saved) {
     const sm = G.machines.find(m => m.id === 16);
     if (sm && !sm.owned) { sm.owned = true; sm.auto = true; }
   }
+  // Точка отсчёта для дельта-синхронизации (см. computeDeltaSyncPayload/
+  // adoptMergedSave выше) — после ЛЮБОЙ загрузки (стартовой, облачной,
+  // фоновой периодической) должна указывать на то, что сейчас реально в G,
+  // а не на то, что было раньше. Иначе следующая дельта посчитает разницу
+  // с устаревшей базой и либо задвоит, либо потеряет часть значений.
+  G.deltaSyncBaseline = {};
+  DELTA_SYNC_FIELDS.forEach(f => { G.deltaSyncBaseline[f] = Number(G[f]) || 0; });
 }
 
 // ── INIT ─────────────────────────────────────────────────────────

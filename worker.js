@@ -676,13 +676,77 @@ async function handleAdminDeletePlayer(body, env, corsHeaders) {
 // ── /save-game ───────────────────────────────────────────────────
 // Настоящее облачное сохранение (VKWebAppStorageSet для этого не годится —
 // у него лимит 4096 байт, а сохранение игры весит намного больше).
+//
+// ВАЖНО: раньше это был простой перезаписывающий blob-store — целиком
+// заменяли то, что лежало на сервере, на то, что прислал клиент. При
+// одновременной игре на двух устройствах это означало, что чьё сохранение
+// улетело последним, тот и "победил" целиком — а прогресс из другой сессии
+// (заработанные монеты, купленные апгрейды) просто пропадал без следа.
+//
+// Теперь для полей, которые действительно можно честно СЛОЖИТЬ (см.
+// DELTA_SYNC_FIELDS ниже — список должен совпадать с одноимённым в
+// index.html), клиент присылает не абсолютное значение, а дельту с прошлой
+// успешной синхронизации, и сервер прибавляет её к тому, что реально
+// лежит здесь сейчас — а не к тому, что клиент видел в последний раз. Так
+// вклад обеих сессий складывается, а не конфликтует. Цеха объединяются
+// отдельно (см. ниже) — владение по ИЛИ, уровень апгрейда — максимум.
+//
+// Это НЕ полноценное CRDT-слияние всего состояния (задания, сезонный
+// прогресс, настройки и т.п. по-прежнему просто перезаписываются целиком —
+// конфликты там не так болезненны, обычно "выигрывает" самое свежее по
+// времени сохранение) — но для денег, статистики и цехов, то есть того,
+// что реально жалко терять, теперь честный аддитивный merge.
+const DELTA_SYNC_FIELDS = [
+  'coins', 'crystals', 'lifetimeCoins', 'lifetimeCrystals',
+  'lifetimeClicks', 'lifetimeAds', 'sold', 'lifetimeUpgrades', 'lifetimeBuys',
+  'totalDailyClaims', 'totalDaysPlayed', 'weeklyCompleted', 'questsCompleted', 'promoCodesRedeemed',
+];
+
 async function handleSaveGame(body, userId, env, corsHeaders) {
-  const { data } = body;
+  const { data, deltas } = body;
   if (!data || typeof data !== 'string' || data.length > 900000) {
     return json({ error: 'invalid_data' }, 400, corsHeaders);
   }
-  await env.REFERRALS.put(`save:${userId}`, data);
-  return json({ ok: true }, 200, corsHeaders);
+  let incoming;
+  try { incoming = JSON.parse(data); } catch(e) { return json({ error: 'invalid_json' }, 400, corsHeaders); }
+
+  const existingRaw = await env.REFERRALS.get(`save:${userId}`);
+  let existing = null;
+  if (existingRaw) { try { existing = JSON.parse(existingRaw); } catch(e) { existing = null; } }
+
+  if (existing) {
+    if (deltas && typeof deltas === 'object') {
+      DELTA_SYNC_FIELDS.forEach(f => {
+        const serverVal = Number(existing[f]) || 0;
+        const delta = Number(deltas[f]) || 0;
+        incoming[f] = serverVal + delta;
+      });
+    }
+    // Цеха — объединяем по id, а не заменяем набор целиком одной сессией:
+    // владение побеждает по ИЛИ (открыт хоть на одном устройстве — значит
+    // открыт), уровень апгрейда — берём больший (апгрейды только растут,
+    // так что "больше" однозначно значит "более свежее" состояние для
+    // этого конкретного цеха). reward/speed берём ЦЕЛИКОМ у той версии,
+    // что победила по уровню — они посчитаны именно под этот уровень, и
+    // мешать level от одной сессии с reward от другой значило бы получить
+    // внутренне противоречивый цех (уровень одного, доход другого).
+    if (Array.isArray(existing.machines) && Array.isArray(incoming.machines)) {
+      incoming.machines = incoming.machines.map(m => {
+        const prev = existing.machines.find(pm => pm.id === m.id);
+        if (!prev) return m;
+        const prevLevel = Number(prev.level) || 0, curLevel = Number(m.level) || 0;
+        const winner = curLevel >= prevLevel ? m : prev;
+        return { ...winner, owned: !!(m.owned || prev.owned) };
+      });
+    }
+  }
+
+  await env.REFERRALS.put(`save:${userId}`, JSON.stringify(incoming));
+  // Возвращаем итоговое (уже слитое) состояние — клиент должен принять
+  // ИМЕННО его как новую точку отсчёта для дельт, а не то, что отправлял
+  // сам, иначе при следующей синхронизации он посчитает дельту от
+  // неверной базы и либо продублирует, либо потеряет часть вклада.
+  return json({ ok: true, save: incoming }, 200, corsHeaders);
 }
 
 // ── /load-game ───────────────────────────────────────────────────
