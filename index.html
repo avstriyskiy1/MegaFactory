@@ -1513,9 +1513,11 @@ function renderIAP() {
   }).join('');
 }
 // ── ГЛОБАЛЬНЫЙ РЕЙТИНГ VK (среди всех игроков) ──
-// Требует бэкенд (см. /vk-leaderboard-worker/README.md), т.к. VK разрешает
-// писать очки в общий рейтинг только с сервера (secure.addAppEvent).
-const GLOBAL_LB_ENDPOINT = 'https://vk-leaderboard-worker.artempro2021.workers.dev/submit-score';
+// Требует бэкенд (Node.js + PostgreSQL + WebSocket, см. megafactory-server/
+// README-DEPLOY.md), т.к. VK разрешает писать очки в общий рейтинг только
+// с сервера (secure.addAppEvent). Тот же адрес используется и для всего
+// остального (save-game, промокоды, платежи и т.д.) — см. workerUrl().
+const GLOBAL_LB_ENDPOINT = 'https://megafactory-f0f4df.dada-tuda.ru/submit-score';
 
 let cachedLaunchParams = null;
 async function getLaunchParamsString() {
@@ -1645,7 +1647,10 @@ async function saveVK(data) {
     const res = await fetch(workerUrl('/save-game'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ launchParams, data, deltas }),
+      // wsClientId — говорит серверу не дублировать нам эхо через WebSocket
+      // (см. connectGameSocket ниже): ответ на этот же save-game и так
+      // придёт вот прямо тут, через обычный HTTP-ответ.
+      body: JSON.stringify({ launchParams, data, deltas, wsClientId }),
       keepalive: true, // запрос не оборвётся, если вкладка/приложение закроется прямо во время отправки
     });
     // ВАЖНО: fetch() резолвится успешно даже если сервер ответил ошибкой
@@ -1665,6 +1670,117 @@ async function saveVK(data) {
     try { respData = await res.json(); } catch(e) {}
     if (respData && respData.ok && respData.save) adoptMergedSave(respData.save);
   } catch(e) { console.warn('[VK] Ошибка облачного сохранения:', e); }
+}
+
+// ══════════════════════════════════════════════════════════════════
+// WEBSOCKET — настоящий реалтайм между одновременно открытыми сессиями
+// ══════════════════════════════════════════════════════════════════
+// Раньше (при переезде с Cloudflare Workers на свой Node.js+PostgreSQL
+// бэкенд) синхронизация была устроена как "толкаем изменения раз в ~90
+// секунд, само слияние надёжное, но задержка есть". Теперь сервер
+// ДОПОЛНИТЕЛЬНО рассылает подтверждённое (уже слитое) состояние всем
+// ДРУГИМ открытым сессиям этого же игрока сразу же, как только кто-то
+// сохранился — через постоянное WebSocket-соединение, без ожидания
+// следующего цикла polling'а. HTTP-эндпоинты (save-game и т.п.) остаются
+// источником истины и единственным способом ЗАПИСАТЬ изменение — сокет
+// только ДОСТАВЛЯЕТ уведомления о том, что где-то что-то изменилось.
+let gameSocket = null;
+let wsClientId = null;
+let wsReconnectAttempt = 0;
+let wsReconnectTimer = null;
+
+function workerWsUrl() {
+  // Тот же хост, что и у HTTP API, просто wss:// и путь /ws — так сервер
+  // и задуман (см. server.js: WebSocketServer на путь '/ws' поверх того
+  // же http-сервера, что и Express).
+  const httpBase = GLOBAL_LB_ENDPOINT.replace(/\/submit-score$/, '');
+  return httpBase.replace(/^https:/, 'wss:').replace(/^http:/, 'ws:') + '/ws';
+}
+
+async function connectGameSocket() {
+  if (PLATFORM !== 'vk' || !vkReady || !GLOBAL_LB_ENDPOINT) return;
+  if (typeof WebSocket === 'undefined') return; // старый WebView без поддержки — просто останемся на обычном polling
+  if (gameSocket && (gameSocket.readyState === WebSocket.OPEN || gameSocket.readyState === WebSocket.CONNECTING)) return;
+
+  const launchParams = await getLaunchParamsString();
+  if (!launchParams) return;
+
+  let ws;
+  try { ws = new WebSocket(workerWsUrl()); }
+  catch(e) { console.warn('[WS] Не удалось открыть соединение:', e); return; }
+  gameSocket = ws;
+
+  ws.addEventListener('open', () => {
+    wsReconnectAttempt = 0;
+    ws.send(JSON.stringify({ type: 'auth', launchParams, clientId: wsClientId || undefined }));
+  });
+
+  ws.addEventListener('message', (evt) => {
+    let msg;
+    try { msg = JSON.parse(evt.data); } catch(e) { return; }
+
+    if (msg.type === 'auth_ok') {
+      wsClientId = msg.clientId;
+      return;
+    }
+    if (msg.type === 'state_merged' && msg.save) {
+      handleRemoteStateMerged(msg.save);
+      return;
+    }
+    if (msg.type === 'account_deleted') {
+      // Аккаунт удалили через админку прямо во время игры — редкий случай
+      // (обычно это модерация/поддержка), но перезаписывать что-то в
+      // облако после этого точно не нужно.
+      vkReady = false;
+      showToast('⚠️ Аккаунт был удалён администратором');
+      return;
+    }
+  });
+
+  ws.addEventListener('close', scheduleWsReconnect);
+  ws.addEventListener('error', () => { try { ws.close(); } catch(e) {} });
+}
+
+function scheduleWsReconnect() {
+  if (gameSocket && gameSocket.readyState !== WebSocket.CLOSED) return;
+  clearTimeout(wsReconnectTimer);
+  // Растущая пауза между попытками (до 30с) — чтобы не долбить сервер,
+  // если соединение стабильно не удаётся (например, сеть совсем легла).
+  const delay = Math.min(30000, 1000 * Math.pow(1.6, wsReconnectAttempt++));
+  wsReconnectTimer = setTimeout(connectGameSocket, delay);
+}
+
+// Пришло подтверждённое состояние с ДРУГОГО устройства. Наивно применить
+// его целиком (как обычную "загрузку") было бы небезопасно: с момента
+// нашей последней успешной отправки локально могло накопиться ещё
+// сколько-то несинхронизированного прогресса (монеты продолжают расти
+// каждый тик) — если просто затереть G значениями из cloud, этот кусок
+// потеряется. Поэтому для дельта-полей прибавляем НАШ ещё не отправленный
+// вклад поверх того, что пришло, а не просто перезаписываем.
+function handleRemoteStateMerged(cloud) {
+  const ourPending = computeDeltaSyncPayload(); // G[f] - baseline[f] — то, что мы ещё не сообщали серверу
+  DELTA_SYNC_FIELDS.forEach(f => {
+    if (cloud[f] === undefined) return;
+    G[f] = Number(cloud[f]) + (Number(ourPending[f]) || 0);
+    if (!G.deltaSyncBaseline) G.deltaSyncBaseline = {};
+    G.deltaSyncBaseline[f] = Number(cloud[f]); // новая база — то, что сервер уже подтвердил (без нашего pending)
+  });
+  if (Array.isArray(cloud.machines)) {
+    cloud.machines.forEach(mm => {
+      const local = G.machines.find(m => m.id === mm.id);
+      // Не откатываем локальный уровень назад, если он почему-то уже выше
+      // пришедшего (например, апгрейд случился именно в эту секунду, ещё
+      // не долетев до сервера) — берём максимум, а не слепо то, что пришло.
+      if (local && Number(mm.level) >= Number(local.level)) {
+        local.owned = mm.owned; local.level = mm.level; local.reward = mm.reward; local.speed = mm.speed;
+      } else if (local) {
+        local.owned = local.owned || mm.owned;
+      }
+    });
+  }
+  localStorage.setItem(SAVE_KEY, JSON.stringify(G));
+  fullRender();
+  showToast('🔄 Прогресс обновлён с другого устройства');
 }
 
 async function loadVKSave() {
@@ -1756,6 +1872,14 @@ document.addEventListener('visibilitychange', () => {
     G.lastSaved = Date.now();
     localStorage.setItem(SAVE_KEY, JSON.stringify(G));
     saveVK(JSON.stringify(G));
+  }
+  // Возврат на вкладку — многие мобильные WebView замораживают/рвут
+  // WebSocket-соединение в фоне, но не всегда честно шлют событие 'close'
+  // сразу, когда это происходит. Проверяем и переподключаемся на всякий
+  // случай — connectGameSocket() сам ничего не сделает, если соединение
+  // всё ещё живо (readyState OPEN/CONNECTING).
+  if (document.visibilityState === 'visible' && PLATFORM === 'vk' && vkReady) {
+    connectGameSocket();
   }
 });
 // Подстраховка: на некоторых мобильных WebView внутри VK-приложения (iOS/
@@ -5302,6 +5426,7 @@ async function initSDK() {
       await vkBridge.send('VKWebAppInit');
       vkReady = true;
       cloudApplied = await loadVKSave();
+      connectGameSocket(); // не ждём — соединение открывается в фоне, параллельно остальной инициализации
     } catch(e) {
       console.warn('[VK] Bridge недоступен:', e.message);
     }
