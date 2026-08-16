@@ -613,11 +613,11 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
         <div class="sec-hdr">Таблица лидеров</div>
         <div class="lb-global-box">
           <div class="lb-global-icon">🏆</div>
-          <div class="lb-global-title">Рейтинг ВКонтакте</div>
-          <div class="lb-global-desc">Сравни свой результат со всеми игроками</div>
-          <div class="lb-global-stat">Монет: <b id="lbMyCoins">0</b></div>
-          <button class="btn-lb-refresh" style="border-color:#2a6aDD;color:#4477FF" onclick="showGlobalLeaderboard()">🌍 Открыть рейтинг</button>
+          <div class="lb-global-title">Рейтинг игроков</div>
+          <div class="lb-global-desc">Топ игроков по количеству монет</div>
+          <div class="lb-global-stat">Твои монеты: <b id="lbMyCoins">0</b><span id="lbMyRank"></span></div>
         </div>
+        <div id="globalLbList"><div class="friends-rank-empty">Загрузка...</div></div>
       </div>
       <div class="tab-pane" id="pane-menu">
 
@@ -854,16 +854,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
               </div>
             </div>
             <button class="btn-friends" onclick="shareReferralLink()" id="friendsShareBtn">📤 Пригласить друга</button>
-            <div class="btn-friends-row">
-              <button class="btn-friends secondary" onclick="shareProgressToStory()" id="shareProgressStoryBtn">📸 В историю</button>
-              <button class="btn-friends secondary" onclick="shareProgressToWall()" id="shareProgressWallBtn">📝 На стену</button>
-            </div>
+            <button class="btn-friends secondary" onclick="shareProgressToStory()" id="shareProgressStoryBtn" style="margin-top:8px;width:100%">📸 В историю</button>
             <div class="friends-code" id="friendsCode"></div>
-          </div>
-          <div class="friends-rank-hdr">🏆 Рейтинг среди друзей</div>
-          <div id="friendsRankingList">
-            <button class="btn-friends secondary" onclick="renderFriendsRanking()" id="loadRankingBtn">🏆 Загрузить топ друзей</button>
-            <div class="friends-rank-empty" style="margin-top:8px">VK спросит доступ к списку друзей только сейчас, по кнопке</div>
           </div>
         </div>
 
@@ -889,7 +881,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
         <span class="tab-icon">☰</span><span class="tab-label" id="tabMenuLabel">Меню</span>
         <span class="tab-badge" id="menuBadge"></span>
       </button>
-      <button class="tab-btn" id="tab-lb" onclick="switchTab('lb'); updateGlobalLbStat()">
+      <button class="tab-btn" id="tab-lb" onclick="switchTab('lb'); renderGlobalLeaderboard()">
         <span class="tab-icon">🏆</span><span class="tab-label">Рейтинг</span>
       </button>
     </div>
@@ -1545,6 +1537,23 @@ function scoreForGlobalLb() {
   return Math.min(15000, Math.floor(Math.log10(coins) * 1000));
 }
 
+// Имя/аватар текущего игрока — кэшируем на всю сессию, чтобы не дёргать
+// VKWebAppGetUserInfo при каждой отправке счёта. Нужно для собственного
+// рейтинга на базе БД (см. renderGlobalLeaderboard ниже) — сервер сам не
+// умеет надёжно доставать имена произвольных игроков (см. комментарий в
+// migrations/002_leaderboard.sql на бэкенде), поэтому каждый клиент
+// присылает своё имя сам, вместе со счётом.
+let cachedMyProfile = null;
+async function getMyProfile() {
+  if (cachedMyProfile) return cachedMyProfile;
+  if (PLATFORM !== 'vk' || !vkReady) return null;
+  try {
+    const p = await vkBridge.send('VKWebAppGetUserInfo', {});
+    cachedMyProfile = { name: `${p.first_name||''} ${p.last_name||''}`.trim(), avatar: p.photo_100 || '' };
+  } catch(e) { cachedMyProfile = null; }
+  return cachedMyProfile;
+}
+
 async function submitScoreGlobal() {
   if (!GLOBAL_LB_ENDPOINT || PLATFORM !== 'vk' || !vkReady) return;
   const now = Date.now();
@@ -1552,11 +1561,15 @@ async function submitScoreGlobal() {
   const launchParams = await getLaunchParamsString();
   if (!launchParams) return;
   lastGlobalSubmit = now;
+  const profile = await getMyProfile();
   try {
     await fetch(GLOBAL_LB_ENDPOINT, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ launchParams, value: scoreForGlobalLb(), rawCoins: Math.floor(G.coins) }),
+      body: JSON.stringify({
+        launchParams, value: scoreForGlobalLb(), rawCoins: Math.floor(G.coins),
+        name: profile?.name, avatar: profile?.avatar,
+      }),
     });
   } catch(e) { console.warn('[LB] Global submit error:', e); }
 }
@@ -1566,21 +1579,52 @@ function updateGlobalLbStat() {
   if (el) el.textContent = fmt(Math.floor(G.coins));
 }
 
-// Открывает нативное окно VK с рейтингом среди всех игроков приложения
-async function showGlobalLeaderboard() {
-  playSound('click');
-  if (PLATFORM !== 'vk' || !vkReady) {
-    showToast('Доступно только внутри VK');
-    return;
-  }
-  if (!GLOBAL_LB_ENDPOINT) {
-    showToast('Общий рейтинг ещё не подключён');
-    return;
-  }
-  await submitScoreGlobal();
+// Собственный рейтинг на базе БД — раньше тут был нативный
+// VKWebAppShowLeaderBoardBox, но по требованию модерации VK эта
+// возможность у приложений убрана (как и "Пост на стену" в разделе
+// "Друзья"). Список берём с СВОЕГО сервера — /leaderboard/top читает
+// прямо из player_meta, куда данные уже попадают при каждой обычной
+// отправке счёта (см. submitScoreGlobal выше).
+async function renderGlobalLeaderboard() {
+  updateGlobalLbStat();
+  const el = document.getElementById('globalLbList');
+  if (!el) return;
+  const retryHtml = (msg) => `<div class="friends-rank-empty">${msg}</div><button class="btn-friends secondary" style="margin-top:10px" onclick="renderGlobalLeaderboard()">🔄 Попробовать ещё раз</button>`;
+
+  if (PLATFORM !== 'vk' || !vkReady) { el.innerHTML = retryHtml('Доступно только внутри VK'); return; }
+  if (!GLOBAL_LB_ENDPOINT) { el.innerHTML = '<div class="friends-rank-empty">Рейтинг ещё не подключён</div>'; return; }
+
+  el.innerHTML = '<div class="friends-rank-empty">Загрузка...</div>';
+  await submitScoreGlobal(); // подтягиваем свой актуальный счёт перед загрузкой списка (если не в троттлинге — не страшно, если пропустится)
+
   try {
-    await vkBridge.send('VKWebAppShowLeaderBoardBox', { user_result: scoreForGlobalLb() });
-  } catch(e) { showToast(t('lbError')); }
+    const launchParams = await getLaunchParamsString();
+    const res = await fetch(workerUrl('/leaderboard/top'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ launchParams }),
+    });
+    const data = await res.json();
+    if (!data.ok) { el.innerHTML = retryHtml('Не удалось загрузить'); return; }
+
+    const rankEl = document.getElementById('lbMyRank');
+    if (rankEl) rankEl.textContent = data.myRank ? ` · место ${data.myRank}` : '';
+
+    if (!data.top || !data.top.length) {
+      el.innerHTML = retryHtml('Пока никто не наиграл достаточно, чтобы попасть в список — стань первым!');
+      return;
+    }
+    el.innerHTML = data.top.map(e => `
+      <div class="friends-rank-item">
+        <div class="friends-rank-pos">${e.rank}</div>
+        ${e.avatar ? `<img class="friends-rank-avatar" src="${e.avatar}" alt="">` : `<div class="friends-rank-avatar"></div>`}
+        <div class="friends-rank-name">${e.name}</div>
+        <div class="friends-rank-score">${fmt(e.score)}</div>
+      </div>`).join('');
+  } catch(e) {
+    console.warn('[LB] Ошибка загрузки рейтинга:', e);
+    el.innerHTML = retryHtml('Не удалось загрузить рейтинг');
+  }
 }
 
 // Игра определяет платформу автоматически и использует нужный SDK.
@@ -4000,48 +4044,6 @@ async function shareProgressToStory() {
 }
 
 // ── «Поделиться прогрессом» — пост на стену VK ─────────────────────
-// Использует VKWebAppShowWallPostBox — открывает нативное окно публикации
-// записи (пользователь сам подтверждает и может отредактировать текст
-// перед публикацией). В текст добавляется реферальная ссылка — VK сам
-// разворачивает такую ссылку в превью-карточку прямо в записи.
-//
-// ВАЖНО: раньше при любой ошибке здесь тихо подменялось на VKWebAppShare —
-// то есть кнопка "на стену" при сбое вела себя как обычное "Пригласить
-// друга", без предупреждения. Это и создавало ощущение "кнопка просто не
-// делает то, что должна". Теперь при реальной ошибке (не отмене) честно
-// показываем это тостом, без скрытой подмены на другой диалог — если метод
-// действительно недоступен на клиенте, лучше явно предложить "В историю"
-// (shareProgressToStory выше), которая работает независимо.
-async function shareProgressToWall() {
-  if (PLATFORM !== 'vk' || !vkReady) {
-    showToast(t('shareProgressUnavailable'));
-    return;
-  }
-  const code = getMyRefCode();
-  const url  = 'https://vk.com/app54630379#ref=' + code;
-  const machinesOwned = G.machines.filter(m => m.owned).length;
-  const text = t('shareProgressText')
-    .replace('{cps}', fmt(cps()))
-    .replace('{machines}', machinesOwned)
-    + '\n' + url;
-
-  registerRefCodeOnServer();
-
-  try {
-    await vkBridge.send('VKWebAppShowWallPostBox', { message: text });
-    // VK не гарантирует достоверный статус публикации в ответе (пользователь
-    // мог отредактировать/отменить прямо в открывшемся окне), поэтому тост
-    // о публикации — не подтверждение, а просто обратная связь по действию.
-    showToast(t('shareProgressPosted'));
-    playSound('quest');
-  } catch(e) {
-    const { reason, cancelled } = isUserCancelledShare(e);
-    console.warn('[Share] VKWebAppShowWallPostBox:', e);
-    if (!cancelled) showToast('⚠️ Не получилось опубликовать на стене' + (reason ? ': ' + reason : '') + ' — попробуй «В историю»');
-  }
-}
-
-
 function renderFriends() {
   const invitedEl = document.getElementById('friendsInvited');
   const multEl    = document.getElementById('friendsBonusMult');
@@ -4049,80 +4051,6 @@ function renderFriends() {
   if (invitedEl) invitedEl.textContent = G.friendsInvited || 0;
   if (multEl)    multEl.textContent    = '×' + referralMult().toFixed(2);
   if (codeEl)    codeEl.textContent    = t('refYourCode') + ': ' + getMyRefCode();
-}
-
-// Рейтинг среди друзей, которые тоже играют — VKWebAppGetFriends отдаёт
-// список друзей самого игрока (имена/аватарки), а очки для них спрашиваем
-// у своего воркера (тот же, что и всё остальное).
-async function renderFriendsRanking() {
-  const el = document.getElementById('friendsRankingList');
-  if (!el) return;
-  playSound('click');
-  // Единый рендер состояния "не получилось" — везде с кнопкой повтора,
-  // чтобы транспортная ошибка/временный сбой сети не оставляли тупик:
-  // ткнул "Загрузить топ" → не получилось → и без этой кнопки раздел
-  // приходилось полностью закрывать и открывать заново, чтобы попробовать
-  // ещё раз.
-  const retryHtml = (msg) => `<div class="friends-rank-empty">${msg}</div><button class="btn-friends secondary" style="margin-top:10px" onclick="renderFriendsRanking()">🔄 Попробовать ещё раз</button>`;
-
-  if (PLATFORM !== 'vk' || !vkReady) {
-    el.innerHTML = retryHtml('Доступно только внутри VK');
-    return;
-  }
-  if (!GLOBAL_LB_ENDPOINT) {
-    el.innerHTML = '<div class="friends-rank-empty">Рейтинг ещё не подключён</div>';
-    return;
-  }
-  el.innerHTML = '<div class="friends-rank-empty">Загрузка...</div>';
-  try {
-    const friendsRes = await vkBridge.send('VKWebAppGetFriends', { multi: false });
-    const friends = (friendsRes.users || []).slice(0, 100);
-    if (!friends.length) {
-      el.innerHTML = retryHtml('Друзья ещё не найдены');
-      return;
-    }
-    const launchParams = await getLaunchParamsString();
-    const profileRes = await vkBridge.send('VKWebAppGetUserInfo', {});
-    const res = await fetch(workerUrl('/friends-scores'), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ launchParams, friendIds: friends.map(f => f.id) }),
-    });
-    const data = await res.json();
-    if (!data.ok) { el.innerHTML = retryHtml('Не удалось загрузить'); return; }
-
-    const entries = [{
-      id: profileRes.id,
-      name: (profileRes.first_name||'') + ' ' + (profileRes.last_name||''),
-      avatar: profileRes.photo_100 || '',
-      score: Math.floor(G.coins),
-      me: true,
-    }];
-    friends.forEach(f => {
-      const score = data.scores[f.id];
-      if (score == null) return; // друг ещё не играл — не показываем
-      entries.push({
-        id: f.id, name: (f.first_name||'')+' '+(f.last_name||''),
-        avatar: f.photo_100 || '', score, me: false,
-      });
-    });
-    entries.sort((a,b) => b.score - a.score);
-
-    if (entries.length === 1) {
-      el.innerHTML = retryHtml('Пока никто из друзей не играет — пригласи их!');
-      return;
-    }
-    el.innerHTML = entries.map((e,i) => `
-      <div class="friends-rank-item${e.me?' me':''}">
-        <div class="friends-rank-pos">${i+1}</div>
-        ${e.avatar ? `<img class="friends-rank-avatar" src="${e.avatar}" alt="">` : `<div class="friends-rank-avatar"></div>`}
-        <div class="friends-rank-name">${e.name}${e.me?' (ты)':''}</div>
-        <div class="friends-rank-score">${fmt(e.score)}</div>
-      </div>`).join('');
-  } catch(e) {
-    console.warn('[Friends] Ошибка рейтинга:', e);
-    el.innerHTML = retryHtml('Не удалось загрузить рейтинг');
-  }
 }
 
 // ── ЭНЕРГИЯ И РУЧНОЕ ПРОИЗВОДСТВО ─────────────────────────────────
@@ -4737,12 +4665,6 @@ function openMenuSection(section) {
   if (section==='weekly')  renderWeeklyChallenge();
   if (section==='stats')   renderStats();
   if (section==='ach')     renderAchievements();
-  // renderFriendsRanking() сюда намеренно НЕ вызывается — этот запрос дёргает
-  // VKWebAppGetFriends, который показывает нативный диалог "разрешить доступ
-  // к друзьям". Если делать это автоматически при каждом открытии раздела,
-  // диалог выскакивает без явного действия игрока, что и раздражало. Теперь
-  // рейтинг грузится только по кнопке "🏆 Загрузить топ друзей" в самом
-  // списке (см. HTML секции menuSecFriends).
   if (section==='friends') { renderFriends(); syncInvitedCount(); }
 }
 
