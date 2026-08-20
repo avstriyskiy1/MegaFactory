@@ -410,6 +410,15 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
 .lb-global-desc { font-size:12px; color:var(--muted); margin-bottom:10px; }
 .lb-global-stat { font-size:13px; color:var(--muted); margin-bottom:14px; }
 .lb-global-stat b { color:var(--text); }
+.lb-metric-tabs{display:flex;gap:8px;margin:14px 0 10px;}
+.lb-metric-tab{flex:1;padding:9px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--muted);font-family:'Exo 2',sans-serif;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;}
+.lb-metric-tab.active{border-color:var(--accent);color:var(--accent);background:rgba(240,165,0,.08);}
+.lb-league-scroller{display:flex;gap:8px;overflow-x:auto;padding:2px 0 10px;-webkit-overflow-scrolling:touch;}
+.lb-league-scroller::-webkit-scrollbar{display:none;}
+.lb-league-pill{flex-shrink:0;display:flex;align-items:center;gap:6px;padding:7px 12px;border-radius:20px;border:1px solid var(--border);background:var(--card);color:var(--muted);font-family:'Exo 2',sans-serif;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;transition:all .15s;}
+.lb-league-pill.active{border-color:var(--teal);color:var(--teal);background:rgba(62,201,255,.08);}
+.lb-league-pill .lb-league-icon{font-size:14px;}
+.lb-league-me-badge{margin-left:16px;font-size:10px;padding:2px 6px;border-radius:8px;background:rgba(240,165,0,.15);color:var(--accent);}
 /* AD BUTTON */
 /* MANUAL PRODUCTION / ENERGY */
 .energy-box{background:linear-gradient(135deg,rgba(74,217,255,.08),rgba(20,80,120,.06));border:1px solid rgba(74,217,255,.3);border-radius:8px;padding:14px;margin-bottom:10px;}
@@ -612,11 +621,27 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
       <div class="tab-pane" id="pane-lb">
         <div class="sec-hdr">Таблица лидеров</div>
         <div class="lb-global-box">
-          <div class="lb-global-icon">🏆</div>
-          <div class="lb-global-title">Рейтинг игроков</div>
-          <div class="lb-global-desc">Топ игроков по количеству монет</div>
+          <div class="lb-global-icon" id="lbHeaderIcon">🏆</div>
+          <div class="lb-global-title" id="lbHeaderTitle">Рейтинг игроков</div>
+          <div class="lb-global-desc" id="lbHeaderDesc">Топ игроков по количеству монет</div>
           <div class="lb-global-stat">Твои монеты: <b id="lbMyCoins">0</b><span id="lbMyRank"></span></div>
         </div>
+
+        <!-- Переключатель топов: по монетам (вне лиг) / по общему времени в
+             игре / по числу престижей / по доходу в секунду (последние три —
+             каждый в рамках своей лиги, см. renderGlobalLeaderboard). -->
+        <div class="lb-metric-tabs" id="lbMetricTabs">
+          <button class="lb-metric-tab active" data-metric="coins"    onclick="switchLbMetric('coins')">💰 Монеты</button>
+          <button class="lb-metric-tab"        data-metric="playtime" onclick="switchLbMetric('playtime')">⏱ Время</button>
+          <button class="lb-metric-tab"        data-metric="prestige" onclick="switchLbMetric('prestige')">⚡ Престижи</button>
+          <button class="lb-metric-tab"        data-metric="ips"      onclick="switchLbMetric('ips')">📈 Доход/сек</button>
+        </div>
+
+        <!-- Лиги — показывается только для метрик, у которых есть лиги
+             (всё, кроме "Монеты"); заполняется динамически из ответа сервера,
+             т.к. границы лиг — источник истины на бэкенде (см. src/leagues.js). -->
+        <div class="lb-league-scroller" id="lbLeagueScroller" style="display:none"></div>
+
         <div id="globalLbList"><div class="friends-rank-empty">Загрузка...</div></div>
       </div>
       <div class="tab-pane" id="pane-menu">
@@ -968,12 +993,19 @@ const I18N = {
     // IAP
     iapStarter: '🚀 Стартовый пак',
     iapStarterDesc: 'Убирает таймер рекламы навсегда + x2 к первым 10 минутам каждой сессии',
-    iapVip: '👑 VIP Статус',
-    iapVipDesc: 'Постоянный ×1.5 к доходу со всех цехов навсегда',
+    iapVip: '👑 VIP Статус навсегда',
+    iapVipDesc: '×1.5 к доходу навсегда, VIP-цех, VIP-тема и фоновая реклама убрана — без ограничения по времени',
+    iapVipMonth: '👑 VIP Статус на месяц',
+    iapVipMonthDesc: 'Все привилегии VIP на 30 дней: ×1.5 к доходу, VIP-цех, VIP-тема, без фоновой рекламы. Можно продлевать',
     iapCoins: '💰 Мешок монет',
     iapCoinsDesc: 'Мгновенно добавляет монет эквивалентных 2 часам производства',
     iapBadge: 'ВЫГОДНО',
-    iapToastVip: '👑 VIP активирован — доход ×1.5 навсегда!',
+    iapToastVip: '👑 VIP активирован навсегда — доход ×1.5, VIP-цех и VIP-тема открыты!',
+    iapToastVipMonth: '👑 VIP активирован на 30 дней — доход ×1.5, VIP-цех и VIP-тема открыты!',
+    iapToastVipExtended: '👑 VIP продлён ещё на 30 дней!',
+    iapToastVipExpired: 'VIP-статус истёк — доход, VIP-цех и VIP-тема снова обычные',
+    iapVipBadge: 'ВЫГОДНО',
+    iapVipMonthBadge: '30 ДНЕЙ',
     iapToastStarter: '🚀 Стартовый пак активирован!',
     iapToastCoins: '💰 +{n} монет!',
     iapLab: '🧪 Секретная лаборатория',
@@ -995,6 +1027,10 @@ const I18N = {
     iapSeasonPassDesc: 'Открывает премиум-награды на всех уровнях сезона, включая эксклюзивные — действует до конца текущего сезона',
     iapSeasonBadge: 'СЕЗОН',
     iapToastSeasonPass: '🎫 Премиум-трек открыт до конца сезона!',
+    iapRemoveAds: '🚫 Убрать рекламу',
+    iapRemoveAdsDesc: 'Убирает фоновый рекламный баннер навсегда. Не влияет на доход, цеха и темы — для этого нужен VIP',
+    iapRemoveAdsBadge: 'НАВСЕГДА',
+    iapToastRemoveAds: '🚫 Фоновая реклама убрана!',
     settingsAutoBuy: '🤖 Автопокупка цехов',
     settingsAutoBuyHint: 'Сам покупает следующий цех, как только хватает монет',
     settingsAutoUpgrade: '⬆️ Автоапгрейд',
@@ -1107,6 +1143,16 @@ const MACHINES_DEF = [
   // номерам. Место в списке (последние) определяется порядком в этом
   // массиве, а не значением id.
   { id:10, name:'Секретная лаборатория', emoji:'🧪', baseCost:0, baseReward:50, baseSpeed:8000, premium:true, buyProductId:'secret_lab' },
+  // VIP-цех — не продаётся отдельно, выдаётся владельцам VIP-статуса (см.
+  // onBuy у vip_status/vip_status_month в IAP_PRODUCTS и восстановление
+  // владения после престижа в doPrestige). vipMachine:true — единственный
+  // цех, чьё ПРОИЗВОДСТВО дополнительно гасится, если VIP сейчас неактивен
+  // (см. isVipActive() и фильтр в cps()/baseCps()) — цех числится купленным
+  // и после истечения месячного VIP, просто не работает, пока VIP не
+  // продлят. "После престижа слетают только улучшения" — уровень (как у
+  // любого цеха) сбрасывается к 1, а вот owned/auto восстанавливаются
+  // отдельным кодом в doPrestige(), как и у Секретной лаборатории.
+  { id:17, name:'VIP-цех', emoji:'👑', baseCost:0, baseReward:80, baseSpeed:6000, premium:true, vipMachine:true },
   // Эксклюзив сезонного пропуска — НЕ продаётся за голоса напрямую, ставится
   // owned=true только через claimSeasonTier(15,'premium') ниже. seasonExclusive
   // указывает buildMachineCard вообще не рисовать карточку "купи", пока не
@@ -1178,10 +1224,74 @@ const IAP_PRODUCTS = [
     price:    voicesLabel(120),
     once:     true,
     flag:     'vipStatus',
-    badgeKey: 'iapBadge',
+    badgeKey: 'iapVipBadge',
     onBuy:    () => {
       G.purchases.vipStatus = true;
+      grantVipMachine();
+      hideBackgroundBannerAd();
       showToast(t('iapToastVip'));
+      renderThemePicker();
+    },
+    onRevoke: () => {
+      // Возврат оплаты — если это не отменяет активный месячный VIP
+      // (оба флага независимы, см. isVipActive), последствия нужно снять:
+      // погасить VIP-тему, если она выбрана, и вернуть баннер, если больше
+      // нет ни VIP, ни отдельно купленного "убрать рекламу".
+      if (!isVipActive()) {
+        if (G.theme === 'gold') { G.theme = 'classic'; setThemeVars('classic'); }
+        if (!hasNoBannerAds()) showBackgroundBannerAd();
+      }
+      renderThemePicker();
+      showToast('VIP-статус (навсегда) отменён (возврат оплаты)');
+    },
+  },
+  {
+    // ── VIP на месяц — расходуемый товар (once:false), как coin_pack и
+    // season_pass: покупать можно сколько угодно раз, каждая покупка
+    // ПРОДЛЕВАЕТ срок (не заменяет — если уже есть 10 дней активного VIP
+    // и покупается ещё месяц, получится 40 дней, а не 30). Если уже есть
+    // VIP навсегда — покупка технически пройдёт (VK её не блокирует), но
+    // ничего не добавит: isVipActive() и так уже true, срок просто не
+    // используется, пока не отменят "навсегда".
+    id:       'vip_status_month',
+    type:     'vip',
+    nameKey:  'iapVipMonth',
+    descKey:  'iapVipMonthDesc',
+    price:    voicesLabel(45),
+    once:     false,
+    badgeKey: 'iapVipMonthBadge',
+    onBuy:    () => {
+      const now = Date.now();
+      const base = (G.vipExpiresAt && G.vipExpiresAt > now) ? G.vipExpiresAt : now;
+      const wasActive = isVipActive();
+      G.vipExpiresAt = base + 30 * 24 * 60 * 60 * 1000; // +30 дней от текущего окончания (или от сейчас, если VIP уже не активен)
+      grantVipMachine();
+      hideBackgroundBannerAd();
+      showToast(wasActive ? t('iapToastVipExtended') : t('iapToastVipMonth'));
+      renderThemePicker();
+    },
+  },
+  {
+    // ── Убрать рекламу — отдельный товар, НЕ часть VIP. Единственный
+    // эффект — прячет фоновый баннер навсегда (см. hasNoBannerAds()).
+    // Не даёт ни ×1.5 к доходу, ни VIP-цех, ни VIP-тему — для этого нужен
+    // именно VIP (месяц или навсегда).
+    id:       'remove_ads',
+    type:     'cosmetic',
+    nameKey:  'iapRemoveAds',
+    descKey:  'iapRemoveAdsDesc',
+    price:    voicesLabel(35),
+    once:     true,
+    flag:     'removeAds',
+    badgeKey: 'iapRemoveAdsBadge',
+    onBuy:    () => {
+      G.purchases.removeAds = true;
+      hideBackgroundBannerAd();
+      showToast(t('iapToastRemoveAds'));
+    },
+    onRevoke: () => {
+      if (!hasNoBannerAds()) showBackgroundBannerAd();
+      showToast('Покупка «Убрать рекламу» отменена (возврат оплаты)');
     },
   },
   {
@@ -1311,8 +1421,26 @@ function iapFlagOwned(id) {
   return !!(prod && prod.flag && G.purchases && G.purchases[prod.flag]);
 }
 
+// VIP теперь бывает двух видов — "навсегда" (G.purchases.vipStatus,
+// как и раньше, простой неизменяемый флаг) и "на месяц" (G.vipExpiresAt —
+// таймстамп истечения, продлевается при повторной покупке, см. onBuy у
+// vip_status_month в IAP_PRODUCTS). Всё, что раньше проверяло
+// G.purchases.vipStatus напрямую (множитель дохода, VIP-тема, VIP-цех,
+// баннер), теперь должно идти через эту функцию, а не через флаг —
+// иначе месячный VIP просто не будет работать.
+function isVipActive() {
+  if (G.purchases && G.purchases.vipStatus) return true; // навсегда — истечения нет
+  return !!(G.vipExpiresAt && Date.now() <= G.vipExpiresAt);
+}
+
+// Есть ли у игрока купленное "убрать рекламу" ИЛИ активный VIP (у VIP это
+// одна из привилегий "бесплатно" — см. IAP_PRODUCTS/showBackgroundBannerAd).
+function hasNoBannerAds() {
+  return !!(G.purchases && G.purchases.removeAds) || isVipActive();
+}
+
 function iapMultiplier() {
-  return G.purchases && G.purchases.vipStatus ? 1.5 : 1;
+  return isVipActive() ? 1.5 : 1;
 }
 
 function hasNoAdCooldown() {
@@ -1336,6 +1464,14 @@ async function buyProduct(id) {
   // игроку случайно заплатить второй раз за то же самое.
   if (id === 'season_pass' && seasonHasPremium()) {
     showToast('🎫 Премиум-трек уже открыт в этом сезоне');
+    return;
+  }
+  // VIP навсегда уже покрывает всё, что даёт месячный — докупать месячный
+  // поверх него просто сожжёт голоса игрока без единого эффекта (isVipActive()
+  // всё равно вернёт true по флагу vipStatus, а не по сроку). Блокируем
+  // явно, а не полагаемся на то, что игрок сам заметит бессмысленность.
+  if (id === 'vip_status_month' && G.purchases?.vipStatus) {
+    showToast('👑 У тебя уже есть VIP навсегда — месячный не нужен');
     return;
   }
   playSound('click');
@@ -1492,11 +1628,31 @@ function renderIAP() {
     // следующем сезоне), но и не обычный расходник вроде пачки монет —
     // в рамках ОДНОГО сезона он ведёт себя как разовая покупка, поэтому
     // "куплено" здесь считается отдельной проверкой, а не только по флагу.
-    const owned = (prod.once && iapFlagOwned(prod.id)) || (prod.id === 'season_pass' && seasonHasPremium());
+    let owned = (prod.once && iapFlagOwned(prod.id)) || (prod.id === 'season_pass' && seasonHasPremium());
+    let extraLine = '';
+
+    // VIP на месяц — единственный товар в каталоге, у которого "куплено"
+    // не бинарно: можно докупать (продлевать), поэтому кнопка НЕ
+    // блокируется как у обычных once-товаров. Единственное исключение —
+    // если уже есть VIP навсегда, тогда месячный смысла не имеет вообще.
+    if (prod.id === 'vip_status_month') {
+      if (G.purchases?.vipStatus) {
+        owned = true; // навсегда уже покрывает всё — показываем как "куплено", кнопку блокируем
+        extraLine = 'Уже включено в VIP навсегда';
+      } else if (G.vipExpiresAt && G.vipExpiresAt > Date.now()) {
+        const daysLeft = Math.max(1, Math.ceil((G.vipExpiresAt - Date.now()) / 86400000));
+        extraLine = `👑 Активен ещё ${daysLeft} ${pluralRu(daysLeft, 'день', 'дня', 'дней')} — новая покупка продлит срок`;
+      }
+    }
+    // VIP навсегда, в свою очередь, делает месячный полностью избыточным —
+    // если уже есть навсегда, отдельно показывать, что месячный "истекает",
+    // не нужно (он попросту больше ни на что не влияет).
+
     return `<div class="iap-item ${prod.type}${owned?' owned':''}">
       <div class="iap-info">
         <div class="iap-name">${t(prod.nameKey)}${owned?' ✓':''}${prod.badgeKey && !owned ? `<span class="iap-badge">${t(prod.badgeKey)}</span>` : ''}</div>
         <div class="iap-desc">${t(prod.descKey)}</div>
+        ${extraLine ? `<div class="iap-desc" style="color:var(--accent);margin-top:2px">${extraLine}</div>` : ''}
       </div>
       <button class="btn-iap ${prod.type}" onclick="buyProduct('${prod.id}')" ${owned?'disabled':''}>
         ${owned ? t('bought') : prod.price}
@@ -1569,6 +1725,12 @@ async function submitScoreGlobal() {
       body: JSON.stringify({
         launchParams, value: scoreForGlobalLb(), rawCoins: Math.floor(G.coins),
         name: profile?.name, avatar: profile?.avatar,
+        // Снимки для переключателей лидерборда/лиг (см. handleSubmitScore
+        // в routes.js) — как и rawCoins, это именно снимок-на-момент-отправки,
+        // не накопительная дельта: сервер просто перезаписывает значение.
+        playTimeMs: Math.floor(G.totalPlayTimeMs || 0),
+        prestigeCount: Math.floor(G.prestigeCount || 0),
+        incomePerSec: Math.floor(cps()),
       }),
     });
   } catch(e) { console.warn('[LB] Global submit error:', e); }
@@ -1579,17 +1741,77 @@ function updateGlobalLbStat() {
   if (el) el.textContent = fmt(Math.floor(G.coins));
 }
 
+// Метка метрики — какой топ сейчас выбран (переключатели над списком) и,
+// для метрик с лигами, какая лига выбрана (null = "моя лига", сервер сам
+// подставит на основе prestige_count — см. handleLeaderboardTop).
+let lbMetric = 'coins';
+let lbLeague = null;
+
+const LB_METRIC_META = {
+  coins:    { icon:'🏆', title:'Рейтинг игроков',      desc:'Топ игроков по количеству монет',        hasLeague:false },
+  playtime: { icon:'⏱', title:'Рейтинг по времени',    desc:'Топ игроков по общему времени в игре',    hasLeague:true  },
+  prestige: { icon:'⚡', title:'Рейтинг по престижам',  desc:'Топ игроков по количеству престижей',     hasLeague:true  },
+  ips:      { icon:'📈', title:'Рейтинг по доходу',     desc:'Топ игроков по доходу в секунду',         hasLeague:true  },
+};
+
+function formatLbScore(metric, value) {
+  if (metric === 'playtime') {
+    const totalMin = Math.floor(value / 60000);
+    const h = Math.floor(totalMin / 60), m = totalMin % 60;
+    return h > 0 ? `${h}ч ${m}м` : `${m}м`;
+  }
+  if (metric === 'prestige') return String(Math.floor(value));
+  if (metric === 'ips') return fmt(value) + '/с';
+  return fmt(value); // coins
+}
+
+function switchLbMetric(metric) {
+  lbMetric = metric;
+  lbLeague = null; // при смене метрики сбрасываем на "мою лигу" — выбор лиги привязан к конкретному топу
+  document.querySelectorAll('#lbMetricTabs .lb-metric-tab').forEach(b => {
+    b.classList.toggle('active', b.dataset.metric === metric);
+  });
+  renderGlobalLeaderboard();
+}
+
+function renderLeagueScroller(leagues, myLeague, activeLeagueId) {
+  const scroller = document.getElementById('lbLeagueScroller');
+  if (!scroller) return;
+  if (!LB_METRIC_META[lbMetric].hasLeague || !leagues) { scroller.style.display = 'none'; return; }
+  scroller.style.display = 'flex';
+  scroller.innerHTML = leagues.map(l => `
+    <button class="lb-league-pill ${l.id === activeLeagueId ? 'active' : ''}" onclick="selectLbLeague('${l.id}')">
+      <span class="lb-league-icon">${l.icon}</span>${l.name}${l.id === myLeague.id ? '<span class="lb-league-me-badge">я тут</span>' : ''}
+    </button>`).join('');
+}
+
+function selectLbLeague(leagueId) {
+  lbLeague = leagueId;
+  renderGlobalLeaderboard();
+}
+
 // Собственный рейтинг на базе БД — раньше тут был нативный
 // VKWebAppShowLeaderBoardBox, но по требованию модерации VK эта
 // возможность у приложений убрана (как и "Пост на стену" в разделе
 // "Друзья"). Список берём с СВОЕГО сервера — /leaderboard/top читает
 // прямо из player_meta, куда данные уже попадают при каждой обычной
-// отправке счёта (см. submitScoreGlobal выше).
+// отправке счёта (см. submitScoreGlobal выше). Помимо общего топа по
+// монетам, поддерживает переключение на топ внутри лиги игрока (по
+// времени в игре / числу престижей / доходу в секунду — см. LB_METRIC_META
+// и handleLeaderboardTop на сервере).
 async function renderGlobalLeaderboard() {
   updateGlobalLbStat();
   const el = document.getElementById('globalLbList');
   if (!el) return;
   const retryHtml = (msg) => `<div class="friends-rank-empty">${msg}</div><button class="btn-friends secondary" style="margin-top:10px" onclick="renderGlobalLeaderboard()">🔄 Попробовать ещё раз</button>`;
+
+  const meta = LB_METRIC_META[lbMetric];
+  const iconEl = document.getElementById('lbHeaderIcon');
+  const titleEl = document.getElementById('lbHeaderTitle');
+  const descEl = document.getElementById('lbHeaderDesc');
+  if (iconEl) iconEl.textContent = meta.icon;
+  if (titleEl) titleEl.textContent = meta.title;
+  if (descEl) descEl.textContent = meta.desc;
 
   if (PLATFORM !== 'vk' || !vkReady) { el.innerHTML = retryHtml('Доступно только внутри VK'); return; }
   if (!GLOBAL_LB_ENDPOINT) { el.innerHTML = '<div class="friends-rank-empty">Рейтинг ещё не подключён</div>'; return; }
@@ -1602,13 +1824,21 @@ async function renderGlobalLeaderboard() {
     const res = await fetch(workerUrl('/leaderboard/top'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ launchParams }),
+      body: JSON.stringify({ launchParams, metric: lbMetric, league: lbLeague || undefined }),
     });
     const data = await res.json();
     if (!data.ok) { el.innerHTML = retryHtml('Не удалось загрузить'); return; }
 
+    renderLeagueScroller(data.leagues, data.myLeague, data.league ? data.league.id : (data.myLeague && data.myLeague.id));
+
     const rankEl = document.getElementById('lbMyRank');
     if (rankEl) rankEl.textContent = data.myRank ? ` · место ${data.myRank}` : '';
+    const coinsLabelEl = document.querySelector('.lb-global-stat');
+    if (coinsLabelEl && meta.hasLeague) {
+      coinsLabelEl.innerHTML = `Твой результат: <b>${data.myScore != null ? formatLbScore(lbMetric, data.myScore) : '—'}</b><span id="lbMyRank">${data.myRank ? ` · место ${data.myRank}` : ''}</span>`;
+    } else if (coinsLabelEl) {
+      coinsLabelEl.innerHTML = `Твои монеты: <b id="lbMyCoins">${fmt(Math.floor(G.coins))}</b><span id="lbMyRank">${data.myRank ? ` · место ${data.myRank}` : ''}</span>`;
+    }
 
     if (!data.top || !data.top.length) {
       el.innerHTML = retryHtml('Пока никто не наиграл достаточно, чтобы попасть в список — стань первым!');
@@ -1619,7 +1849,7 @@ async function renderGlobalLeaderboard() {
         <div class="friends-rank-pos">${e.rank}</div>
         ${e.avatar ? `<img class="friends-rank-avatar" src="${e.avatar}" alt="">` : `<div class="friends-rank-avatar"></div>`}
         <div class="friends-rank-name">${e.name}</div>
-        <div class="friends-rank-score">${fmt(e.score)}</div>
+        <div class="friends-rank-score">${formatLbScore(lbMetric, e.score)}</div>
       </div>`).join('');
   } catch(e) {
     console.warn('[LB] Ошибка загрузки рейтинга:', e);
@@ -1653,6 +1883,13 @@ const DELTA_SYNC_FIELDS = [
   'coins', 'crystals', 'lifetimeCoins', 'lifetimeCrystals',
   'lifetimeClicks', 'lifetimeAds', 'sold', 'lifetimeUpgrades', 'lifetimeBuys',
   'totalDailyClaims', 'totalDaysPlayed', 'weeklyCompleted', 'questsCompleted', 'promoCodesRedeemed',
+  // Лиги/лидерборд по престижам и времени в игре (см. migrations/003_leagues.sql
+  // и DELTA_FIELDS в gameData.js на сервере — список должен совпадать буквально).
+  // prestigeCount раньше жил только внутри "остального" состояния (самое
+  // свежее сохранение целиком побеждает) — престиж почти одновременно на
+  // двух устройствах мог потерять единицу счётчика. Как дельта-поле он
+  // теперь суммируется атомарно на сервере, как coins.
+  'prestigeCount', 'totalPlayTimeMs',
 ];
 
 function computeDeltaSyncPayload() {
@@ -1682,7 +1919,20 @@ function adoptMergedSave(merged) {
   DELTA_SYNC_FIELDS.forEach(f => { G.deltaSyncBaseline[f] = G[f]; });
 }
 
-async function saveVK(data) {
+// ВАЖНО: sync между устройствами не работал ВООБЩЕ — сюда передавался уже
+// СТРОКОВЫЙ JSON.stringify(G) (см. вызовы ниже), и он попадал в поле "data"
+// внутри ЕЩЁ ОДНОГО JSON.stringify({...}) чуть ниже. На выходе получался
+// дважды закодированный JSON: сервер парсил внешний конверт и видел в
+// req.body.data обычную СТРОКУ, а не объект — handleSaveGame в routes.js
+// требует typeof data === 'object' и с чистой совестью отвечал 400
+// 'invalid_data' на КАЖДОЕ сохранение. Ошибка не была видна на глаз в игре
+// (см. комментарий про !res.ok выше — он молча логировал в консоль и всё),
+// поэтому выглядело так, будто прогресс просто никогда не улетает в облако.
+// Правильно — передавать сюда САМ объект состояния (state), а не его
+// сериализованную копию: тогда он попадёт в тело запроса как настоящий
+// вложенный объект, и внешний JSON.stringify() ниже закодирует его ровно
+// один раз, как и ожидает сервер.
+async function saveVK(state) {
   if (!vkReady || PLATFORM !== 'vk' || !GLOBAL_LB_ENDPOINT) return;
   try {
     const launchParams = await getLaunchParamsString();
@@ -1694,7 +1944,7 @@ async function saveVK(data) {
       // wsClientId — говорит серверу не дублировать нам эхо через WebSocket
       // (см. connectGameSocket ниже): ответ на этот же save-game и так
       // придёт вот прямо тут, через обычный HTTP-ответ.
-      body: JSON.stringify({ launchParams, data, deltas, wsClientId }),
+      body: JSON.stringify({ launchParams, data: state, deltas, wsClientId }),
       keepalive: true, // запрос не оборвётся, если вкладка/приложение закроется прямо во время отправки
     });
     // ВАЖНО: fetch() резолвится успешно даже если сервер ответил ошибкой
@@ -1886,23 +2136,21 @@ async function forceCloudResync() {
   if (!vkReady || PLATFORM !== 'vk' || !GLOBAL_LB_ENDPOINT) return;
   lastCloudSaveAt = Date.now();
   G.lastSaved = Date.now();
-  const data = JSON.stringify(G);
-  localStorage.setItem(SAVE_KEY, data);
-  await saveVK(data);
+  localStorage.setItem(SAVE_KEY, JSON.stringify(G));
+  await saveVK(G); // объект, НЕ JSON.stringify(G) — см. комментарий у saveVK() про двойное кодирование
 }
 
 // ── ОБЛАЧНЫЕ СОХРАНЕНИЯ — единая точка ──────────────────────────
 async function saveGame() {
   G.lastSaved = Date.now();
-  const data = JSON.stringify(G);
-  localStorage.setItem(SAVE_KEY, data);
+  localStorage.setItem(SAVE_KEY, JSON.stringify(G));
   if (PLATFORM === 'vk') {
     // В облако шлём не чаще раза в ~20с — локально сохраняется каждый раз
     // мгновенно, а частые сетевые запросы ни к чему.
     const now = Date.now();
     if (now - lastCloudSaveAt > 20000) {
       lastCloudSaveAt = now;
-      saveVK(data);
+      saveVK(G); // объект, НЕ JSON.stringify(G) — см. комментарий у saveVK()
     }
   }
 }
@@ -1915,7 +2163,7 @@ document.addEventListener('visibilitychange', () => {
     lastCloudSaveAt = Date.now();
     G.lastSaved = Date.now();
     localStorage.setItem(SAVE_KEY, JSON.stringify(G));
-    saveVK(JSON.stringify(G));
+    saveVK(G); // объект, НЕ JSON.stringify(G) — см. комментарий у saveVK()
   }
   // Возврат на вкладку — многие мобильные WebView замораживают/рвут
   // WebSocket-соединение в фоне, но не всегда честно шлют событие 'close'
@@ -1934,7 +2182,7 @@ window.addEventListener('pagehide', () => {
   if (PLATFORM === 'vk' && vkReady && GLOBAL_LB_ENDPOINT) {
     G.lastSaved = Date.now();
     localStorage.setItem(SAVE_KEY, JSON.stringify(G));
-    saveVK(JSON.stringify(G));
+    saveVK(G); // объект, НЕ JSON.stringify(G) — см. комментарий у saveVK()
   }
 });
 
@@ -1994,6 +2242,62 @@ async function watchAdThen(callback) {
     } catch(e) { showToast(t('toastAdUnavail')); }
   } else {
     callback(); // локальная симуляция
+  }
+}
+
+// ── ФОНОВЫЙ БАННЕР (постоянная реклама) ─────────────────────────────
+// В отличие от showRewardedAd()/VKWebAppShowNativeAds выше (реклама по
+// запросу игрока за награду), это отдельный формат VK Bridge —
+// VKWebAppShowBannerAd — постоянно закреплённая полоска с рекламой снизу
+// экрана, которая просто висит весь сеанс и не требует действий игрока.
+// Показываем один раз при входе в игру (после сплэша) и просто оставляем
+// висеть — прятать её нет смысла, это фоновая монетизация, а не
+// разовое взаимодействие.
+//
+// ВАЖНО (обязательно проверь перед публикацией): чтобы этот вызов вообще
+// сработал, в настройках приложения на dev.vk.com должна быть включена
+// баннерная реклама (раздел "Монетизация"/"Реклама" → баннеры) — без этого
+// VK просто вернёт ошибку, игру это не сломает (см. try/catch ниже), но
+// баннер и не покажется. Формат доступен не для всех категорий
+// приложений — если баннер не появляется даже после включения в
+// настройках, проверь актуальные условия на dev.vk.com, т.к. правила
+// монетизации VK меняются чаще, чем сам Bridge API.
+let bannerAdShown = false;
+async function showBackgroundBannerAd() {
+  if (PLATFORM !== 'vk' || !vkReady || bannerAdShown) return;
+  if (hasNoBannerAds()) return; // VIP (навсегда или на месяц) или отдельная покупка "Убрать рекламу" — баннер не показываем вовсе
+  try {
+    // layout_type:'resize' — просит клиент VK подвинуть/сжать вьюпорт под
+    // баннер сам, без наложения поверх интерфейса игры (никаких доп.
+    // отступов подгонять на своей стороне не нужно). banner_location —
+    // снизу экрана, чтобы не спорить с шапкой игры (монеты/энергия) сверху.
+    const res = await vkBridge.send('VKWebAppShowBannerAd', {
+      banner_location: 'bottom',
+      layout_type: 'resize',
+    });
+    if (res && res.result !== false) bannerAdShown = true;
+  } catch(e) {
+    // Не критично для игры — просто нет баннера в этой сессии (например,
+    // формат ещё не включён в настройках приложения, см. комментарий выше).
+    console.warn('[Ads] Фоновый баннер недоступен:', e?.error_data?.error_reason || e?.message || e);
+  }
+}
+
+// Пара к showBackgroundBannerAd() — вызывается при покупке VIP/"Убрать
+// рекламу" (баннер должен исчезнуть СРАЗУ, а не только при следующем
+// запуске игры) и не является догадкой на пустом месте: VK Bridge
+// последовательно называет парные show/hide-методы одинаково (ср.
+// VKWebAppShowStoryBox не имеет пары, а вот показ/скрытие баннера —
+// ожидаемо парный метод, раз баннер "постоянный" и его нужно чем-то
+// убирать). Если по факту метод называется иначе — стоит свериться с
+// dev.vk.com; try/catch ниже в любом случае не даст этому сломать игру.
+async function hideBackgroundBannerAd() {
+  if (PLATFORM !== 'vk' || !vkReady || !bannerAdShown) return;
+  try {
+    await vkBridge.send('VKWebAppHideBannerAd', {});
+    bannerAdShown = false;
+  } catch(e) {
+    console.warn('[Ads] Не удалось скрыть фоновый баннер:', e?.error_data?.error_reason || e?.message || e);
   }
 }
 const AD_BONUS_DURATION = 5 * 60 * 1000;
@@ -2757,6 +3061,7 @@ function defaultState() {
     dailyStreak: 0, lastDailyClaimDay: null, bestStreak: 0,
     totalDailyClaims: 0, // сколько раз всего забирал ежедневную награду (не текущий стрик, а общее число)
     totalDaysPlayed: 0, lastPlayedDay: null, // сколько РАЗНЫХ календарных дней вообще открывал игру
+    totalPlayTimeMs: 0, // суммарное время с открытой игрой — для топа лидерборда "по общему времени в игре"
     weeklyCompleted: 0, // сколько еженедельных челленджей всего выполнено (текущий G.weekly.claimed — только про эту неделю)
     seasonIndex: null, seasonSP: 0, seasonFreeClaimed: [], seasonPremiumClaimed: [], seasonPremiumForIndex: null,
     seasonQuests: null,
@@ -2766,7 +3071,8 @@ function defaultState() {
     tutorialSeen: false, seenStreakFeature: false, seenSkillsFeature: false, theme: 'classic',
     weekly: null, notifAllowed: false, hapticEnabled: true,
     firstPlayedAt: Date.now(),
-    purchases: { starterPack: false, vipStatus: false, secretLab: false, autoPilot: false, themeAurora: false, themeMagma: false },
+    purchases: { starterPack: false, vipStatus: false, secretLab: false, autoPilot: false, themeAurora: false, themeMagma: false, removeAds: false },
+    vipExpiresAt: null, // таймстамп окончания месячного VIP (null = нет активного месячного VIP); "навсегда" — отдельно, purchases.vipStatus
     claimedOrderIds: [], // orderId уже применённых pending-покупок — для идемпотентности (см. syncPurchases)
     seasonExclusiveMachineUnlocked: false, // навсегда, даже после смены сезона — заработано за 15 ур. премиум-трека
     seasonExclusiveThemeUnlocked: false,   // навсегда — заработано за 10 ур. премиум-трека
@@ -2803,6 +3109,17 @@ function loadGame() {
 
 // ── HELPERS ─────────────────────────────────────────────────────
 const getMachine = id => G.machines.find(m=>m.id===id);
+
+// Выдаёт (или подтверждает уже выданный) VIP-цех — общий код для покупки
+// VIP любого вида (навсегда/на месяц) и восстановления владения после
+// престижа (см. doPrestige). Если цех уже владелся — просто ничего не
+// делает, повторный set owned/auto не сбрасывает level/progress.
+function grantVipMachine() {
+  const m = getMachine(17);
+  if (!m) return;
+  m.owned = true;
+  m.auto  = true;
+}
 const getDef     = id => MACHINES_DEF.find(d=>d.id===id);
 const getUpgDef  = id => UPGRADES_DEF.find(u=>u.id===id);
 const getUpgState= id => G.upgrades.find(u=>u.id===id);
@@ -2817,14 +3134,14 @@ function incomeMult() {
 }
 
 function cps() {
-  return G.machines.filter(m=>m.owned&&m.auto&&!isMachineBroken(m.id))
+  return G.machines.filter(m=>m.owned&&m.auto&&!isMachineBroken(m.id)&&!(getDef(m.id).vipMachine&&!isVipActive()))
     .reduce((s,m)=>s+m.reward*incomeMult()*1000/m.speed, 0);
 }
 // "Голая" скорость дохода без множителей — для сравнения БАЗОВЫХ наград
 // цехов между собой (m.reward у всех цехов хранится без incomeMult, он
 // применяется один раз в момент начисления/показа).
 function baseCps() {
-  return G.machines.filter(m=>m.owned&&m.auto&&!isMachineBroken(m.id))
+  return G.machines.filter(m=>m.owned&&m.auto&&!isMachineBroken(m.id)&&!(getDef(m.id).vipMachine&&!isVipActive()))
     .reduce((s,m)=>s+m.reward*1000/m.speed, 0);
 }
 
@@ -3092,6 +3409,8 @@ function doPrestige() {
   const claimedOrderIds = G.claimedOrderIds;
   const seasonExclusiveMachineUnlocked = G.seasonExclusiveMachineUnlocked;
   const seasonExclusiveThemeUnlocked = G.seasonExclusiveThemeUnlocked;
+  const vipExpiresAt = G.vipExpiresAt; // месячный VIP переживает престиж как обычная покупка — только цех/улучшения пересоздаются
+  const totalPlayTimeMs = G.totalPlayTimeMs;
   G = defaultState();
   G.prestigeMult   = mult;
   G.prestigeCount  = cnt;
@@ -3142,9 +3461,12 @@ function doPrestige() {
   G.claimedOrderIds       = claimedOrderIds;
   G.seasonExclusiveMachineUnlocked = seasonExclusiveMachineUnlocked;
   G.seasonExclusiveThemeUnlocked   = seasonExclusiveThemeUnlocked;
+  G.vipExpiresAt = vipExpiresAt;
+  G.totalPlayTimeMs = totalPlayTimeMs; // lifetime-метрика — раньше по ошибке сбрасывалась престижем, хотя lifetimeCoins/lifetimeClicks и т.п. рядом не сбрасываются
   G.energy = energyMax();
   if (purchases.secretLab) { const ml=getMachine(10); ml.owned=true; ml.auto=true; }
   if (seasonExclusiveMachineUnlocked) { const sm=getMachine(16); sm.owned=true; sm.auto=true; }
+  if (isVipActive()) grantVipMachine(); // "после престижа слетают только улучшения" — уровень цеха сброшен как у всех, а владение/авто восстановлены здесь
   closePrestige();
   fullRender();
   saveGame();
@@ -3290,11 +3612,51 @@ function buildMachineCard(m) {
   const d = getDef(m.id);
 
   if (!m.owned) {
-    // Платный цех — показываем отдельно с кнопкой IAP (если он вообще
-    // покупается за голоса — у seasonExclusive такой кнопки нет в принципе,
-    // получить его можно только пройдя премиум-трек сезонного пропуска).
+    // Платный цех — показываем отдельно с кнопкой IAP (или ссылкой на то,
+    // где его получить), а не как обычный "следующий по очереди" цех.
     if (d.premium) {
-      if (d.seasonExclusive) return ''; // не показываем карточку вообще, пока не заработан — не "куплен ли", а "заработан ли"
+      // VIP-цех — получить можно ЛЮБЫМ из двух VIP-товаров (навсегда или
+      // на месяц), поэтому, в отличие от Секретной лаборатории с одной
+      // buyProductId-кнопкой, тут кнопка ведёт в Магазин, а не покупает
+      // что-то одно напрямую с этой карточки.
+      if (d.vipMachine) {
+        return `<div class="mcard" style="border-color:#ffd700;background:linear-gradient(135deg,rgba(255,215,0,.1),rgba(120,90,0,.08))" data-mid="${m.id}" data-premium="1">
+          <div class="mcard-head">
+            <div class="mcard-icon" style="border-color:#ffd700;font-size:22px">${d.emoji}</div>
+            <div style="flex:1">
+              <div class="mcard-name" style="color:#ffd700">${d.name}</div>
+              <div class="mcard-lvl">${t('iapVipMonthBadge')} · ${t('premiumOnly')}</div>
+            </div>
+          </div>
+          <div class="mcard-reward" style="color:#ffd700">+${fmt(d.baseReward * incomeMult())} ${t('coins')} ${t('perCycle')}</div>
+          <div class="iap-desc" style="margin:4px 0 8px">Работает, пока активен VIP-статус (навсегда или на месяц)</div>
+          <button class="btn-buy-big" data-action="openshop"
+            style="background:#ffd700;color:#2a2200;margin-top:0;pointer-events:all;cursor:pointer">
+            👑 Получить VIP-статус
+          </button>
+        </div>`;
+      }
+      // Сезонный (батл-пасс) цех — не продаётся за голоса вообще, только
+      // прогрессом по премиум-треку. Раньше карточка вообще не рисовалась,
+      // пока цех не заработан — теперь, как и у остальных премиум-цехов,
+      // видна всегда, просто с кнопкой в раздел "Сезон" вместо покупки.
+      if (d.seasonExclusive) {
+        return `<div class="mcard locked" style="border-color:#c9a000;background:linear-gradient(135deg,rgba(255,215,106,.08),rgba(60,45,0,.08));opacity:1;cursor:default" data-mid="${m.id}" data-premium="1">
+          <div class="mcard-head">
+            <div class="mcard-icon" style="border-color:#c9a000;font-size:22px;filter:grayscale(.4)">${d.emoji}</div>
+            <div style="flex:1">
+              <div class="mcard-name" style="color:#e0c060">${d.name}</div>
+              <div class="mcard-lvl">🎖️ Награда за сезонный пропуск</div>
+            </div>
+          </div>
+          <div class="mcard-reward" style="color:#e0c060">+${fmt(d.baseReward * incomeMult())} ${t('coins')} ${t('perCycle')}</div>
+          <div class="iap-desc" style="margin:4px 0 8px">Открывается 15 уровнем премиум-трека сезонного пропуска — не продаётся за голоса</div>
+          <button class="btn-buy-big" data-action="openseason"
+            style="background:#c9a000;color:#2a2200;margin-top:0;pointer-events:all;cursor:pointer">
+            🎫 Открыть Сезонный пропуск
+          </button>
+        </div>`;
+      }
       const prod = IAP_PRODUCTS.find(p => p.id === d.buyProductId);
       if (!prod) return '';
       const bought = G.purchases?.[prod.flag];
@@ -3366,6 +3728,29 @@ function buildMachineCard(m) {
   const adUpg   = !canUpg && upgPct >= 80 && canFreeUpgrade();
   const eff     = Math.round(m.reward * incomeMult());
   const broken  = isMachineBroken(m.id);
+  // VIP-цех числится owned даже после истечения VIP (не отбираем сам факт
+  // владения — только производство, см. cps()/baseCps()), поэтому ему
+  // нужно отдельное визуальное состояние "куплен, но временно не работает"
+  // вместо обычной рабочей карточки.
+  const vipInactive = d.vipMachine && !isVipActive();
+
+  if (vipInactive) {
+    return `<div class="mcard broken" data-mid="${m.id}">
+      <div class="mcard-head">
+        <div class="mcard-icon" style="filter:grayscale(1);opacity:.6">${d.emoji}</div>
+        <div>
+          <div class="mcard-name">${d.name}</div>
+          <div class="mcard-lvl" style="color:#ffd700">VIP истёк — не производит</div>
+        </div>
+      </div>
+      <div class="pbar-wrap"><div class="pbar" style="width:100%;background:#7a6200"></div></div>
+      <div class="mcard-footer">
+        <button class="btn-upg" data-action="openshop" style="border-color:#ffd700;color:#ffd700">
+          👑 Продлить VIP
+        </button>
+      </div>
+    </div>`;
+  }
 
   if (broken) {
     const cost = repairCost(m.id);
@@ -4089,6 +4474,24 @@ const COMBO_WINDOW = 1500;
 const COMBO_MAX = 10;
 const COMBO_MAX_MULT = 2.0;
 
+// Отслеживаем переход VIP активен → неактивен (истёк месячный VIP), чтобы
+// один раз показать тост и снять последствия — если просто проверять
+// isVipActive() каждый раз без сравнения с предыдущим состоянием, тост
+// показывался бы на каждом тике, пока игрок сидит с истёкшим VIP.
+let vipWasActive = null;
+function checkVipExpiry() {
+  const active = isVipActive();
+  if (vipWasActive === null) { vipWasActive = active; return; } // первая проверка за сессию — не тост, а просто запоминаем стартовое состояние
+  if (vipWasActive && !active) {
+    if (G.theme === 'gold') { G.theme = 'classic'; setThemeVars('classic'); }
+    if (!hasNoBannerAds()) showBackgroundBannerAd(); // "убрать рекламу" отдельно всё ещё может прятать баннер — проверяем заново, а не просто показываем
+    renderThemePicker();
+    showToast(t('iapToastVipExpired'));
+    fullRender(); // VIP-цех должен сразу перестать показываться работающим, а не только на следующей перерисовке карточек
+  }
+  vipWasActive = active;
+}
+
 function comboMultiplier() {
   return 1 + Math.min(comboCount, COMBO_MAX) / COMBO_MAX * (COMBO_MAX_MULT - 1);
 }
@@ -4104,6 +4507,25 @@ function updateComboUI() {
   badge.style.animation = 'comboPulse .25s ease-out';
   valEl.textContent = comboMultiplier().toFixed(2);
 }
+
+// Раньше проверка "не истекло ли окно комбо" жила ВНУТРИ основного игрового
+// цикла tick() — общего "раз в секунду" блока вместе с баннерами событий,
+// автопилотом, форс-синхронизацией облака и т.д. (см. requestAnimationFrame
+// ниже). Проблема: это один общий синхронный блок без try/catch на каждый
+// шаг — если хоть один из тех вызовов упадёт с исключением ДО того, как
+// дойдёт очередь до проверки комбо, скрытие бейджа просто не происходит на
+// этом тике, а надпись "Комбо ×2.00" виснет на экране бессрочно (именно то,
+// что было замечено). Отдельный независимый таймер не зависит от того, что
+// происходит в остальном игровом цикле — 250мс достаточно часто, чтобы
+// бейдж пропадал почти сразу после истечения COMBO_WINDOW (1.5с), и он
+// продолжит работать, даже если что-то другое в игре временно сломается.
+setInterval(() => {
+  if (comboCount > 0 && Date.now() - lastClickAt > COMBO_WINDOW) {
+    comboCount = 0;
+    const badge = document.getElementById('comboBadge');
+    if (badge) badge.style.display = 'none';
+  }
+}, 250);
 
 function manualProduce(evt) {
   if (G.energy == null) G.energy = energyMax();
@@ -4163,8 +4585,8 @@ const THEMES = [
     hint: 'Косметика — открывается покупкой в Магазине',
     vars: { '--accent':'#ff3d00', '--accent2':'#8b0000', '--teal':'#ffab00' } },
   { id:'gold', name:'VIP Золото', icon:'🟡',
-    unlock: () => !!(G.purchases && G.purchases.vipStatus),
-    hint: 'Открывается с VIP-статусом',
+    unlock: () => isVipActive(),
+    hint: 'Открывается с активным VIP-статусом',
     vars: { '--accent':'#ffd700', '--accent2':'#b8860b', '--teal':'#f5deb3' } },
   { id:'champion', name:'Чемпион сезона', icon:'🎖️',
     unlock: () => !!G.seasonExclusiveThemeUnlocked,
@@ -5151,15 +5573,41 @@ let lastPointerAt = 0;
 function uiIsBusy() { return Date.now() - lastPointerAt < 400; }
 
 function tick(now) {
+  // Внешний try/catch на ВСЮ функцию: rAF-цепочка держится на том, что
+  // tick() каждый раз доходит до requestAnimationFrame(tick) в конце —
+  // одно необработанное исключение ГДЕ УГОДНО внутри раньше означало, что
+  // этот вызов никогда не случится, и игра замирала насмерть (монеты,
+  // энергия, комбо — всё) до перезагрузки страницы. Теперь любая ошибка
+  // логируется, но следующий кадр всё равно планируется.
+  try {
+    tickInner(now);
+  } catch (e) {
+    console.error('[tick] Необработанная ошибка в игровом цикле (кадр пропущен, цикл продолжится):', e);
+  }
+  requestAnimationFrame(tick);
+}
+
+function tickInner(now) {
   const dt=now-lastTick; lastTick=now;
   saveTimer+=dt;
   let needFull=false;
+
+  // Общее время в игре — для топа лидерборда "по общему времени в игре"
+  // (см. renderGlobalLeaderboard). Клампим dt тем же способом, что и везде
+  // в тике: если вкладка была в фоне и rAF не вызывался долго, один такой
+  // "прыжок" не должен на разы раздувать статистику — реального игрового
+  // времени в этом промежутке не было.
+  G.totalPlayTimeMs = (G.totalPlayTimeMs || 0) + Math.min(dt, 5000);
 
   regenEnergy(dt);
 
   G.machines.forEach(m=>{
     if(!m.owned) return;
     if(isMachineBroken(m.id)) return; // сломанный цех не производит, пока не починят или не пройдёт время
+    // VIP-цех числится owned даже после истечения VIP (см. buildMachineCard —
+    // это сделано намеренно, "слетают только улучшения"), но производить
+    // монеты, пока VIP неактивен, он не должен.
+    if(getDef(m.id).vipMachine && !isVipActive()) return;
     if(m.auto && m.progress===0) m.progress=1;
     if(m.progress>0){
       m.progress+=dt;
@@ -5211,43 +5659,48 @@ function tick(now) {
   // Обновляем кнопку рекламы каждую секунду
   if (!tick.lastAdUpdate || now - tick.lastAdUpdate > 1000) {
     tick.lastAdUpdate = now;
-    updateAdButton();
-    updateMenuBadge();
-    maybeTriggerRushHour(now);
-    updateRushBanner();
-    maybeTriggerRandomEvent(now);
-    updateEventBanner();
-    if (G.purchases?.autoPilot) runAutoPilot();
-    // Раз в ~90 секунд — не чаще, это не критичный по времени процесс —
-    // форсируем облачную синхронизацию мимо обычного троттлинга (см.
-    // forceCloudResync выше). Это и есть механизм "не ждать до перезахода",
-    // если игра открыта одновременно на двух устройствах.
-    if (!tick.lastCloudResync) tick.lastCloudResync = now; // не в первые секунды сессии
-    if (now - tick.lastCloudResync > 90000) {
-      tick.lastCloudResync = now;
-      forceCloudResync();
+    // try/catch вокруг всего блока: раньше необработанное исключение в
+    // ЛЮБОЙ из этих функций обрывало tick() целиком, включая финальный
+    // requestAnimationFrame(tick) ниже — это останавливало ВЕСЬ игровой
+    // цикл (производство монет, регенерацию энергии, комбо-таймер и т.д.)
+    // до перезагрузки страницы. Теперь сбой одной непринципиальной вещи
+    // (баннер события, автопилот) не может уронить всю игру.
+    try {
+      updateAdButton();
+      updateMenuBadge();
+      maybeTriggerRushHour(now);
+      updateRushBanner();
+      maybeTriggerRandomEvent(now);
+      updateEventBanner();
+      checkVipExpiry();
+      if (G.purchases?.autoPilot) runAutoPilot();
+      // Раз в ~90 секунд — не чаще, это не критичный по времени процесс —
+      // форсируем облачную синхронизацию мимо обычного троттлинга (см.
+      // forceCloudResync выше). Это и есть механизм "не ждать до перезахода",
+      // если игра открыта одновременно на двух устройствах.
+      if (!tick.lastCloudResync) tick.lastCloudResync = now; // не в первые секунды сессии
+      if (now - tick.lastCloudResync > 90000) {
+        tick.lastCloudResync = now;
+        forceCloudResync();
+      }
+      if (currentTab==='menu' && currentMenuSection && !uiIsBusy()) {
+        if (currentMenuSection==='streak')  renderDailyStreak();
+        if (currentMenuSection==='daily')   renderQuests();
+        if (currentMenuSection==='weekly')  renderWeeklyChallenge();
+        if (currentMenuSection==='stats')   renderStats();
+        if (currentMenuSection==='ach')     renderAchievements();
+        if (currentMenuSection==='friends') renderFriends();
+      }
+      if (currentTab==='season' && !uiIsBusy()) renderSeasonPass();
+    } catch (e) {
+      console.error('[tick] Ошибка в периодическом блоке (не критично, игровой цикл продолжится):', e);
     }
-    if (comboCount > 0 && now - lastClickAt > COMBO_WINDOW) {
-      comboCount = 0;
-      const badge = document.getElementById('comboBadge');
-      if (badge) badge.style.display = 'none';
-    }
-    if (currentTab==='menu' && currentMenuSection && !uiIsBusy()) {
-      if (currentMenuSection==='streak')  renderDailyStreak();
-      if (currentMenuSection==='daily')   renderQuests();
-      if (currentMenuSection==='weekly')  renderWeeklyChallenge();
-      if (currentMenuSection==='stats')   renderStats();
-      if (currentMenuSection==='ach')     renderAchievements();
-      if (currentMenuSection==='friends') renderFriends();
-    }
-    if (currentTab==='season' && !uiIsBusy()) renderSeasonPass();
   }
 
   tickRender(now);
   renderHeader();
   updateShopBadge();
   updateEnergyUI();
-  requestAnimationFrame(tick);
 }
 
 // ── INIT ─────────────────────────────────────────────────────────
@@ -5316,6 +5769,15 @@ function applyLoaded(saved) {
   if (G.seasonExclusiveMachineUnlocked) {
     const sm = G.machines.find(m => m.id === 16);
     if (sm && !sm.owned) { sm.owned = true; sm.auto = true; }
+  }
+  // Тот же принцип для VIP-цеха: если есть право (навсегда ИЛИ ещё не
+  // истёкший месячный VIP), а цех почему-то не owned — например, VIP
+  // выдан через админку/промокод в обход buyProduct(), или это старое
+  // сохранение с purchases.vipStatus=true, сделанное ДО того, как в игре
+  // вообще появился VIP-цех (id 17) — досогласуем прямо здесь.
+  if (isVipActive()) {
+    const vm = G.machines.find(m => m.id === 17);
+    if (vm && !vm.owned) { vm.owned = true; vm.auto = true; }
   }
   // Точка отсчёта для дельта-синхронизации (см. computeDeltaSyncPayload/
   // adoptMergedSave выше) — после ЛЮБОЙ загрузки (стартовой, облачной,
@@ -5412,6 +5874,7 @@ document.getElementById('startBtn').addEventListener('click', () => {
   syncInvitedCount();
   syncPurchases();
   updateMenuBadge();
+  showBackgroundBannerAd(); // постоянный рекламный баннер — см. комментарий у функции выше
 
   // Офлайн доход
   const offlineCoins = calcOfflineIncome();
@@ -5431,6 +5894,8 @@ document.getElementById('startBtn').addEventListener('click', () => {
     if (e.target.closest('[data-action="adupgrade"]')) { adFreeUpgrade(id); return; }
     if (e.target.closest('[data-action="adopen"]'))    { adOpenMachine(id); return; }
     if (e.target.closest('[data-action="repair"]'))    { repairMachine(id); return; }
+    if (e.target.closest('[data-action="openshop"]'))  { switchTab('shop'); return; }
+    if (e.target.closest('[data-action="openseason"]')) { switchTab('season'); renderSeasonPass(); return; }
     const premBtn = e.target.closest('[data-action="buypremium"]');
     if (premBtn) { buyProduct(premBtn.dataset.product); return; }
     // Цеха больше не кликабельны напрямую — производство полностью автоматическое
