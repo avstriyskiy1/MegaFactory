@@ -1896,7 +1896,11 @@ function computeDeltaSyncPayload() {
   if (!G.deltaSyncBaseline) G.deltaSyncBaseline = {};
   const deltas = {};
   DELTA_SYNC_FIELDS.forEach(f => {
-    deltas[f] = (Number(G[f]) || 0) - (Number(G.deltaSyncBaseline[f]) || 0);
+    // Math.round — соответствующие колонки на сервере BIGINT (целые);
+    // totalPlayTimeMs копится через дробные performance.now()/dt, без
+    // округления сервер отверг бы всё сохранение с 22P02 invalid_text_
+    // representation (см. комментарий у DELTA_FIELDS в gameData.js).
+    deltas[f] = Math.round((Number(G[f]) || 0) - (Number(G.deltaSyncBaseline[f]) || 0));
   });
   return deltas;
 }
