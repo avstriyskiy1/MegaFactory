@@ -1602,7 +1602,7 @@ async function syncPurchases(retryHard) {
         } catch(e) { console.error('[IAP] Ошибка выдачи товара', p.item, e); }
       });
 
-      if (changed) { playSound('levelup'); fullRender(); saveGame(); }
+      if (changed) { playSound('levelup'); fullRender(); saveGame(); syncNow(); }
       if (ackIds.length) {
         // Подтверждение — fire-and-forget: если оно не дойдёт, сервер просто
         // пришлёт те же pending ещё раз в следующий раз, а клиент их тихо
@@ -1911,6 +1911,23 @@ function computeDeltaSyncPayload() {
 // должна считаться от того, что сервер только что подтвердил, а не от
 // того, что было у нас до отправки — иначе можно задвоить или потерять
 // чей-то вклад при следующей синхронизации.
+// Общая часть adoptMergedSave() и handleRemoteStateMerged() ниже: применяет
+// на G ВСЁ, что пришло с сервера, КРОМЕ дельта-полей и machines (у них своя,
+// более аккуратная логика слияния чуть выше/ниже по вызывающим функциям).
+// Раньше и то, и другое место брали из ответа сервера только дельта-поля и
+// machines, полностью игнорируя всё остальное (апгрейды, квесты, ачивки,
+// покупки, тему, скиллы) — это и было основной причиной, почему прогресс
+// на двух устройствах расходился: сервер теперь честно СЛИВАЕТ jsonb по
+// ключам (см. "data = saves.data || EXCLUDED.data" в saveFullState), но
+// смысла в этом ноль, если клиент результат слияния тут же выбрасывает.
+const NON_MERGE_KEYS = new Set(['machines', 'deltaSyncBaseline', 'lastSaved']);
+function applyNonDeltaFields(source) {
+  Object.keys(source).forEach(key => {
+    if (NON_MERGE_KEYS.has(key) || DELTA_SYNC_FIELDS.includes(key)) return;
+    G[key] = source[key];
+  });
+}
+
 function adoptMergedSave(merged) {
   DELTA_SYNC_FIELDS.forEach(f => { if (merged[f] !== undefined) G[f] = merged[f]; });
   if (Array.isArray(merged.machines)) {
@@ -1919,6 +1936,7 @@ function adoptMergedSave(merged) {
       if (local) { local.owned = mm.owned; local.level = mm.level; local.reward = mm.reward; local.speed = mm.speed; }
     });
   }
+  applyNonDeltaFields(merged);
   if (!G.deltaSyncBaseline) G.deltaSyncBaseline = {};
   DELTA_SYNC_FIELDS.forEach(f => { G.deltaSyncBaseline[f] = G[f]; });
 }
@@ -1966,7 +1984,15 @@ async function saveVK(state) {
     }
     let respData = null;
     try { respData = await res.json(); } catch(e) {}
-    if (respData && respData.ok && respData.save) adoptMergedSave(respData.save);
+    if (respData && respData.ok && respData.save) {
+      adoptMergedSave(respData.save);
+      // Перерисовываем: если другое устройство успело что-то поменять
+      // между нашими сохранениями, слитое состояние (см. applyNonDeltaFields
+      // выше) теперь может отличаться от того, что было на экране секунду
+      // назад — без ре-рендера игрок бы этого просто не увидел вживую.
+      localStorage.setItem(SAVE_KEY, JSON.stringify(G));
+      fullRender();
+    }
   } catch(e) { console.warn('[VK] Ошибка облачного сохранения:', e); }
 }
 
@@ -2076,6 +2102,16 @@ function handleRemoteStateMerged(cloud) {
       }
     });
   }
+  // Всё остальное (апгрейды, квесты, ачивки, покупки, тема, скиллы и т.д.)
+  // — раньше это сообщение целиком игнорировалось за пределами дельта-полей
+  // и цехов, из-за чего прогресс на двух устройствах расходился почти во
+  // всём, кроме монет. См. applyNonDeltaFields выше — сервер теперь честно
+  // сливает jsonb по ключам (см. saveFullState в gameData.js), так что
+  // применить остальное отсюда уже безопасно в подавляющем большинстве
+  // случаев (риск остаётся только если ОБА устройства правят ОДНО и то же
+  // поле в одно и то же мгновение — такой конфликт неизбежно решается в
+  // пользу того, чьё сохранение сервер обработал последним).
+  applyNonDeltaFields(cloud);
   localStorage.setItem(SAVE_KEY, JSON.stringify(G));
   fullRender();
   showToast('🔄 Прогресс обновлён с другого устройства');
@@ -2149,14 +2185,38 @@ async function saveGame() {
   G.lastSaved = Date.now();
   localStorage.setItem(SAVE_KEY, JSON.stringify(G));
   if (PLATFORM === 'vk') {
-    // В облако шлём не чаще раза в ~20с — локально сохраняется каждый раз
-    // мгновенно, а частые сетевые запросы ни к чему.
+    // Троттлинг снижен с 20с до 6с — раньше именно это и создавало
+    // ощущение "прогресс на устройствах почти никогда не совпадает":
+    // купил апгрейд на одном устройстве, а на другом ещё половину минуты
+    // видно старое состояние. 6с — разумный компромисс между "почти
+    // реалтайм" и не заваливать сервер запросами на каждый чих; для
+    // действительно срочных моментов (покупка, апгрейд, престиж) есть
+    // syncNow() — она обходит этот троттлинг почти полностью (гарантирует
+    // минимум раз в ~2с, см. ниже).
     const now = Date.now();
-    if (now - lastCloudSaveAt > 20000) {
+    if (now - lastCloudSaveAt > 6000) {
       lastCloudSaveAt = now;
       saveVK(G); // объект, НЕ JSON.stringify(G) — см. комментарий у saveVK()
     }
   }
+}
+
+// Форсированная синхронизация после КОНКРЕТНОГО значимого действия (покупка
+// цеха, апгрейд, покупка в магазине, престиж, погашение промокода, награда
+// за квест/стрик и т.п.) — а не только по общему таймеру. Раз в 30с (см.
+// saveTimer ниже) не годится, когда речь о "нажал — и это тут же видно на
+// другом устройстве": именно отсутствие такого моста после РЕАЛЬНЫХ игровых
+// событий было главной причиной ощутимого расхождения между устройствами.
+// Собственный, более короткий троттлинг (2с) — чтобы серия быстрых покупок
+// подряд не открывала по запросу на каждую, но и не задерживала последнюю
+// дольше чем на пару секунд.
+let lastSyncNowAt = 0;
+function syncNow() {
+  if (PLATFORM !== 'vk') return;
+  const now = Date.now();
+  if (now - lastSyncNowAt < 2000) return;
+  lastSyncNowAt = now;
+  forceCloudResync();
 }
 
 // Форс-сохранение в облако при сворачивании/закрытии приложения — иначе
@@ -3208,6 +3268,7 @@ function buyMachine(id) {
   renderHeader();
   updateShopBadge();
   updateMenuBadge();
+  syncNow(); // покупка цеха — значимое событие, не ждём общего таймера
 }
 
 function clickMachine(id, evt) {
@@ -3235,6 +3296,7 @@ function upgradeMachine(id) {
   playSound('upgrade');
   updateMachineCardDOM(id);
   renderHeader();
+  syncNow(); // апгрейд цеха — тоже значимое событие; внутренний троттлинг в syncNow() не даст засыпать сервер запросами при частых апгрейдах подряд
 }
 
 // ── АВТОПИЛОТ (платная функция, см. IAP 'auto_pilot') ─────────────
@@ -3474,6 +3536,7 @@ function doPrestige() {
   closePrestige();
   fullRender();
   saveGame();
+  syncNow(); // престиж — самое важное событие для sync: другое устройство должно узнать о сбросе цехов как можно быстрее (см. per-gen merge в saveFullState на сервере)
   showToast('⚡ '+t('prestigeToast')+mult.toFixed(1)+'  ·  +'+fmt(crystalsEarned)+' 💎');
 }
 
@@ -4179,6 +4242,7 @@ async function redeemPromoCode() {
       input.value = '';
       G.promoCodesRedeemed = (G.promoCodesRedeemed || 0) + 1;
       applyPromoReward(data.reward);
+      syncNow();
     } else {
       const messages = {
         not_found:              'Такого промокода не существует',
@@ -4931,6 +4995,7 @@ function claimAchievement(id) {
   renderAchievements();
   updateQuestBadge();
   saveGame();
+  syncNow();
 }
 
 // ── СТАТИСТИКА ───────────────────────────────────────────────────
@@ -5185,6 +5250,7 @@ function claimDailyReward() {
   renderDailyStreak();
   updateMenuBadge();
   saveGame();
+  syncNow();
 }
 
 // ── ОБУЧЕНИЕ ДЛЯ НОВИЧКОВ ─────────────────────────────────────────
@@ -5318,6 +5384,7 @@ function claimWeeklyChallenge() {
   renderWeeklyChallenge();
   updateMenuBadge();
   saveGame();
+  syncNow();
 }
 
 function renderWeeklyChallenge() {
@@ -5437,7 +5504,7 @@ function claimQuest(idx) {
     adFreeUpgEnd = 0;
     showToast('🎁 '+t('qrUpgrade')+'!');
   }
-  renderQuests(); updateQuestBadge(); saveGame();
+  renderQuests(); updateQuestBadge(); saveGame(); syncNow();
 }
 
 function updateMenuBadge() {
@@ -5636,7 +5703,7 @@ function tickInner(now) {
     }
   });
 
-  if(saveTimer>30000){ saveTimer=0; saveGame(); submitScoreGlobal(); syncInvitedCount(); }
+  if(saveTimer>10000){ saveTimer=0; saveGame(); submitScoreGlobal(); syncInvitedCount(); }
 
   // Золотая деталь — раз в 60с случайный цех даёт ×10
   const goldenUs = G.upgrades && G.upgrades.find(u=>u.id==='sZ');
@@ -5678,12 +5745,14 @@ function tickInner(now) {
       updateEventBanner();
       checkVipExpiry();
       if (G.purchases?.autoPilot) runAutoPilot();
-      // Раз в ~90 секунд — не чаще, это не критичный по времени процесс —
-      // форсируем облачную синхронизацию мимо обычного троттлинга (см.
-      // forceCloudResync выше). Это и есть механизм "не ждать до перезахода",
-      // если игра открыта одновременно на двух устройствах.
+      // Раньше — раз в ~90с; теперь раз в ~10с. Это ГЛАВНЫЙ канал получения
+      // чужих изменений, если на этом устройстве давно не было своих (WS
+      // приходит только когда САМО другое устройство что-то сохраняет —
+      // если оно тоже просто "висит открытым" без действий, обеим сторонам
+      // всё равно нужен периодический форс-опрос, иначе рассинхрон виден,
+      // пока кто-то не нажмёт хоть что-то).
       if (!tick.lastCloudResync) tick.lastCloudResync = now; // не в первые секунды сессии
-      if (now - tick.lastCloudResync > 90000) {
+      if (now - tick.lastCloudResync > 10000) {
         tick.lastCloudResync = now;
         forceCloudResync();
       }
