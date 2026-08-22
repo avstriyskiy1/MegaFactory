@@ -1967,6 +1967,17 @@ function deepMergeGameData(base, incoming) {
       }
       return Array.from(byId.values());
     }
+    // Массив ОБЪЕКТОВ без поля id (например, старый формат заданий
+    // сезонного пропуска) — множество по object-ссылкам НЕ дедуплицирует:
+    // Set сравнивает объекты по ссылке, а не по содержимому, так что даже
+    // структурно одинаковые объекты из base и incoming считаются разными
+    // элементами и просто копятся при каждом слиянии (баг: "вечный список
+    // из повторяющихся заданий, за каждое из которых можно получить
+    // награду"). Безопасный дефолт для этого случая — просто взять входящее
+    // целиком, без накопления дублей.
+    if (sample && typeof sample === 'object') return incoming;
+    // Массив ПРИМИТИВОВ (например, claimedOrderIds) — тут Set по значению
+    // работает верно, объединяем без дублей.
     return Array.from(new Set([...base, ...incoming]));
   }
   if (typeof base === 'object' && typeof incoming === 'object' && !Array.isArray(base) && !Array.isArray(incoming)) {
@@ -2916,13 +2927,34 @@ function lifetimeMetric(type) {
   }[type] || 0;
 }
 
-function makeSeasonQuest(type, scale) {
-  return { type, startVal: lifetimeMetric(type), target: Math.max(1, Math.round(questTarget(type) * scale)), claimed:false };
+function makeSeasonQuest(id, type, scale) {
+  return { id, type, startVal: lifetimeMetric(type), target: Math.max(1, Math.round(questTarget(type) * scale)), claimed:false };
 }
 
 function seasonQuestProgress(q) {
   if (!q) return 0;
   return Math.max(0, lifetimeMetric(q.type) - q.startVal);
+}
+
+// Схлопывает уже накопившиеся дубли в списке (см. подробный разбор бага у
+// deepMergeGameData: объекты заданий сезонного пропуска раньше создавались
+// БЕЗ поля id, из-за чего merge между устройствами копил дубли при каждой
+// синхронизации вместо слияния — "вечный список из повторяющихся заданий").
+// Вызывается на КАЖДОМ ensureSeasonQuests(), поэтому уже испорченные у
+// игроков сохранения самовосстановятся при следующей же загрузке, без
+// необходимости что-либо сбрасывать вручную. Дедуп по id, если он есть
+// (новые записи), иначе по типу (старые задания без id, гарантированно
+// оставшиеся от бага) — оставляем выполненную копию, если такая есть.
+function dedupeSeasonQuestList(list, maxSlots) {
+  if (!Array.isArray(list)) return [];
+  const seen = new Map();
+  for (const q of list) {
+    if (!q || !q.type) continue;
+    const key = q.id !== undefined ? `id:${q.id}` : `type:${q.type}`;
+    const existing = seen.get(key);
+    if (!existing || (q.claimed && !existing.claimed)) seen.set(key, q);
+  }
+  return Array.from(seen.values()).slice(0, maxSlots);
 }
 
 function ensureSeasonQuests() {
@@ -2938,20 +2970,23 @@ function ensureSeasonQuests() {
   }
   if (!sq.weekly) sq.weekly = { list:[], resetAt:0 };
   if (!Array.isArray(sq.weekly.list)) sq.weekly.list = [];
+  // Само-восстановление от бага дублирования — см. dedupeSeasonQuestList.
+  sq.daily.list  = dedupeSeasonQuestList(sq.daily.list,  SEASON_DAILY_SLOTS);
+  sq.weekly.list = dedupeSeasonQuestList(sq.weekly.list, SEASON_WEEKLY_SLOTS);
   const now = Date.now();
 
   if (now >= (sq.daily.resetAt||0)) {
-    sq.daily.list = pickRandom(SEASON_QUEST_TYPES, SEASON_DAILY_SLOTS).map(type => makeSeasonQuest(type, 0.6));
+    sq.daily.list = pickRandom(SEASON_QUEST_TYPES, SEASON_DAILY_SLOTS).map((type,i) => makeSeasonQuest(i, type, 0.6));
     sq.daily.resetAt = now + 24*60*60*1000;
   }
   if (now >= (sq.weekly.resetAt||0)) {
-    sq.weekly.list = pickRandom(SEASON_QUEST_TYPES, SEASON_WEEKLY_SLOTS).map(type => makeSeasonQuest(type, 3.5));
+    sq.weekly.list = pickRandom(SEASON_QUEST_TYPES, SEASON_WEEKLY_SLOTS).map((type,i) => makeSeasonQuest(i, type, 3.5));
     sq.weekly.resetAt = now + 7*24*60*60*1000;
   }
   // Сезонное задание живёт весь сезон — обновляется не по таймеру, а когда
   // реально сменился номер сезона (см. ensureSeasonFresh выше).
   if (sq.seasonal.seasonIndex !== G.seasonIndex) {
-    sq.seasonal.quest = makeSeasonQuest(pickRandom(SEASON_QUEST_TYPES, 1)[0], 12);
+    sq.seasonal.quest = makeSeasonQuest(0, pickRandom(SEASON_QUEST_TYPES, 1)[0], 12);
     sq.seasonal.seasonIndex = G.seasonIndex;
   }
 }
