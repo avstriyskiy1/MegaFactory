@@ -2002,7 +2002,13 @@ function adoptMergedSave(merged) {
   if (Array.isArray(merged.machines)) {
     merged.machines.forEach(mm => {
       const local = G.machines.find(m => m.id === mm.id);
-      if (local) { local.owned = mm.owned; local.level = mm.level; local.reward = mm.reward; local.speed = mm.speed; }
+      if (!local) return;
+      // owned только через OR — та же защита, что и в handleRemoteStateMerged
+      // ниже (см. подробный разбор бага там же): сервер и так должен
+      // присылать owned корректно объединённым (OR в самом SQL), но
+      // никогда не отбираем владение локально, что бы ни пришло.
+      local.owned = local.owned || mm.owned;
+      local.level = mm.level; local.reward = mm.reward; local.speed = mm.speed;
     });
   }
   applyNonDeltaFields(merged);
@@ -2161,13 +2167,20 @@ function handleRemoteStateMerged(cloud) {
   if (Array.isArray(cloud.machines)) {
     cloud.machines.forEach(mm => {
       const local = G.machines.find(m => m.id === mm.id);
-      // Не откатываем локальный уровень назад, если он почему-то уже выше
-      // пришедшего (например, апгрейд случился именно в эту секунду, ещё
-      // не долетев до сервера) — берём максимум, а не слепо то, что пришло.
-      if (local && Number(mm.level) >= Number(local.level)) {
-        local.owned = mm.owned; local.level = mm.level; local.reward = mm.reward; local.speed = mm.speed;
-      } else if (local) {
-        local.owned = local.owned || mm.owned;
+      if (!local) return;
+      // БАГ, который привёл к "покупка цеха сразу откатывается обратно":
+      // раньше решение "доверять ли входящему owned" принималось по
+      // сравнению level (mm.level >= local.level) — но level НЕ меняется
+      // в момент покупки (остаётся 1 что до, что после), поэтому устаревший
+      // снимок с owned:false (сделанный ДО покупки) проходил эту проверку
+      // как "не старее" и безусловно перезаписывал local.owned обратно на
+      // false. owned теперь ТОЛЬКО через OR — купленный цех никогда не
+      // может быть отобран входящим (устаревшим) сообщением, что бы там ни
+      // было с level. level/reward/speed по-прежнему берём у той версии,
+      // что не старше (не путаем level одной сессии с reward другой).
+      local.owned = local.owned || mm.owned;
+      if (Number(mm.level) >= Number(local.level)) {
+        local.level = mm.level; local.reward = mm.reward; local.speed = mm.speed;
       }
     });
   }
