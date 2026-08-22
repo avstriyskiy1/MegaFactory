@@ -240,34 +240,47 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
 @keyframes achTilePulse{0%,100%{box-shadow:0 0 0 0 rgba(255,255,255,0);}50%{box-shadow:0 0 0 4px var(--tier);}}
 
 /* Сезонный пропуск */
-.season-summary{background:linear-gradient(135deg,rgba(62,201,255,.08),rgba(123,47,247,.06));border:1px solid rgba(62,201,255,.25);border-radius:10px;padding:14px;margin-bottom:12px;text-align:center;}
-.season-level-row{display:flex;align-items:center;gap:10px;margin:10px 0 8px;}
-.season-level-badge{flex-shrink:0;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#000;font-weight:800;font-size:12px;padding:7px 10px;border-radius:8px;white-space:nowrap;}
-.season-level-bar-wrap{position:relative;flex:1;height:22px;background:var(--bg3);border-radius:11px;overflow:hidden;border:1px solid var(--border);}
-.season-level-bar{position:absolute;top:0;left:0;bottom:0;background:linear-gradient(90deg,#3ec9ff,#7b2ff7);transition:width .3s;}
+.season-summary{position:relative;background:linear-gradient(135deg,rgba(62,201,255,.10),rgba(123,47,247,.08));border:1px solid rgba(62,201,255,.3);border-radius:14px;padding:16px;margin-bottom:14px;text-align:center;overflow:hidden;}
+.season-summary::before{content:'';position:absolute;top:-40%;left:-10%;width:60%;height:180%;background:radial-gradient(circle,rgba(62,201,255,.15),transparent 70%);pointer-events:none;}
+.season-title{font-size:18px;font-weight:800;color:var(--accent);letter-spacing:.01em;position:relative;}
+.season-sub{font-size:12px;color:var(--muted);margin:4px 0 12px;position:relative;}
+.season-level-row{display:flex;align-items:center;gap:10px;margin:10px 0 10px;position:relative;}
+.season-level-badge{flex-shrink:0;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#000;font-weight:800;font-size:13px;padding:8px 12px;border-radius:10px;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.25);}
+.season-level-bar-wrap{position:relative;flex:1;height:24px;background:var(--bg3);border-radius:12px;overflow:hidden;border:1px solid var(--border);}
+.season-level-bar{position:absolute;top:0;left:0;bottom:0;background:linear-gradient(90deg,#3ec9ff,#7b2ff7);transition:width .3s;box-shadow:0 0 10px rgba(62,201,255,.5) inset;}
 .season-level-bar-label{position:relative;z-index:1;height:100%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.7);white-space:nowrap;padding:0 4px;}
+.season-next-reward{display:flex;align-items:center;gap:8px;justify-content:center;font-size:11px;color:var(--muted);background:rgba(0,0,0,.15);border-radius:20px;padding:6px 12px;margin:0 0 10px;position:relative;}
+.season-next-reward b{color:var(--text);font-weight:700;}
 .season-subtabs{display:flex;gap:8px;margin:2px 0 10px;}
 .season-subtab{flex:1;padding:9px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--muted);font-family:'Exo 2',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;}
 .season-subtab.active{border-color:#3ec9ff;color:#3ec9ff;background:rgba(62,201,255,.08);}
 .season-block-title{font-size:12px;font-weight:600;color:var(--muted);letter-spacing:.02em;margin:14px 0 8px;}
-.season-title{font-size:16px;font-weight:700;color:var(--accent);}
-.season-sub{font-size:12px;color:var(--muted);margin:4px 0 10px;}
-.season-premium-badge{font-size:12px;font-weight:600;color:#3ec9ff;background:rgba(62,201,255,.1);border:1px solid rgba(62,201,255,.3);border-radius:20px;padding:6px 12px;display:inline-block;}
-.season-track{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:8px 10px;}
-.season-track-hdr{display:flex;font-size:11px;color:var(--muted);padding:4px 4px 8px;font-weight:600;}
+.season-premium-badge{font-size:12px;font-weight:600;color:#3ec9ff;background:rgba(62,201,255,.1);border:1px solid rgba(62,201,255,.3);border-radius:20px;padding:6px 12px;display:inline-block;position:relative;}
+.season-track{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:6px;}
+.season-track-hdr{display:flex;font-size:11px;color:var(--muted);padding:6px 6px 10px;font-weight:700;letter-spacing:.02em;}
 .season-track-hdr span{flex:1;text-align:center;}
-.season-track-hdr span:first-child{flex:0 0 26px;}
-.season-tier-row{display:flex;align-items:center;gap:6px;padding:5px 0;border-top:1px solid var(--border);}
-.season-tier-row:first-child{border-top:none;}
-.season-tier-num{flex:0 0 26px;text-align:center;font-size:12px;font-weight:700;color:var(--muted);}
-.season-tier-row.unlocked .season-tier-num{color:var(--teal);}
-.season-cell{flex:1;display:flex;align-items:center;justify-content:center;padding:8px 4px;border-radius:8px;background:var(--bg3);font-size:11px;font-weight:600;cursor:pointer;opacity:.4;text-align:center;transition:opacity .15s,transform .1s;}
+.season-track-hdr span:first-child{flex:0 0 34px;}
+.season-tier-row{display:flex;align-items:center;gap:8px;padding:6px;border-radius:10px;margin:3px 0;background:transparent;transition:background .15s;}
+.season-tier-row.unlocked{background:rgba(0,201,167,.05);}
+.season-tier-row.current{background:rgba(255,215,106,.08);box-shadow:0 0 0 1px rgba(255,215,106,.35) inset;}
+.season-tier-num{flex:0 0 34px;height:34px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:var(--bg3);font-size:12px;font-weight:800;color:var(--muted);border:1px solid var(--border);}
+.season-tier-row.unlocked .season-tier-num{color:#000;background:linear-gradient(135deg,var(--teal),#00c9a7);border-color:var(--teal);}
+.season-tier-row.current .season-tier-num{background:linear-gradient(135deg,#ffd76a,#ffb700);border-color:#ffd76a;color:#2a1e00;}
+.season-cell{flex:1;display:flex;align-items:center;justify-content:center;gap:2px;padding:9px 4px;border-radius:9px;background:var(--bg3);font-size:11px;font-weight:700;cursor:pointer;opacity:.42;text-align:center;transition:opacity .15s,transform .1s;border:1px solid transparent;}
 .season-cell:active{transform:scale(0.95);}
-.season-cell.ready{opacity:1;background:rgba(0,201,167,.12);border:1px solid var(--teal);color:var(--teal);}
+.season-cell.ready{opacity:1;background:rgba(0,201,167,.14);border-color:var(--teal);color:var(--teal);box-shadow:0 0 10px rgba(0,201,167,.25);animation:seasonCellReady 1.6s ease-in-out infinite;}
+@keyframes seasonCellReady{0%,100%{box-shadow:0 0 6px rgba(0,201,167,.2);}50%{box-shadow:0 0 14px rgba(0,201,167,.5);}}
 .season-cell.claimed{opacity:.5;background:rgba(255,255,255,.03);}
-.season-cell.locked-premium{opacity:.3;cursor:default;}
-.season-cell.exclusive{border:1px solid #ffd76a;background:rgba(255,215,106,.1);font-weight:700;color:#ffd76a;}
+.season-cell.locked-premium{opacity:.32;cursor:default;}
+.season-cell.exclusive{border-color:#ffd76a;background:rgba(255,215,106,.12);font-weight:800;color:#ffd76a;}
+.season-cell.exclusive.ready{animation:seasonCellExclusive 1.6s ease-in-out infinite;}
+@keyframes seasonCellExclusive{0%,100%{box-shadow:0 0 6px rgba(255,215,106,.25);}50%{box-shadow:0 0 16px rgba(255,215,106,.6);}}
 .season-cell.exclusive.claimed{opacity:.6;}
+.season-quest-group-hdr{font-size:11px;font-weight:700;letter-spacing:.03em;color:var(--muted);margin:14px 2px 8px;text-transform:uppercase;}
+.season-quest-group-hdr:first-child{margin-top:2px;}
+.season-quest-card.kind-daily{border-left:3px solid #3ec9ff;}
+.season-quest-card.kind-weekly{border-left:3px solid #ff8a3e;}
+.season-quest-card.kind-seasonal{border-left:3px solid #ffd76a;background:linear-gradient(90deg,rgba(255,215,106,.06),transparent);}
 
 /* DAILY STREAK */
 .streak-desc{font-size:12px;color:var(--muted);text-align:center;padding:4px 0 10px;}
@@ -1111,6 +1124,8 @@ const I18N = {
     qtUpgrade:{name:'Инженер',      desc:'Сделай {n} апгрейдов', icon:'⬆️'},
     qtBuy:    {name:'Расширение',   desc:'Купи {n} цехов',       icon:'🏭'},
     qtAd:     {name:'Рекламщик',    desc:'Посмотри {n} рекламу', icon:'📺'},
+    qtRepair: {name:'Механик',      desc:'Почини {n} слом. цехов', icon:'🔧'},
+    qtPackage:{name:'Кладоискатель',desc:'Забери {n} посылок',   icon:'📦'},
     qrCoins:'монет', qrBoost:'Буст ×2 на 30 мин', qrUpgrade:'Бесплатный апгрейд',
   }
 };
@@ -1890,6 +1905,13 @@ const DELTA_SYNC_FIELDS = [
   // двух устройствах мог потерять единицу счётчика. Как дельта-поле он
   // теперь суммируется атомарно на сервере, как coins.
   'prestigeCount', 'totalPlayTimeMs',
+  // Для новых заданий сезонного пропуска (qtRepair/qtPackage) — как и
+  // остальные lifetime-счётчики выше, должны быть консистентны МЕЖДУ
+  // устройствами: прогресс задания считается как "текущее значение минус
+  // снимок на момент выдачи задания" (см. seasonQuestProgress), и если
+  // почини на одном устройстве не долетит до другого дельтой — там задание
+  // никогда не засчитается выполненным.
+  'lifetimeRepairs', 'lifetimePackages',
 ];
 
 function computeDeltaSyncPayload() {
@@ -1917,14 +1939,50 @@ function computeDeltaSyncPayload() {
 // Раньше и то, и другое место брали из ответа сервера только дельта-поля и
 // machines, полностью игнорируя всё остальное (апгрейды, квесты, ачивки,
 // покупки, тему, скиллы) — это и было основной причиной, почему прогресс
-// на двух устройствах расходился: сервер теперь честно СЛИВАЕТ jsonb по
-// ключам (см. "data = saves.data || EXCLUDED.data" в saveFullState), но
-// смысла в этом ноль, если клиент результат слияния тут же выбрасывает.
+// на двух устройствах расходился. Сервер теперь честно СЛИВАЕТ jsonb
+// рекурсивно и типобезопасно (см. deepMergeGameData в src/gameData.js), и
+// applyNonDeltaFields ниже делает РОВНО ТО ЖЕ САМОЕ слияние на клиенте
+// (той же функцией, см. deepMergeGameData сразу под NON_MERGE_KEYS), а не
+// слепую замену — иначе входящее WS-сообщение с чужого устройства могло бы
+// затереть локальный прогресс, который только что произошёл, но ещё не
+// успел уйти на сервер.
 const NON_MERGE_KEYS = new Set(['machines', 'deltaSyncBaseline', 'lastSaved']);
+
+// Тот же типобезопасный глубокий merge, что и на сервере (см.
+// deepMergeGameData в src/gameData.js — правила там расписаны подробно:
+// числа → max, булевы → OR, массивы объектов с id → слияние по id,
+// массивы примитивов → объединение множеств, остальное → входящее).
+function deepMergeGameData(base, incoming) {
+  if (incoming === undefined) return base;
+  if (base === undefined || base === null) return incoming;
+  if (incoming === null) return base;
+  if (typeof base === 'number' && typeof incoming === 'number') return Math.max(base, incoming);
+  if (typeof base === 'boolean' && typeof incoming === 'boolean') return base || incoming;
+  if (Array.isArray(base) && Array.isArray(incoming)) {
+    const sample = incoming[0] ?? base[0];
+    if (sample && typeof sample === 'object' && 'id' in sample) {
+      const byId = new Map(base.map(x => [x.id, x]));
+      for (const item of incoming) {
+        byId.set(item.id, byId.has(item.id) ? deepMergeGameData(byId.get(item.id), item) : item);
+      }
+      return Array.from(byId.values());
+    }
+    return Array.from(new Set([...base, ...incoming]));
+  }
+  if (typeof base === 'object' && typeof incoming === 'object' && !Array.isArray(base) && !Array.isArray(incoming)) {
+    const out = { ...base };
+    for (const key of Object.keys(incoming)) {
+      out[key] = key in base ? deepMergeGameData(base[key], incoming[key]) : incoming[key];
+    }
+    return out;
+  }
+  return incoming;
+}
+
 function applyNonDeltaFields(source) {
   Object.keys(source).forEach(key => {
     if (NON_MERGE_KEYS.has(key) || DELTA_SYNC_FIELDS.includes(key)) return;
-    G[key] = source[key];
+    G[key] = (key in G) ? deepMergeGameData(G[key], source[key]) : source[key];
   });
 }
 
@@ -2658,6 +2716,7 @@ function repairMachine(id) {
   const cost = repairCost(id);
   if (G.coins < cost) return;
   G.coins -= cost;
+  G.lifetimeRepairs = (G.lifetimeRepairs || 0) + 1; // для сезонного задания qtRepair
   clearBreakdown();
   showToast('🔧 Починено!');
   playSound('buy');
@@ -2683,6 +2742,7 @@ function triggerPackage(now) {
 function claimPackage() {
   if (!packageDrop) return;
   G.coins += packageDrop.bonus;
+  G.lifetimePackages = (G.lifetimePackages || 0) + 1; // для сезонного задания qtPackage
   showToast(`📦 +${fmt(packageDrop.bonus)} монет!`);
   playSound('levelup');
   packageDrop = null;
@@ -2789,12 +2849,16 @@ function seasonTierUnlocked(tier) {
 // открытия уровня.
 function seasonFreeReward(tier) {
   const coins = Math.max(150, Math.round(cps() * (30 + tier * 18)));
-  const crystal = (tier % 5 === 0) ? Math.round(tier / 5) : 0;
+  // "Огранка кристаллов" (skillBonus('crystal_gain')) применяется и тут —
+  // см. комментарий у calcPrestigeCrystals(), почему сам престиж теперь
+  // фиксирован, а этот навык переехал на другие источники кристаллов.
+  const crystal = (tier % 5 === 0) ? Math.round(tier / 5 * (1 + skillBonus('crystal_gain'))) : 0;
   return { coins, crystal };
 }
 function seasonPremiumReward(tier) {
   const coins = Math.max(300, Math.round(cps() * (60 + tier * 30)));
-  const crystal = (tier % 5 === 0) ? Math.round(tier / 5) * 2 : (tier % 3 === 0 ? 1 : 0);
+  const crystalBase = (tier % 5 === 0) ? Math.round(tier / 5) * 2 : (tier % 3 === 0 ? 1 : 0);
+  const crystal = Math.round(crystalBase * (1 + skillBonus('crystal_gain')));
   // Эксклюзивы премиум-трека — то, чего нет ни за деньги напрямую, ни на
   // бесплатном треке: на 10 уровне тема оформления, на макс. (15) —
   // отдельный цех. Оба остаются навсегда, даже после того как сезон
@@ -2806,22 +2870,37 @@ function seasonPremiumReward(tier) {
 }
 
 // ── ЗАДАНИЯ СЕЗОННОГО ПРОПУСКА ──────────────────────────────────────
-// Отдельные от обычных ежедневных заданий и недельного испытания — свои
-// ежедневные (2 шт, 24ч), своё еженедельное (7 дней) и одно сезонное
-// (на весь 14-дневный сезон целиком). Награда — только очки сезона (SP),
-// не монеты: монеты игрок и так получает с обычных заданий, тут отдельная
-// прогрессия специально под трек сезона.
+// Свои ежедневные (3 шт, 24ч), свои еженедельные (2 шт, 7 дней) и одно
+// сезонное (на весь 14-дневный сезон целиком) — отдельные от обычных
+// ежедневных заданий и недельного испытания. Награда — только очки сезона
+// (SP), не монеты: монеты игрок и так получает с обычных заданий, тут
+// отдельная прогрессия специально под трек сезона.
+//
+// Пул типов ШИРЕ, чем у обычных ежедневных заданий (см. SEASON_QUEST_TYPES
+// ниже — 8 типов вместо 6 у QUEST_TYPES): помимо всех обычных типов,
+// добавлены qtRepair (почини сломанный цех) и qtPackage (забери случайную
+// посылку) — оба завязаны на уже существующие случайные события
+// (см. maybeTriggerRandomEvent), просто раньше их прогресс никуда не
+// засчитывался. Слотов стало больше (3 ежедневных вместо 2, 2 еженедельных
+// вместо 1) — БОЛЬШЕ разнообразия и заметнее список заданий, — но общий
+// бюджет очков в день/неделю НЕ вырос (даже чуть меньше, см. SEASON_QUEST_SP
+// ниже): 3×5=15 вместо 2×8=16 в день, 2×17=34 вместо 1×35 в неделю. Так
+// повышать уровень пропуска не стало легче — прогресс приходится набирать
+// из большего числа разных источников, а не будто бы "бесплатно" получать
+// больше очков суммарно.
 //
 // Прогресс считается не через отдельные session-счётчики (как у обычных
 // daily/weekly), а как разница между ТЕКУЩИМ lifetime-показателем и его
 // значением в момент выдачи задания (startVal) — это позволяет не заводить
-// ещё три копии счётчиков-сессий и их сброса, а просто переиспользовать уже
+// ещё копии счётчиков-сессий и их сброса, а просто переиспользовать уже
 // существующие lifetime-метрики (G.sold, G.lifetimeCoins и т.д.).
 // (использует QUEST_TYPES напрямую, а не через отдельный алиас-константу —
 // та объявлена ниже по файлу, и обращение к ней с верхнего уровня до её
 // объявления валило TDZ-ошибкой; обращение изнутри функций ниже безопасно,
 // так как эти функции вызываются намного позже полной загрузки скрипта).
-const SEASON_QUEST_SP = { daily: 8, weekly: 35, seasonal: 120 };
+const SEASON_QUEST_SP = { daily: 5, weekly: 17, seasonal: 120 };
+const SEASON_DAILY_SLOTS  = 3;
+const SEASON_WEEKLY_SLOTS = 2;
 
 function lifetimeMetric(type) {
   return {
@@ -2831,6 +2910,9 @@ function lifetimeMetric(type) {
     qtUpgrade: G.lifetimeUpgrades || 0,
     qtBuy:     G.lifetimeBuys     || 0,
     qtAd:      G.lifetimeAds      || 0,
+    // Новые типы — только для сезонного пропуска (см. SEASON_QUEST_TYPES).
+    qtRepair:  G.lifetimeRepairs  || 0,
+    qtPackage: G.lifetimePackages || 0,
   }[type] || 0;
 }
 
@@ -2845,22 +2927,31 @@ function seasonQuestProgress(q) {
 
 function ensureSeasonQuests() {
   ensureSeasonFresh();
-  if (!G.seasonQuests) G.seasonQuests = { daily:{list:[],resetAt:0}, weekly:{quest:null,resetAt:0}, seasonal:{quest:null,seasonIndex:null} };
+  if (!G.seasonQuests) G.seasonQuests = { daily:{list:[],resetAt:0}, weekly:{list:[],resetAt:0}, seasonal:{quest:null,seasonIndex:null} };
   const sq = G.seasonQuests;
+  // Миграция старого формата: раньше был один quest в sq.weekly.quest,
+  // а не массив sq.weekly.list — конвертируем при первой встрече, иначе
+  // у уже играющих потеряется текущий недельный прогресс сезона.
+  if (sq.weekly && sq.weekly.quest !== undefined && !Array.isArray(sq.weekly.list)) {
+    sq.weekly.list = sq.weekly.quest ? [sq.weekly.quest] : [];
+    delete sq.weekly.quest;
+  }
+  if (!sq.weekly) sq.weekly = { list:[], resetAt:0 };
+  if (!Array.isArray(sq.weekly.list)) sq.weekly.list = [];
   const now = Date.now();
 
   if (now >= (sq.daily.resetAt||0)) {
-    sq.daily.list = pickRandom(QUEST_TYPES, 2).map(type => makeSeasonQuest(type, 0.6));
+    sq.daily.list = pickRandom(SEASON_QUEST_TYPES, SEASON_DAILY_SLOTS).map(type => makeSeasonQuest(type, 0.6));
     sq.daily.resetAt = now + 24*60*60*1000;
   }
   if (now >= (sq.weekly.resetAt||0)) {
-    sq.weekly.quest = makeSeasonQuest(pickRandom(QUEST_TYPES, 1)[0], 3.5);
+    sq.weekly.list = pickRandom(SEASON_QUEST_TYPES, SEASON_WEEKLY_SLOTS).map(type => makeSeasonQuest(type, 3.5));
     sq.weekly.resetAt = now + 7*24*60*60*1000;
   }
   // Сезонное задание живёт весь сезон — обновляется не по таймеру, а когда
   // реально сменился номер сезона (см. ensureSeasonFresh выше).
   if (sq.seasonal.seasonIndex !== G.seasonIndex) {
-    sq.seasonal.quest = makeSeasonQuest(pickRandom(QUEST_TYPES, 1)[0], 12);
+    sq.seasonal.quest = makeSeasonQuest(pickRandom(SEASON_QUEST_TYPES, 1)[0], 12);
     sq.seasonal.seasonIndex = G.seasonIndex;
   }
 }
@@ -2868,7 +2959,7 @@ function ensureSeasonQuests() {
 function claimSeasonQuest(kind, idx) {
   ensureSeasonQuests();
   const sq = G.seasonQuests;
-  const q = kind === 'daily' ? sq.daily.list[idx] : kind === 'weekly' ? sq.weekly.quest : sq.seasonal.quest;
+  const q = kind === 'daily' ? sq.daily.list[idx] : kind === 'weekly' ? sq.weekly.list[idx] : sq.seasonal.quest;
   if (!q || q.claimed) return;
   if (seasonQuestProgress(q) < q.target) return;
   q.claimed = true;
@@ -2889,13 +2980,13 @@ function seasonQuestCardHtml(label, q, kind, idx) {
   const pct = Math.min(100, Math.round(progress/q.target*100));
   const done = progress >= q.target;
   const sp = SEASON_QUEST_SP[kind] || 0;
-  return `<div class="quest-card ${q.claimed?'claimed':done?'done':''}">
+  return `<div class="quest-card season-quest-card kind-${kind} ${q.claimed?'claimed':done?'done':''}">
     <div class="quest-head">
       <div class="quest-icon">${qt.icon}</div>
       <div class="quest-info">
-        <div class="quest-name">${label} · ${qt.name}</div>
+        <div class="quest-name">${qt.name}</div>
         <div class="quest-desc">${qt.desc.replace('{n}', fmt(q.target))}</div>
-        <div class="quest-reward">🎫 +${sp} очков сезона</div>
+        <div class="quest-reward">🎫 +${sp}</div>
       </div>
     </div>
     <div class="quest-progress">
@@ -2913,8 +3004,11 @@ function renderSeasonQuests() {
   const el = document.getElementById('seasonQuestsList');
   if (!el) return;
   const sq = G.seasonQuests;
-  let html = sq.daily.list.map((q,i) => seasonQuestCardHtml('Ежедневное', q, 'daily', i)).join('');
-  html += seasonQuestCardHtml('Еженедельное', sq.weekly.quest, 'weekly', 0);
+  let html = `<div class="season-quest-group-hdr">📅 Ежедневные</div>`;
+  html += sq.daily.list.map((q,i) => seasonQuestCardHtml('Ежедневное', q, 'daily', i)).join('');
+  html += `<div class="season-quest-group-hdr">🗓️ Еженедельные</div>`;
+  html += sq.weekly.list.map((q,i) => seasonQuestCardHtml('Еженедельное', q, 'weekly', i)).join('');
+  html += `<div class="season-quest-group-hdr">🏆 Сезонное</div>`;
   html += seasonQuestCardHtml('Сезонное', sq.seasonal.quest, 'seasonal', 0);
   el.innerHTML = html;
 }
@@ -2981,9 +3075,21 @@ function renderSeasonPass() {
   const segPct    = isMax ? 100 : Math.min(100, Math.round((sp - prevNeed) / (nextNeed - prevNeed) * 100));
 
   if (summary) {
+    // Превью следующей награды — что конкретно получит игрок на следующем
+    // уровне (по обеим веткам, если премиум активен) — раньше полоса
+    // прогресса просто показывала числа без контекста, ради чего они.
+    let nextPreview = '';
+    if (!isMax) {
+      const freeR = seasonFreeReward(nextTier);
+      const premR = hasPremium ? seasonPremiumReward(nextTier) : null;
+      const freeStr = `💰${fmt(freeR.coins)}${freeR.crystal?` 💎${freeR.crystal}`:''}`;
+      const premStr = premR ? ` <span style="color:#ffd76a">+ ${premR.exclusive ? premR.exclusive.label+' ' : ''}💰${fmt(premR.coins)}${premR.crystal?` 💎${premR.crystal}`:''}✨</span>` : '';
+      nextPreview = `<div class="season-next-reward">Дальше: <b>${freeStr}</b>${premStr}</div>`;
+    }
     summary.innerHTML = `
       <div class="season-title">🎫 Сезон ${seasonNumber(G.seasonIndex)}</div>
       <div class="season-sub">Осталось ${daysLeft} дн.</div>
+      ${nextPreview}
       <div class="season-level-row">
         <div class="season-level-badge">Ур. ${curTier}</div>
         <div class="season-level-bar-wrap">
@@ -3008,12 +3114,16 @@ function renderSeasonPass() {
 
     const freeCellClass = freeClaimed ? 'claimed' : (unlocked ? 'ready' : '');
     const premCellClass = (premClaimed ? 'claimed' : (!hasPremium ? 'locked-premium' : (unlocked ? 'ready' : ''))) + (isExclusiveTier ? ' exclusive' : '');
+    // Подсветка "прямо сейчас работаешь над этим" — первый ещё не
+    // разблокированный уровень (= nextTier), чтобы в длинном списке из 15
+    // строк взгляд сразу падал на актуальную цель, а не терялся.
+    const isCurrentGoal = !unlocked && tier === nextTier;
 
     const premText = premClaimed
       ? (isExclusiveTier ? `✓ ${premR.exclusive.type==='theme'?'🎖️':'🏆'}` : '✓')
       : `${hasPremium?'':'🔒 '}${isExclusiveTier ? premR.exclusive.label + ' + ' : ''}💰${fmt(premR.coins)}${premR.crystal?` 💎${premR.crystal}`:''}`;
 
-    rows.push(`<div class="season-tier-row${unlocked?' unlocked':''}">
+    rows.push(`<div class="season-tier-row${unlocked?' unlocked':''}${isCurrentGoal?' current':''}">
       <div class="season-tier-num">${tier}</div>
       <div class="season-cell ${freeCellClass}" onclick="claimSeasonTier(${tier},'free')">
         ${freeClaimed ? '✓' : `💰${fmt(freeR.coins)}${freeR.crystal?` 💎${freeR.crystal}`:''}`}
@@ -3023,7 +3133,7 @@ function renderSeasonPass() {
       </div>
     </div>`);
   }
-  list.innerHTML = `<div class="season-track-hdr"><span>Уровень</span><span>Бесплатно</span><span>Премиум ${hasPremium?'✨':'🔒'}</span></div>` + rows.join('');
+  list.innerHTML = `<div class="season-track-hdr"><span>Ур.</span><span>Бесплатно</span><span>Премиум ${hasPremium?'✨':'🔒'}</span></div>` + rows.join('');
   switchSeasonSubtab(seasonSubtab); // применяем видимость вкладок Задания/Награды и после перерисовки
 }
 
@@ -3119,6 +3229,8 @@ function defaultState() {
     coins:0, sold:0, prestigeMult:1.0, prestigeCount:0,
     clickMult: 1, offlineMult: 1, goldenTimer: 0,
     lifetimeCoins: 0, lifetimeClicks: 0, lifetimeAds: 0,
+    lifetimeRepairs: 0,   // сколько раз чинил сломанный цех — для нового задания сезонного пропуска (qtRepair)
+    lifetimePackages: 0,  // сколько раз забирал случайную посылку — для нового задания сезонного пропуска (qtPackage)
     energy: 100, energyMaxBonus: 0, energyRegenBonus: 0, clickValueMult: 1,
     achievements: {},
     myRefCode: null, friendsInvited: 0, referredBy: null,
@@ -3237,18 +3349,22 @@ function prestigeThreshold() {
   return Math.round(base * (1 - skillBonus('prestige_thresh')));
 }
 
-// Кристаллы за престиж: база растёт вместе с числом уже сделанных престижей
-// (2 + 1.5×номер), а не выдаётся сразу пачкой с первого раза — иначе первый
-// же престиж (ещё без вложений в навыки) ощущается слишком щедрым.
-// sqrt(coins/thr) — бонус за то, что подождал сверх минимального порога.
+// Кристаллы за престиж — ФИКСИРОВАННОЕ количество, независимо ни от каких
+// факторов (число уже сделанных престижей, накопленные монеты, скиллы).
+// Раньше формула была: base = 2 + prestigeCount*1.5 (росло без ограничений
+// с каждым следующим престижем) умноженное на waitBonus = sqrt(монеты/порог)
+// (до ×5) — то есть чем дольше копить монеты ПОСЛЕ того, как порог уже
+// открыт, тем больше кристаллов давал престиж. Это самая настоящая дыра в
+// экономике: оптимальная стратегия — не престижиться сразу по готовности, а
+// откладывать это на как можно дольше, копя монеты сверх порога, чтобы
+// выжать больше кристаллов из каждого престижа. Плюс сама база росла с
+// prestigeCount без потолка, так что чем дальше в игру, тем сильнее
+// перекос. Теперь — простое фиксированное число, престиж даёт ровно
+// PRESTIGE_CRYSTALS_REWARD кристаллов всегда, никакого смысла тянуть или
+// хитрить с накоплением монет ради лишних кристаллов больше нет.
+const PRESTIGE_CRYSTALS_REWARD = 5;
 function calcPrestigeCrystals() {
-  const base = 2 + G.prestigeCount * 1.5;
-  // Бонус за то, что подождал сверх порога — но с потолком! Без него, если
-  // накопить монет намного больше порога (офлайн-доход, поздние цеха,
-  // промокоды), sqrt всё равно даёт огромное число — баг, который давал
-  // сотни тысяч кристаллов за один престиж.
-  const waitBonus = Math.min(5, Math.sqrt(G.coins / prestigeThreshold()));
-  return Math.max(1, Math.floor(base * waitBonus * (1 + skillBonus('crystal_gain'))));
+  return PRESTIGE_CRYSTALS_REWARD;
 }
 
 // ── ACTIONS ─────────────────────────────────────────────────────
@@ -3477,7 +3593,22 @@ function doPrestige() {
   const seasonExclusiveThemeUnlocked = G.seasonExclusiveThemeUnlocked;
   const vipExpiresAt = G.vipExpiresAt; // месячный VIP переживает престиж как обычная покупка — только цех/улучшения пересоздаются
   const totalPlayTimeMs = G.totalPlayTimeMs;
+  // КРИТИЧНО: deltaSyncBaseline — точка отсчёта для дельта-синхронизации
+  // (см. computeDeltaSyncPayload) — должна пережить сброс `G = defaultState()`
+  // ниже, а не обнулиться вместе с остальным состоянием. Иначе для coins
+  // получается: локальный баланс упал до 0 (сброшен престижем), а baseline
+  // ТОЖЕ упал до 0 — следующая дельта считается как 0-0=0 вместо
+  // "было 5 000 000 → стало 0" (0 - 5000000 = -5000000), и серверу просто
+  // никогда не сообщается, что баланс обнулился. Первое же входящее
+  // состояние с сервера (у которого по-прежнему лежит старая накопленная
+  // сумма) тут же возвращало эти деньги обратно — вот и "после престижа
+  // почему-то сразу появляется 5 миллионов". Сохраняя старый baseline как
+  // есть, следующая дельта для coins/sold (единственные два поля, которые
+  // престиж реально обнуляет, а не переносит) корректно получится большой
+  // отрицательной — то, что и должно уйти на сервер.
+  const deltaSyncBaseline = G.deltaSyncBaseline;
   G = defaultState();
+  G.deltaSyncBaseline = deltaSyncBaseline;
   G.prestigeMult   = mult;
   G.prestigeCount  = cnt;
   G.purchases      = purchases;
@@ -4805,7 +4936,7 @@ function renderSettingsPanel() {
 const SKILLS_DEF = [
   { id:'prod_mult',      branch:'prod', name:'Оптимизация цехов',   icon:'🏭', desc:'+8% ко всему доходу',        maxLevel:12, baseCost:5,  costMult:1.35, perLevel:0.08 },
   { id:'prestige_thresh',branch:'prestige', name:'Быстрый рестарт', icon:'⏱️', desc:'-4% к порогу престижа',       maxLevel:10, baseCost:8,  costMult:1.4,  perLevel:0.04 },
-  { id:'crystal_gain',   branch:'prestige', name:'Огранка кристаллов', icon:'💎', desc:'+15% кристаллов за престиж', maxLevel:8,  baseCost:10, costMult:1.5,  perLevel:0.15 },
+  { id:'crystal_gain',   branch:'prestige', name:'Огранка кристаллов', icon:'💎', desc:'+15% кристаллов из испытаний и пропуска', maxLevel:8,  baseCost:10, costMult:1.5,  perLevel:0.15 },
   { id:'energy_regen',   branch:'utility', name:'Второе дыхание',   icon:'🔋', desc:'+0.2 энергии/сек',            maxLevel:8,  baseCost:5,  costMult:1.35, perLevel:0.2  },
   { id:'offline_boost',  branch:'utility', name:'Автопилот завода',  icon:'🌙', desc:'+20% офлайн-дохода',          maxLevel:6,  baseCost:6,  costMult:1.4,  perLevel:0.2  },
   { id:'click_power',    branch:'utility', name:'Твёрдая рука',     icon:'👆', desc:'+25% силы клика',             maxLevel:8,  baseCost:5,  costMult:1.35, perLevel:0.25 },
@@ -5374,7 +5505,11 @@ function claimWeeklyChallenge() {
   G.weeklyCompleted = (G.weeklyCompleted||0) + 1;
   addSeasonSP(25);
   const coins    = Math.max(1000, Math.round(cps() * 100));
-  const crystals = 5;
+  // "Огранка кристаллов" (см. SKILLS_DEF, id crystal_gain) применяется
+  // здесь, а не к престижу (тот теперь фиксирован — см. calcPrestigeCrystals) —
+  // это фиксированная награда за фиксированное действие раз в неделю,
+  // без риска эксплойта вроде "накопи побольше и получи больше".
+  const crystals = Math.round(5 * (1 + skillBonus('crystal_gain')));
   G.coins += coins;
   G.crystals = (G.crystals||0) + crystals;
   G.lifetimeCrystals = (G.lifetimeCrystals||0) + crystals;
@@ -5404,6 +5539,11 @@ function renderWeeklyChallenge() {
 
 // ── ЕЖЕДНЕВНЫЕ ЗАДАНИЯ ───────────────────────────────────────────
 const QUEST_TYPES = ['qtProduce','qtClick','qtCoins','qtUpgrade','qtBuy','qtAd'];
+// Сезонный пропуск использует более широкий пул типов, чем обычные
+// ежедневные задания (см. ensureSeasonQuests выше) — добавление
+// qtRepair/qtPackage сюда НЕ трогает баланс обычных daily-заданий, они
+// продолжают выбираться только из QUEST_TYPES.
+const SEASON_QUEST_TYPES = [...QUEST_TYPES, 'qtRepair', 'qtPackage'];
 
 function questTarget(type) {
   return {
@@ -5413,6 +5553,12 @@ function questTarget(type) {
     qtUpgrade: Math.max(3,   G.prestigeCount + 3),
     qtBuy:     1,
     qtAd:      3,
+    // Ниже — типы, которых нет в обычных ежедневных заданиях (см. QUEST_TYPES
+    // выше), а есть только в расширенном пуле сезонного пропуска (см.
+    // SEASON_QUEST_TYPES) — обычные задания их никогда не запрашивают, так
+    // что добавление сюда не меняет баланс обычных daily-заданий.
+    qtRepair:  1, // почини сломанный цех — редкое случайное событие (см. maybeTriggerRandomEvent), поэтому база такая же скромная, как у qtBuy
+    qtPackage: 1, // забери случайную посылку — тоже редкое событие, та же логика
   }[type] || 10;
 }
 
@@ -5531,7 +5677,7 @@ function updateMenuBadge() {
     if (sq) {
       const questReady = q => q && !q.claimed && seasonQuestProgress(q) >= q.target;
       if (sq.daily.list.some(questReady)) return true;
-      if (questReady(sq.weekly.quest)) return true;
+      if (sq.weekly.list && sq.weekly.list.some(questReady)) return true;
       if (questReady(sq.seasonal.quest)) return true;
     }
     return false;
