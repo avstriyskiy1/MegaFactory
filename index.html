@@ -2003,12 +2003,19 @@ function adoptMergedSave(merged) {
     merged.machines.forEach(mm => {
       const local = G.machines.find(m => m.id === mm.id);
       if (!local) return;
-      // owned только через OR — та же защита, что и в handleRemoteStateMerged
-      // ниже (см. подробный разбор бага там же): сервер и так должен
-      // присылать owned корректно объединённым (OR в самом SQL), но
-      // никогда не отбираем владение локально, что бы ни пришло.
+      // "Апгрейд цеха почти сразу слетает обратно на 1 лвл": эта функция
+      // раньше применяла level/reward/speed от сервера БЕЗУСЛОВНО (в отличие
+      // от handleRemoteStateMerged ниже, где такая защита уже была). Если
+      // ответ сервера на save-game по любой причине пришёл с более низким
+      // level, чем только что стало локально (гонка запросов, отставшее
+      // "поколение" gen и т.п.) — локальный, только что оплаченный апгрейд
+      // стирался. Теперь то же правило, что и в handleRemoteStateMerged:
+      // owned только через OR, level/reward/speed — только если пришедшее
+      // не меньше локального.
       local.owned = local.owned || mm.owned;
-      local.level = mm.level; local.reward = mm.reward; local.speed = mm.speed;
+      if (Number(mm.level) >= Number(local.level)) {
+        local.level = mm.level; local.reward = mm.reward; local.speed = mm.speed;
+      }
     });
   }
   applyNonDeltaFields(merged);
