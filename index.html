@@ -181,8 +181,15 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
 .privacy-modal-header{flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;padding:10px 14px;padding-top:calc(10px + env(safe-area-inset-top,0px));background:var(--bg2);border-bottom:1px solid var(--border);}
 .privacy-modal-title{font-family:'Russo One',sans-serif;font-size:14px;color:var(--text);}
 .privacy-modal-close{flex:0 0 auto;background:var(--accent);border:none;color:#000;font-weight:700;font-size:14px;padding:8px 16px;border-radius:6px;cursor:pointer;}
-.privacy-modal-body{flex:1 1 auto;background:#fff;}
-.privacy-modal-body iframe{width:100%;height:100%;border:0;display:block;}
+.privacy-modal-body{flex:1 1 auto;background:var(--bg2);overflow-y:auto;-webkit-overflow-scrolling:touch;}
+.privacy-modal-content{max-width:640px;margin:0 auto;padding:20px 18px 40px;color:var(--text);font-family:'Exo 2',sans-serif;font-size:14px;line-height:1.65;}
+.privacy-modal-content h1{font-family:'Russo One',sans-serif;font-size:19px;color:var(--accent);margin:0 0 6px;}
+.privacy-modal-content h2{font-family:'Russo One',sans-serif;font-size:15px;color:var(--accent);margin:22px 0 8px;}
+.privacy-modal-content p, .privacy-modal-content li{color:var(--muted);}
+.privacy-modal-content ul{margin:0 0 12px;padding-left:20px;}
+.privacy-modal-content li{margin-bottom:6px;}
+.privacy-modal-content a{color:var(--teal);}
+.privacy-modal-content .updated{color:var(--muted);font-size:12px;margin-bottom:18px;}
 /* OFFLINE MODAL */
 .offline-modal { text-align:center; }
 .offline-icon { font-size:52px; margin-bottom:8px; }
@@ -509,18 +516,56 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
   <a href="#" onclick="openPrivacyModal();return false;" style="margin-top:20px;font-size:11px;color:var(--muted);text-decoration:underline">Политика конфиденциальности</a>
 </div>
 
-<!-- Политика конфиденциальности показывается ВНУТРИ игры (модалка + iframe),
-     а не через target="_blank": в мобильном WebView клиента VK такая ссылка
-     часто просто заменяет фрейм игры без возможности вернуться назад — это
-     и было причиной отказа модерации. Кнопка "Назад" в шапке модалки видна
-     всегда и не зависит от содержимого iframe. -->
+<!-- Политика конфиденциальности показывается ВНУТРИ игры (текст прямо в
+     модалке, без iframe и без внешнего сайта): раньше грузили через
+     target="_blank" — на мобильном WebView клиента VK это заменяло фрейм
+     игры без возможности вернуться назад (причина отказа модерации).
+     Пробовали чинить через iframe на GitHub Pages, но он давал белый
+     экран на части устройств. Текст ниже — не зависит от сети и всегда
+     доступен, кнопка "Назад" в шапке видна всегда. -->
 <div class="privacy-modal-overlay" id="privacyModal">
   <div class="privacy-modal-header">
     <span class="privacy-modal-title">Политика конфиденциальности</span>
     <button class="privacy-modal-close" onclick="closePrivacyModal()">← Назад в игру</button>
   </div>
   <div class="privacy-modal-body">
-    <iframe id="privacyIframe" src="" title="Политика конфиденциальности"></iframe>
+    <div class="privacy-modal-content">
+      <h1>Политика конфиденциальности MegaFactory</h1>
+      <div class="updated">Последнее обновление: 04.08.2026</div>
+      <p>Это мини-приложение (игра «MegaFactory») работает внутри платформы ВКонтакте. Ниже описано, какие данные собираются в процессе игры и для чего они используются.</p>
+
+      <h2>Какие данные мы получаем</h2>
+      <p>При запуске игры платформа ВКонтакте передаёт приложению:</p>
+      <ul>
+        <li>Ваш идентификатор пользователя VK (vk_user_id) — техническое число, не имя и не контакты;</li>
+        <li>Технические параметры запуска (платформа, язык интерфейса) — стандартно передаются платформой VK всем мини-приложениям.</li>
+      </ul>
+      <p>Мы не запрашиваем и не получаем доступ к вашему имени, фотографии, списку друзей, переписке или другим личным данным профиля ВКонтакте, кроме идентификатора пользователя.</p>
+
+      <h2>Для чего используются данные</h2>
+      <ul>
+        <li><b>Синхронизация прогресса</b> — ваш игровой прогресс (уровни цехов, монеты, достижения и т.д.) сохраняется на сервере и привязывается к вашему vk_user_id, чтобы прогресс не терялся и был доступен на любом устройстве, где вы заходите в игру под своим VK-аккаунтом.</li>
+        <li><b>Общий рейтинг игроков</b> — если вы соглашаетесь участвовать в рейтинге, ваш результат передаётся во внутренний игровой рейтинг VK (через официальный метод VK <code>secure.addAppEvent</code>) и виден другим игрокам как часть таблицы лидеров.</li>
+        <li><b>Приглашения друзей</b> — при переходе по реферальной ссылке мы записываем факт приглашения (кто кого пригласил), чтобы честно начислить бонус пригласившему игроку.</li>
+        <li><b>Промокоды</b> — при активации промокода мы запоминаем, что именно этот vk_user_id уже использовал этот код, чтобы его нельзя было активировать повторно.</li>
+        <li><b>Покупки</b> — при оплате внутриигровых предметов через VK Pay идентификатор пользователя используется для того, чтобы подтвердить оплату и выдать купленный предмет именно вам.</li>
+      </ul>
+
+      <h2>Где хранятся данные</h2>
+      <p>Данные хранятся на серверах Cloudflare (сервис Cloudflare Workers KV) — техническом провайдере инфраструктуры игры. Данные не продаются и не передаются третьим лицам в рекламных или иных целях, кроме случаев, когда это требуется самой платформой VK для работы её сервисов (рейтинг, платежи).</p>
+
+      <h2>Реклама</h2>
+      <p>Если вы смотрите рекламные ролики за игровые бонусы, показ рекламы осуществляется через встроенный рекламный SDK самой платформы VK (<code>VKWebAppShowNativeAds</code>). Обработка данных в рамках показа рекламы регулируется политикой конфиденциальности самой платформы ВКонтакте: <a href="https://vk.com/privacy" target="_blank" rel="noopener">vk.com/privacy</a>.</p>
+
+      <h2>Хранение и удаление данных</h2>
+      <p>Данные хранятся, пока вы играете в приложение. Чтобы запросить удаление своих данных (игрового прогресса и связанной с ним информации), напишите нам: <a href="https://vk.com/a.avstriyskiy" target="_blank" rel="noopener">vk.com/a.avstriyskiy</a>.</p>
+
+      <h2>Изменения политики</h2>
+      <p>Мы можем время от времени обновлять эту страницу. Дата последнего обновления указана в начале документа.</p>
+
+      <h2>Связь с нами</h2>
+      <p>По любым вопросам о хранении и обработке данных: <a href="https://vk.com/a.avstriyskiy" target="_blank" rel="noopener">vk.com/a.avstriyskiy</a>.</p>
+    </div>
   </div>
 </div>
 
@@ -3673,14 +3718,14 @@ function closePrestige() {
   const modal = document.getElementById('prestigeModal');
   if (modal) modal.classList.remove('show');
 }
-// Политика конфиденциальности открывается ВНУТРИ игры (модалка + iframe),
-// а не через target="_blank" — см. комментарий у разметки #privacyModal.
-// src у iframe выставляется только при открытии (лениво), чтобы страница
-// не грузилась зря при каждом запуске игры.
+// Политика конфиденциальности открывается ВНУТРИ игры (модалка с текстом,
+// без iframe) — см. комментарий у разметки #privacyModal. Раньше пробовали
+// через iframe на внешний GitHub Pages, но на части устройств он давал
+// белый экран (сторонний сайт не всегда рендерится во вложенном iframe
+// внутри мобильного WebView VK) — поэтому текст политики продублирован
+// прямо в разметке ниже и грузится без сети и без внешних зависимостей.
 function openPrivacyModal() {
   const modal = document.getElementById('privacyModal');
-  const iframe = document.getElementById('privacyIframe');
-  if (iframe && !iframe.src) iframe.src = 'https://avstriyskiy1.github.io/privacy/';
   if (modal) modal.classList.add('show');
 }
 function closePrivacyModal() {
