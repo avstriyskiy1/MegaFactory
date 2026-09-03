@@ -172,6 +172,17 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
 .btn-modal{padding:10px 28px;border-radius:4px;font-family:'Exo 2',sans-serif;font-size:14px;cursor:pointer;transition:all .15s;}
 .btn-modal.primary{background:var(--accent);border:none;color:#000;font-weight:700;}
 .btn-modal.secondary{background:transparent;border:1px solid var(--border);color:var(--muted);}
+/* PRIVACY MODAL: открывается ВНУТРИ игры (iframe), а не отдельной вкладкой/
+   навигацией — именно так, чтобы пользователь физически не покидал фрейм
+   игры и кнопка "Назад" была видна всегда, независимо от того, что
+   происходит внутри iframe (это и было причиной отказа модерации). */
+.privacy-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:200;display:flex;flex-direction:column;opacity:0;pointer-events:none;transition:opacity .2s;}
+.privacy-modal-overlay.show{opacity:1;pointer-events:all;}
+.privacy-modal-header{flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;padding:10px 14px;padding-top:calc(10px + env(safe-area-inset-top,0px));background:var(--bg2);border-bottom:1px solid var(--border);}
+.privacy-modal-title{font-family:'Russo One',sans-serif;font-size:14px;color:var(--text);}
+.privacy-modal-close{flex:0 0 auto;background:var(--accent);border:none;color:#000;font-weight:700;font-size:14px;padding:8px 16px;border-radius:6px;cursor:pointer;}
+.privacy-modal-body{flex:1 1 auto;background:#fff;}
+.privacy-modal-body iframe{width:100%;height:100%;border:0;display:block;}
 /* OFFLINE MODAL */
 .offline-modal { text-align:center; }
 .offline-icon { font-size:52px; margin-bottom:8px; }
@@ -495,7 +506,22 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
   <button class="splash-btn" id="startBtn" style="display:none">▶ НАЧАТЬ</button>
   <div id="sdkLoading" style="margin-top:36px;font-size:14px;color:var(--muted);letter-spacing:2px">⏳ Ищем облачное сохранение...</div>
   <div class="splash-save-note" id="saveNote"></div>
-  <a href="https://avstriyskiy1.github.io/privacy/" target="_blank" rel="noopener" style="margin-top:20px;font-size:11px;color:var(--muted);text-decoration:underline">Политика конфиденциальности</a>
+  <a href="#" onclick="openPrivacyModal();return false;" style="margin-top:20px;font-size:11px;color:var(--muted);text-decoration:underline">Политика конфиденциальности</a>
+</div>
+
+<!-- Политика конфиденциальности показывается ВНУТРИ игры (модалка + iframe),
+     а не через target="_blank": в мобильном WebView клиента VK такая ссылка
+     часто просто заменяет фрейм игры без возможности вернуться назад — это
+     и было причиной отказа модерации. Кнопка "Назад" в шапке модалки видна
+     всегда и не зависит от содержимого iframe. -->
+<div class="privacy-modal-overlay" id="privacyModal">
+  <div class="privacy-modal-header">
+    <span class="privacy-modal-title">Политика конфиденциальности</span>
+    <button class="privacy-modal-close" onclick="closePrivacyModal()">← Назад в игру</button>
+  </div>
+  <div class="privacy-modal-body">
+    <iframe id="privacyIframe" src="" title="Политика конфиденциальности"></iframe>
+  </div>
 </div>
 
 <div class="milestone-toast" id="toast"></div>
@@ -3645,6 +3671,20 @@ function openPrestige() {
 }
 function closePrestige() {
   const modal = document.getElementById('prestigeModal');
+  if (modal) modal.classList.remove('show');
+}
+// Политика конфиденциальности открывается ВНУТРИ игры (модалка + iframe),
+// а не через target="_blank" — см. комментарий у разметки #privacyModal.
+// src у iframe выставляется только при открытии (лениво), чтобы страница
+// не грузилась зря при каждом запуске игры.
+function openPrivacyModal() {
+  const modal = document.getElementById('privacyModal');
+  const iframe = document.getElementById('privacyIframe');
+  if (iframe && !iframe.src) iframe.src = 'https://avstriyskiy1.github.io/privacy/';
+  if (modal) modal.classList.add('show');
+}
+function closePrivacyModal() {
+  const modal = document.getElementById('privacyModal');
   if (modal) modal.classList.remove('show');
 }
 function doPrestige() {
