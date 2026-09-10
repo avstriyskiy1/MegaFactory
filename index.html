@@ -675,6 +675,12 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
           <button class="btn-ad" id="adBtn" onclick="showRewardedAd()">▶ Смотреть рекламу</button>
           <div class="ad-cooldown" id="adCooldown"></div>
         </div>
+        <div class="ad-box" style="margin-top:8px">
+          <div class="ad-title">🎁 Рекламный сундук</div>
+          <div class="ad-desc">Раз в несколько часов — ролик за случайную награду: монеты, кристаллы, а иногда и джекпот</div>
+          <button class="btn-ad" id="adChestBtn" onclick="openAdChest()">🎁 Открыть сундук</button>
+          <div class="ad-cooldown" id="adChestCooldown"></div>
+        </div>
         <div class="machines-grid" id="machinesGrid"></div>
       </div>
       <div class="tab-pane" id="pane-shop">
@@ -2061,9 +2067,47 @@ function deepMergeGameData(base, incoming) {
   return incoming;
 }
 
+// Поля сезонного пропуска, которые НЕЛЬЗЯ мержить обычным deepMergeGameData
+// (см. SEASON_KEYS ниже и объяснение в applyNonDeltaFields) — вынесено
+// отдельным списком, чтобы не разъезжалось с тем, что реально резолвит
+// ensureSeasonFresh() при смене сезона.
+const SEASON_KEYS = [
+  'seasonIndex', 'seasonSP', 'seasonFreeClaimed', 'seasonPremiumClaimed',
+  'seasonPremiumForIndex', 'seasonQuests',
+];
+
 function applyNonDeltaFields(source) {
+  // БАГ "боевой пропуск не обнуляется после конца сезона": обычный
+  // deepMergeGameData берёт Math.max() для чисел и объединение (union) для
+  // массивов примитивов — это верное правило для большинства полей, но не
+  // для сезонных: seasonSP считается ВНУТРИ текущего сезона, а
+  // seasonFreeClaimed/seasonPremiumClaimed — это списки уровней, уже
+  // забранных ИМЕННО в текущем сезоне. Если приходит source из сохранения,
+  // которое ещё не видело смену сезона (например, устройство давно не
+  // синхронизировалось, или порядок сетевых ответов на save/load
+  // переставился), общий мерж брал Math.max(0, старыхSP) → старые очки
+  // "воскресали" поверх уже честно сброшенного ensureSeasonFresh() числа, а
+  // union списков claimed возвращал уже заявленные в прошлом сезоне уровни
+  // обратно в список — визуально "пропуск как будто не сбросился". Поэтому
+  // сезонные поля мержим отдельно: сравниваем seasonIndex явно и берём
+  // состояние сезона ЦЕЛИКОМ от той стороны, чей сезон свежее, не смешивая
+  // поля старого и нового сезона между собой. Мержим по обычным правилам
+  // только если seasonIndex у обеих сторон совпадает (два сохранения одного
+  // и того же текущего сезона — тут обычный merge корректен).
+  if (source && typeof source.seasonIndex === 'number') {
+    if (typeof G.seasonIndex !== 'number' || source.seasonIndex > G.seasonIndex) {
+      SEASON_KEYS.forEach(k => { if (source[k] !== undefined) G[k] = source[k]; });
+    } else if (source.seasonIndex === G.seasonIndex) {
+      SEASON_KEYS.forEach(k => {
+        if (source[k] === undefined) return;
+        G[k] = (k in G) ? deepMergeGameData(G[k], source[k]) : source[k];
+      });
+    }
+    // source.seasonIndex < G.seasonIndex — источник из уже закончившегося
+    // сезона, игнорируем его сезонные поля целиком, оставляем G как есть.
+  }
   Object.keys(source).forEach(key => {
-    if (NON_MERGE_KEYS.has(key) || DELTA_SYNC_FIELDS.includes(key)) return;
+    if (NON_MERGE_KEYS.has(key) || DELTA_SYNC_FIELDS.includes(key) || SEASON_KEYS.includes(key)) return;
     G[key] = (key in G) ? deepMergeGameData(G[key], source[key]) : source[key];
   });
 }
@@ -2465,6 +2509,19 @@ let adFreeUpgEnd = 0; // когда снова доступен бесплатн
 
 function canFreeUpgrade() { return Date.now() >= adFreeUpgEnd; }
 
+// "Будим" рекламный SDK VK заранее, ещё до первого тапа игрока — просто
+// проверка готовности (ничего не показывает), которая по наблюдению VK
+// ускоряет фоновую подгрузку следующего ролика. Снижает шанс того, что
+// requestNativeAd() вообще придётся ждать/ретраить при первом реальном
+// показе за сессию. Повторяем не слишком часто (раз в минуту) — это не
+// показ рекламы, а просто "прощупывание" готовности.
+function warmUpRewardedAd() {
+  if (PLATFORM !== 'vk' || !vkReady) return;
+  const ping = () => { vkBridge.send('VKWebAppCheckNativeAds', { ad_format: 'reward' }).catch(()=>{}); };
+  ping();
+  setInterval(ping, 60000);
+}
+
 async function adOpenMachine(id) {
   const m = getMachine(id), d = getDef(id);
   if (m.owned) return;
@@ -2501,24 +2558,57 @@ async function adFreeShopUpg(id) {
   });
 }
 
+// ── ПОКАЗ РЕКЛАМЫ (reward) — общая функция с догрузкой/ретраями ──────────
+// БАГ "реклама не всегда включается с первой попытки": раньше showRewardedAd
+// и watchAdThen сразу звали VKWebAppShowNativeAds и при ЛЮБОЙ ошибке решали,
+// что рекламы "нет". По факту чаще всего причина не в отсутствии рекламы
+// вообще, а в том, что клиент VK ещё не успел ПРЕДЗАГРУЗИТЬ ролик к моменту
+// тапа — особенно на первом за сессию показе. Отсюда и характерная картина
+// "с первого раза не сработало, подождал — и следующий тап уже работает".
+// VKWebAppCheckNativeAds существует ровно для этого случая — проверяет
+// готовность, ничего не показывая. Если реклама ещё не готова, даём ей
+// несколько секунд на подгрузку и тихо повторяем проверку сами, вместо того
+// чтобы сразу сдаваться и заставлять игрока тыкать кнопку заново вручную.
+const AD_RETRY_DELAYS = [400, 1200, 2500]; // мс между попытками — суммарно ~4с
+function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+async function requestNativeAd() {
+  if (PLATFORM !== 'vk' || !vkReady) return { ok: true, simulated: true }; // локальный режим — симуляция у вызывающего кода
+  for (let attempt = 0; attempt <= AD_RETRY_DELAYS.length; attempt++) {
+    try {
+      // Проверка готовности дешевле неудачного показа (не тратит "показ" и
+      // не откатывает игрока в состояние "закрыл рекламу без просмотра").
+      const check = await vkBridge.send('VKWebAppCheckNativeAds', { ad_format: 'reward' });
+      if (check && check.result) {
+        const res = await vkBridge.send('VKWebAppShowNativeAds', { ad_format: 'reward' });
+        return { ok: !!res.result, declined: !res.result };
+      }
+    } catch (e) {
+      // VKWebAppCheckNativeAds сам может быть недоступен в части клиентов —
+      // не считаем это фатальным, пробуем показ напрямую как раньше.
+      try {
+        const res = await vkBridge.send('VKWebAppShowNativeAds', { ad_format: 'reward' });
+        return { ok: !!res.result, declined: !res.result };
+      } catch (e2) { /* не готово — подождём и попробуем ещё раз ниже */ }
+    }
+    if (attempt < AD_RETRY_DELAYS.length) await wait(AD_RETRY_DELAYS[attempt]);
+  }
+  return { ok: false, declined: false }; // так и не подгрузилась за отведённое время — это техническая недоступность, не отказ игрока
+}
+
 // Универсальная обёртка: показывает рекламу и вызывает callback при успехе
 async function watchAdThen(callback) {
-  if (PLATFORM === 'vk' && vkReady) {
-    try {
-      const res = await vkBridge.send('VKWebAppShowNativeAds', { ad_format: 'reward' });
-      if (res.result) callback();
-      else showToast(t('toastAdUnavail'));
-    } catch(e) { showToast(t('toastAdUnavail')); }
-  } else {
-    callback(); // локальная симуляция
-  }
+  const { ok, simulated } = await requestNativeAd();
+  if (simulated || ok) callback();
+  else showToast(t('toastAdUnavail'));
 }
 
 // ── ФОНОВЫЙ БАННЕР (постоянная реклама) ─────────────────────────────
 // В отличие от showRewardedAd()/VKWebAppShowNativeAds выше (реклама по
 // запросу игрока за награду), это отдельный формат VK Bridge —
-// VKWebAppShowBannerAd — постоянно закреплённая полоска с рекламой снизу
-// экрана, которая просто висит весь сеанс и не требует действий игрока.
+// VKWebAppShowBannerAd — постоянно закреплённая полоска с рекламой сверху
+// экрана (banner_location:'top'), которая просто висит весь сеанс и не
+// требует действий игрока.
 // Показываем один раз при входе в игру (после сплэша) и просто оставляем
 // висеть — прятать её нет смысла, это фоновая монетизация, а не
 // разовое взаимодействие.
@@ -2539,9 +2629,9 @@ async function showBackgroundBannerAd() {
     // layout_type:'resize' — просит клиент VK подвинуть/сжать вьюпорт под
     // баннер сам, без наложения поверх интерфейса игры (никаких доп.
     // отступов подгонять на своей стороне не нужно). banner_location —
-    // снизу экрана, чтобы не спорить с шапкой игры (монеты/энергия) сверху.
+    // сверху экрана, как и просили: постоянная реклама в верхней области игры.
     const res = await vkBridge.send('VKWebAppShowBannerAd', {
-      banner_location: 'bottom',
+      banner_location: 'top',
       layout_type: 'resize',
     });
     if (res && res.result !== false) bannerAdShown = true;
@@ -3002,17 +3092,97 @@ function seasonFreeReward(tier) {
   const crystal = (tier % 5 === 0) ? Math.round(tier / 5 * (1 + skillBonus('crystal_gain'))) : 0;
   return { coins, crystal };
 }
+// ── ЭКСКЛЮЗИВНЫЕ НАГРАДЫ ПРЕМИУМ-ТРЕКА (тема на 10 ур., цех на 15 ур.) ──
+// РАНЬШЕ это были ДВА ФИКСИРОВАННЫХ предмета — одна и та же тема и один и
+// тот же цех КАЖДЫЙ сезон, привязанные к простым булевым флагам
+// (seasonExclusiveThemeUnlocked/seasonExclusiveMachineUnlocked). Из-за этого
+// начиная со второго сезона верхние уровни премиум-трека давали "уже
+// открыто" и по факту ничего нового (см. exclusiveGranted в claimSeasonTier
+// ниже — флаг просто не срабатывал повторно) — жаловались, что "награды
+// повторяются", хотя технически они просто переставали хоть что-то давать.
+// Теперь это НЕБОЛЬШОЙ ПУЛ визуально разных вариантов — каждый сезон выдаёт
+// следующий по кругу. Если игрок такой вариант ещё не собирал — это
+// полноценно новый предмет (тема добавляется в список доступных, цех
+// получает новый визуальный скин). Если вариант уже был собран в прошлый
+// раз (пул исчерпан и пошёл по новому кругу) — начисляем небольшую
+// компенсацию кристаллами, чтобы верхний уровень трека не ощущался пустым
+// даже тогда. Легаси-флаги seasonExclusive*Unlocked НЕ удалены — держим их
+// живыми синхронно с новыми списками, т.к. admin.js/admin.html (см.
+// REWARD_TYPES.themeChampion/seasonExclusiveMachine) читают их напрямую из
+// сохранения для отображения в админке.
+const SEASON_EXCLUSIVE_THEMES = [
+  { id:'champion',         name:'Чемпион сезона',      icon:'🎖️', vars:{ '--accent':'#ffd76a', '--accent2':'#c9a000', '--teal':'#7fffb0' } },
+  { id:'champion_violet',  name:'Полуночный чемпион',  icon:'🔮', vars:{ '--accent':'#c07bff', '--accent2':'#5b1fa8', '--teal':'#7fd6ff' } },
+  { id:'champion_emerald', name:'Изумрудный чемпион',  icon:'💚', vars:{ '--accent':'#33e6a0', '--accent2':'#0f8a5f', '--teal':'#c9ffb0' } },
+  { id:'champion_crimson', name:'Багровый чемпион',    icon:'🔴', vars:{ '--accent':'#ff5c4d', '--accent2':'#9c0d0d', '--teal':'#ffb37f' } },
+];
+const SEASON_EXCLUSIVE_MACHINE_SKINS = [
+  { id:'s_gold',   name:'Сезонный цех: Голд',   emoji:'🎖️' },
+  { id:'s_aurora', name:'Сезонный цех: Аврора', emoji:'🌌' },
+  { id:'s_magma',  name:'Сезонный цех: Магма',  emoji:'🌋' },
+  { id:'s_storm',  name:'Сезонный цех: Шторм',  emoji:'⚡' },
+];
+function seasonExclusiveThemeForIndex(idx) {
+  const i = ((idx % SEASON_EXCLUSIVE_THEMES.length) + SEASON_EXCLUSIVE_THEMES.length) % SEASON_EXCLUSIVE_THEMES.length;
+  return SEASON_EXCLUSIVE_THEMES[i];
+}
+function seasonExclusiveMachineSkinForIndex(idx) {
+  const i = ((idx % SEASON_EXCLUSIVE_MACHINE_SKINS.length) + SEASON_EXCLUSIVE_MACHINE_SKINS.length) % SEASON_EXCLUSIVE_MACHINE_SKINS.length;
+  return SEASON_EXCLUSIVE_MACHINE_SKINS[i];
+}
+// Возвращает true, если это НОВЫЙ для игрока вариант (стоит праздновать),
+// false — если такой уже был собран раньше (компенсацию начисляет вызывающий код).
+function grantSeasonExclusiveTheme(themeId) {
+  if (!Array.isArray(G.seasonExclusiveThemesOwned)) G.seasonExclusiveThemesOwned = [];
+  G.seasonExclusiveThemeUnlocked = true; // легаси-флаг для админки — см. комментарий выше
+  if (G.seasonExclusiveThemesOwned.includes(themeId)) return false;
+  G.seasonExclusiveThemesOwned.push(themeId);
+  return true;
+}
+function grantSeasonExclusiveMachineSkin(skinId) {
+  if (!Array.isArray(G.seasonExclusiveMachineSkinsOwned)) G.seasonExclusiveMachineSkinsOwned = [];
+  G.seasonExclusiveMachineUnlocked = true; // легаси-флаг для админки
+  const m = getMachine(16);
+  const firstTimeMachine = !m.owned;
+  m.owned = true; m.auto = true;
+  const skin = SEASON_EXCLUSIVE_MACHINE_SKINS.find(s => s.id === skinId) || SEASON_EXCLUSIVE_MACHINE_SKINS[0];
+  // Имя/эмодзи цеха хранятся в MACHINES_DEF (см. getDef), а не в самом m —
+  // рендер карточки берёт их оттуда, поэтому "переодеваем" именно def.
+  const d = getDef(16);
+  if (d) { d.name = skin.name; d.emoji = skin.emoji; }
+  if (firstTimeMachine) {
+    // Тот же принцип расчёта силы, что и у Секретной лаборатории — сила
+    // считается от текущей экономики игрока в момент получения, а не
+    // фиксированным числом.
+    const ref = getMachine(9);
+    const refDps = ref.owned ? (ref.reward / ref.speed * 1000) : (baseCps() * 0.3 || 5);
+    m.reward = Math.max(50, Math.round(refDps * (m.speed / 1000) * 2.2));
+  }
+  const isNewSkin = !G.seasonExclusiveMachineSkinsOwned.includes(skinId);
+  if (isNewSkin) G.seasonExclusiveMachineSkinsOwned.push(skinId);
+  return firstTimeMachine || isNewSkin;
+}
+
 function seasonPremiumReward(tier) {
   const coins = Math.max(300, Math.round(cps() * (60 + tier * 30)));
   const crystalBase = (tier % 5 === 0) ? Math.round(tier / 5) * 2 : (tier % 3 === 0 ? 1 : 0);
   const crystal = Math.round(crystalBase * (1 + skillBonus('crystal_gain')));
   // Эксклюзивы премиум-трека — то, чего нет ни за деньги напрямую, ни на
   // бесплатном треке: на 10 уровне тема оформления, на макс. (15) —
-  // отдельный цех. Оба остаются навсегда, даже после того как сезон
-  // закончится (как и положено наградам боевого пропуска).
+  // скин отдельного цеха. Какой именно вариант из пула — зависит от номера
+  // ТЕКУЩЕГО сезона (G.seasonIndex), поэтому от сезона к сезону предмет
+  // меняется, а не повторяется один и тот же (см. пул выше). Раз полученный
+  // вариант остаётся навсегда, даже после того как сезон закончится — как и
+  // положено наградам боевого пропуска.
   let exclusive = null;
-  if (tier === 10) exclusive = { type:'theme', flag:'seasonExclusiveThemeUnlocked', label:'🎖️ Тема «Чемпион сезона»' };
-  if (tier === SEASON_TIER_COUNT) exclusive = { type:'machine', flag:'seasonExclusiveMachineUnlocked', label:'🏆 Эксклюзивный цех' };
+  if (tier === 10) {
+    const theme = seasonExclusiveThemeForIndex(G.seasonIndex || 0);
+    exclusive = { type:'theme', themeId: theme.id, label: `🎖️ Тема «${theme.name}»` };
+  }
+  if (tier === SEASON_TIER_COUNT) {
+    const skin = seasonExclusiveMachineSkinForIndex(G.seasonIndex || 0);
+    exclusive = { type:'machine', skinId: skin.id, label: `🏆 ${skin.name}` };
+  }
   return { coins, crystal, exclusive };
 }
 
@@ -3196,28 +3366,30 @@ function claimSeasonTier(tier, track) {
   G.coins += reward.coins;
   if (reward.crystal) { G.crystals = (G.crystals||0)+reward.crystal; G.lifetimeCrystals = (G.lifetimeCrystals||0)+reward.crystal; }
   let exclusiveGranted = false;
-  if (track === 'premium' && reward.exclusive && !G[reward.exclusive.flag]) {
-    G[reward.exclusive.flag] = true;
-    exclusiveGranted = true;
-    if (reward.exclusive.type === 'machine') {
-      // Тот же принцип расчёта силы, что и у Секретной лаборатории — сила
-      // считается от текущей экономики игрока в момент получения, а не
-      // фиксированным числом (иначе на позднем старте награда будет
-      // смехотворно маленькой, а на раннем — сломает баланс).
-      const m = getMachine(16);
-      m.owned = true;
-      m.auto = true;
-      const ref = getMachine(9); // Орбитальный цех как ориентир силы
-      const refDps = ref.owned ? (ref.reward / ref.speed * 1000) : (baseCps() * 0.3 || 5);
-      m.reward = Math.max(50, Math.round(refDps * (m.speed/1000) * 2.2)); // чуть сильнее лаборатории — это эксклюзив за прогрессию, не за деньги
+  let compensated = false;
+  if (track === 'premium' && reward.exclusive) {
+    if (reward.exclusive.type === 'theme') {
+      exclusiveGranted = grantSeasonExclusiveTheme(reward.exclusive.themeId);
+    } else if (reward.exclusive.type === 'machine') {
+      exclusiveGranted = grantSeasonExclusiveMachineSkin(reward.exclusive.skinId);
+    }
+    if (!exclusiveGranted) {
+      // Этот конкретный вариант из пула у игрока уже есть с прошлого раза —
+      // не оставляем верхний уровень трека пустым, добавляем компенсацию.
+      G.crystals = (G.crystals||0) + 3;
+      G.lifetimeCrystals = (G.lifetimeCrystals||0) + 3;
+      compensated = true;
     }
   }
   claimedList.push(tier);
   playSound('levelup');
   goldenGlow(document.getElementById('hCoins'));
-  showToast(`🎫 Уровень ${tier}: +${fmt(reward.coins)} монет${reward.crystal?` +${reward.crystal} 💎`:''}${exclusiveGranted?` + ${reward.exclusive.label}!`:''}`);
+  let msg = `🎫 Уровень ${tier}: +${fmt(reward.coins)} монет${reward.crystal?` +${reward.crystal} 💎`:''}`;
+  if (exclusiveGranted) msg += ` + ${reward.exclusive.label}!`;
+  else if (compensated) msg += ` +3 💎 (этот вариант уже был)`;
+  showToast(msg);
   renderSeasonPass();
-  if (exclusiveGranted) { fullRender(); renderThemePicker(); }
+  if (reward.exclusive) { fullRender(); renderThemePicker(); }
   updateMenuBadge();
   saveGame();
 }
@@ -3341,15 +3513,17 @@ async function showRewardedAd() {
   const btn = document.getElementById('adBtn');
   if (btn) { btn.disabled = true; btn.textContent = t('adLoading'); }
 
-  if (PLATFORM === 'vk' && vkReady) {
-    try {
-      const res = await vkBridge.send('VKWebAppShowNativeAds', { ad_format: 'reward' });
-      if (res.result) onAdRewarded(); else onAdClose();
-    } catch(e) { onAdClose(); }
-  } else {
-    // Локальный режим — симуляция
-    setTimeout(() => onAdRewarded(), 500);
-  }
+  // requestNativeAd() сама пытается дождаться подгрузки ролика (см.
+  // комментарий у неё) — здесь только разбираем итог на три разных случая,
+  // раньше неотличимых друг от друга (всё валилось в один onAdClose()):
+  //  ok         — досмотрел, награда;
+  //  declined   — реклама показалась, но игрок закрыл её без просмотра;
+  //  ни то ни другое — реклама технически не подгрузилась вообще.
+  const { ok, declined, simulated } = await requestNativeAd();
+  if (simulated) { setTimeout(() => onAdRewarded(), 500); return; }
+  if (ok) onAdRewarded();
+  else if (declined) onAdClose();
+  else onAdUnavailable();
 }
 
 function onAdRewarded() {
@@ -3365,6 +3539,82 @@ function onAdClose() {
   // Закрыл без просмотра — короткий cooldown 30с
   adCooldownEnd = Date.now() + 30000;
   updateAdButton();
+}
+
+// Отдельно от onAdClose(): здесь игрок НЕ отказывался — реклама просто не
+// успела подгрузиться даже после ретраев requestNativeAd(). Cooldown короче
+// (15с) и отдельный тост, чтобы не выглядело так, будто игра "отказала"
+// ему в награде за то, чего он не делал.
+function onAdUnavailable() {
+  adCooldownEnd = Date.now() + 15000;
+  showToast(t('toastAdUnavail'));
+  updateAdButton();
+}
+
+// ── РЕКЛАМНЫЙ СУНДУК ─────────────────────────────────────────────────
+// Ещё один способ получить пользу от рекламы, отдельный от бонуса ×2 —
+// раз в несколько часов можно посмотреть ролик и получить случайную
+// награду (монеты почти всегда, кристаллы с шансом, изредка — джекпот).
+// Отдельный cooldown от showRewardedAd()/AD_COOLDOWN, чтобы оба механизма
+// не конкурировали друг с другом за один и тот же таймер.
+const AD_CHEST_COOLDOWN = 3 * 60 * 60 * 1000; // 3 часа
+
+function canClaimAdChest() { return Date.now() >= (G.adChestNextAt || 0); }
+
+async function openAdChest() {
+  if (!canClaimAdChest()) return;
+  const btn = document.getElementById('adChestBtn');
+  if (btn) { btn.disabled = true; btn.textContent = t('adLoading'); }
+  await watchAdThen(() => {
+    G.adChestNextAt = Date.now() + AD_CHEST_COOLDOWN;
+    const roll = Math.random();
+    let msg;
+    if (roll < 0.08) {
+      // Джекпот — редкая крупная награда, чтобы сундук не ощущался
+      // одинаковым каждый раз.
+      const coins = Math.max(500, Math.round(cps() * 180));
+      const crystal = 5;
+      G.coins += coins;
+      G.crystals = (G.crystals||0) + crystal;
+      G.lifetimeCrystals = (G.lifetimeCrystals||0) + crystal;
+      msg = `🎰 Джекпот! +${fmt(coins)} ${t('coins')} +${crystal} 💎`;
+    } else if (roll < 0.45) {
+      const coins = Math.max(200, Math.round(cps() * 60));
+      const crystal = 1;
+      G.coins += coins;
+      G.crystals = (G.crystals||0) + crystal;
+      G.lifetimeCrystals = (G.lifetimeCrystals||0) + crystal;
+      msg = `🎁 +${fmt(coins)} ${t('coins')} +${crystal} 💎`;
+    } else {
+      const coins = Math.max(150, Math.round(cps() * 45));
+      G.coins += coins;
+      msg = `🎁 +${fmt(coins)} ${t('coins')}`;
+    }
+    playSound('levelup');
+    goldenGlow(document.getElementById('hCoins'));
+    showToast(msg);
+    renderHeader();
+    updateAdChestUI();
+    saveGame();
+  });
+  updateAdChestUI();
+}
+
+function updateAdChestUI() {
+  const btn = document.getElementById('adChestBtn');
+  const cd  = document.getElementById('adChestCooldown');
+  if (!btn) return;
+  const left = (G.adChestNextAt || 0) - Date.now();
+  if (left > 0) {
+    const h = Math.floor(left / 3600000), m = Math.ceil((left % 3600000) / 60000);
+    btn.disabled = true;
+    btn.textContent = t('adWatch');
+    if (cd) cd.textContent = `${t('adRecharge')}: ${h > 0 ? h + 'ч ' : ''}${m}${t('minShort')}`;
+  } else {
+    btn.disabled = false;
+    btn.textContent = '🎁 Открыть сундук';
+    if (cd) cd.textContent = '';
+  }
 }
 
 function updateAdButton() {
@@ -3421,8 +3671,11 @@ function defaultState() {
     purchases: { starterPack: false, vipStatus: false, secretLab: false, autoPilot: false, themeAurora: false, themeMagma: false, removeAds: false },
     vipExpiresAt: null, // таймстамп окончания месячного VIP (null = нет активного месячного VIP); "навсегда" — отдельно, purchases.vipStatus
     claimedOrderIds: [], // orderId уже применённых pending-покупок — для идемпотентности (см. syncPurchases)
-    seasonExclusiveMachineUnlocked: false, // навсегда, даже после смены сезона — заработано за 15 ур. премиум-трека
-    seasonExclusiveThemeUnlocked: false,   // навсегда — заработано за 10 ур. премиум-трека
+    seasonExclusiveMachineUnlocked: false, // легаси-флаг "хотя бы один скин цеха получен" — держим для админки, см. grantSeasonExclusiveMachineSkin()
+    seasonExclusiveThemeUnlocked: false,   // легаси-флаг "хотя бы одна тема получена" — держим для админки, см. grantSeasonExclusiveTheme()
+    seasonExclusiveThemesOwned: [],        // навсегда — все варианты тем, заработанные за 10 ур. премиум-трека по сезонам (см. SEASON_EXCLUSIVE_THEMES)
+    seasonExclusiveMachineSkinsOwned: [],  // навсегда — все скины сезонного цеха, заработанные за 15 ур. премиум-трека по сезонам
+    adChestNextAt: 0, // когда снова доступен рекламный сундук (см. openAdChest)
     machines: MACHINES_DEF.map(d=>({
       id:d.id, level:1, owned:false, auto:true,
       progress:0, reward:d.baseReward, speed:d.baseSpeed,
@@ -3795,6 +4048,9 @@ function doPrestige() {
   const claimedOrderIds = G.claimedOrderIds;
   const seasonExclusiveMachineUnlocked = G.seasonExclusiveMachineUnlocked;
   const seasonExclusiveThemeUnlocked = G.seasonExclusiveThemeUnlocked;
+  const seasonExclusiveThemesOwned = G.seasonExclusiveThemesOwned;
+  const seasonExclusiveMachineSkinsOwned = G.seasonExclusiveMachineSkinsOwned;
+  const adChestNextAt = G.adChestNextAt;
   const vipExpiresAt = G.vipExpiresAt; // месячный VIP переживает престиж как обычная покупка — только цех/улучшения пересоздаются
   const totalPlayTimeMs = G.totalPlayTimeMs;
   // КРИТИЧНО: deltaSyncBaseline — точка отсчёта для дельта-синхронизации
@@ -3862,11 +4118,22 @@ function doPrestige() {
   G.claimedOrderIds       = claimedOrderIds;
   G.seasonExclusiveMachineUnlocked = seasonExclusiveMachineUnlocked;
   G.seasonExclusiveThemeUnlocked   = seasonExclusiveThemeUnlocked;
+  G.seasonExclusiveThemesOwned         = seasonExclusiveThemesOwned || [];
+  G.seasonExclusiveMachineSkinsOwned   = seasonExclusiveMachineSkinsOwned || [];
+  G.adChestNextAt = adChestNextAt || 0;
   G.vipExpiresAt = vipExpiresAt;
   G.totalPlayTimeMs = totalPlayTimeMs; // lifetime-метрика — раньше по ошибке сбрасывалась престижем, хотя lifetimeCoins/lifetimeClicks и т.п. рядом не сбрасываются
   G.energy = energyMax();
   if (purchases.secretLab) { const ml=getMachine(10); ml.owned=true; ml.auto=true; }
-  if (seasonExclusiveMachineUnlocked) { const sm=getMachine(16); sm.owned=true; sm.auto=true; }
+  if (seasonExclusiveMachineUnlocked) {
+    const sm=getMachine(16); sm.owned=true; sm.auto=true;
+    // Скин цеха хранится в MACHINES_DEF (см. getDef), а не в самом объекте
+    // цеха — тот пересоздаётся заново из MACHINES_DEF при каждом престиже
+    // (см. defaultState() выше), поэтому визуал нужно переприменить явно.
+    const lastSkinId = (seasonExclusiveMachineSkinsOwned || [])[seasonExclusiveMachineSkinsOwned.length - 1];
+    const skin = SEASON_EXCLUSIVE_MACHINE_SKINS.find(s => s.id === lastSkinId);
+    if (skin) { const d = getDef(16); if (d) { d.name = skin.name; d.emoji = skin.emoji; } }
+  }
   if (isVipActive()) grantVipMachine(); // "после престижа слетают только улучшения" — уровень цеха сброшен как у всех, а владение/авто восстановлены здесь
   closePrestige();
   fullRender();
@@ -4631,17 +4898,16 @@ function applyPromoReward(reward) {
   } else if (type === 'themeMagma') {
     if (!G.purchases.themeMagma) { G.purchases.themeMagma = true; showToast('🎉 Тема «Магма» разблокирована!'); }
   } else if (type === 'themeChampion') {
-    if (!G.seasonExclusiveThemeUnlocked) { G.seasonExclusiveThemeUnlocked = true; showToast('🎉 Эксклюзивная тема «Чемпион сезона» разблокирована!'); }
+    // Промокод/админка всегда выдаёт БАЗОВЫЙ вариант пула (см.
+    // SEASON_EXCLUSIVE_THEMES/grantSeasonExclusiveTheme) — если игрок его
+    // уже собрал в игре, повторно ничего не ломает (просто вернёт false).
+    if (grantSeasonExclusiveTheme('champion')) showToast('🎉 Эксклюзивная тема «Чемпион сезона» разблокирована!');
+    else showToast('Тема «Чемпион сезона» уже была получена ранее.');
+    renderThemePicker();
   } else if (type === 'seasonExclusiveMachine') {
-    if (!G.seasonExclusiveMachineUnlocked) {
-      G.seasonExclusiveMachineUnlocked = true;
-      const m = getMachine(16);
-      m.owned = true; m.auto = true;
-      const ref = getMachine(9);
-      const refDps = ref.owned ? (ref.reward / ref.speed * 1000) : (baseCps() * 0.3 || 5);
-      m.reward = Math.max(50, Math.round(refDps * (m.speed / 1000) * 2.2));
-      showToast('🎉 Эксклюзивный сезонный цех разблокирован!');
-    }
+    if (grantSeasonExclusiveMachineSkin('s_gold')) showToast('🎉 Эксклюзивный сезонный цех разблокирован!');
+    else showToast('Этот сезонный цех уже был получен ранее.');
+    fullRender();
   } else if (type === 'seasonPass') {
     ensureSeasonFresh();
     if (!seasonHasPremium()) {
@@ -4991,10 +5257,18 @@ const THEMES = [
     unlock: () => isVipActive(),
     hint: 'Открывается с активным VIP-статусом',
     vars: { '--accent':'#ffd700', '--accent2':'#b8860b', '--teal':'#f5deb3' } },
-  { id:'champion', name:'Чемпион сезона', icon:'🎖️',
-    unlock: () => !!G.seasonExclusiveThemeUnlocked,
+  // Пул эксклюзивных тем боевого пропуска (см. SEASON_EXCLUSIVE_THEMES и
+  // комментарий у seasonPremiumReward) — каждая открывается получением
+  // соответствующего варианта на 10 уровне премиум-трека в СВОЙ сезон;
+  // 'champion' дополнительно проверяет легаси-флаг для игроков, успевших
+  // получить её ДО того, как появился пул вариантов.
+  ...SEASON_EXCLUSIVE_THEMES.map(st => ({
+    id: st.id, name: st.name, icon: st.icon,
+    unlock: () => !!(G.seasonExclusiveThemesOwned && G.seasonExclusiveThemesOwned.includes(st.id))
+                  || (st.id === 'champion' && !!G.seasonExclusiveThemeUnlocked),
     hint: 'Эксклюзив — 10 уровень премиум-трека сезонного пропуска',
-    vars: { '--accent':'#ffd76a', '--accent2':'#c9a000', '--teal':'#7fffb0' } },
+    vars: st.vars,
+  })),
 ];
 
 function setThemeVars(id) {
@@ -6088,6 +6362,7 @@ function tickInner(now) {
     // (баннер события, автопилот) не может уронить всю игру.
     try {
       updateAdButton();
+      updateAdChestUI();
       updateMenuBadge();
       maybeTriggerRushHour(now);
       updateRushBanner();
@@ -6192,6 +6467,28 @@ function applyLoaded(saved) {
   if (G.seasonExclusiveMachineUnlocked) {
     const sm = G.machines.find(m => m.id === 16);
     if (sm && !sm.owned) { sm.owned = true; sm.auto = true; }
+  }
+  // Миграция: раньше seasonExclusiveThemeUnlocked/seasonExclusiveMachineUnlocked
+  // были простыми "да/нет" флагами на ОДИН фиксированный вариант награды.
+  // Теперь у эксклюзивов премиум-трека есть пул вариантов (см.
+  // SEASON_EXCLUSIVE_THEMES/SEASON_EXCLUSIVE_MACHINE_SKINS выше по файлу) —
+  // у уже играющих переносим старый флаг в списки владения базовым
+  // вариантом, чтобы никто не потерял то, что уже честно заработал.
+  if (!Array.isArray(G.seasonExclusiveThemesOwned)) G.seasonExclusiveThemesOwned = [];
+  if (G.seasonExclusiveThemeUnlocked && !G.seasonExclusiveThemesOwned.includes('champion')) {
+    G.seasonExclusiveThemesOwned.push('champion');
+  }
+  if (!Array.isArray(G.seasonExclusiveMachineSkinsOwned)) G.seasonExclusiveMachineSkinsOwned = [];
+  if (G.seasonExclusiveMachineUnlocked && !G.seasonExclusiveMachineSkinsOwned.includes('s_gold')) {
+    G.seasonExclusiveMachineSkinsOwned.push('s_gold');
+  }
+  // Визуальный скин цеха №16 хранится в MACHINES_DEF (см. getDef), а не в
+  // самом сохранении — восстанавливаем по последнему заработанному варианту
+  // при каждой загрузке (MACHINES_DEF всегда стартует "как в коде").
+  if (G.seasonExclusiveMachineSkinsOwned.length) {
+    const lastSkinId = G.seasonExclusiveMachineSkinsOwned[G.seasonExclusiveMachineSkinsOwned.length - 1];
+    const skin = SEASON_EXCLUSIVE_MACHINE_SKINS.find(s => s.id === lastSkinId);
+    if (skin) { const d = getDef(16); if (d) { d.name = skin.name; d.emoji = skin.emoji; } }
   }
   // Тот же принцип для VIP-цеха: если есть право (навсегда ИЛИ ещё не
   // истёкший месячный VIP), а цех почему-то не owned — например, VIP
@@ -6298,6 +6595,7 @@ document.getElementById('startBtn').addEventListener('click', () => {
   syncPurchases();
   updateMenuBadge();
   showBackgroundBannerAd(); // постоянный рекламный баннер — см. комментарий у функции выше
+  warmUpRewardedAd(); // заранее "будим" рекламный SDK VK — см. комментарий у функции ниже
 
   // Офлайн доход
   const offlineCoins = calcOfflineIncome();
