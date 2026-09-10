@@ -2114,26 +2114,44 @@ function applyNonDeltaFields(source) {
 
 function adoptMergedSave(merged) {
   DELTA_SYNC_FIELDS.forEach(f => { if (merged[f] !== undefined) G[f] = merged[f]; });
-  if (Array.isArray(merged.machines)) {
-    merged.machines.forEach(mm => {
-      const local = G.machines.find(m => m.id === mm.id);
-      if (!local) return;
-      // "Апгрейд цеха почти сразу слетает обратно на 1 лвл": эта функция
-      // раньше применяла level/reward/speed от сервера БЕЗУСЛОВНО (в отличие
-      // от handleRemoteStateMerged ниже, где такая защита уже была). Если
-      // ответ сервера на save-game по любой причине пришёл с более низким
-      // level, чем только что стало локально (гонка запросов, отставшее
-      // "поколение" gen и т.п.) — локальный, только что оплаченный апгрейд
-      // стирался. Теперь то же правило, что и в handleRemoteStateMerged:
-      // owned только через OR, level/reward/speed — только если пришедшее
-      // не меньше локального.
-      local.owned = local.owned || mm.owned;
-      if (Number(mm.level) >= Number(local.level)) {
-        local.level = mm.level; local.reward = mm.reward; local.speed = mm.speed;
-      }
-    });
+  // БАГ "после престижа не пропадают цехи": save-game — асинхронный HTTP-
+  // запрос. Если один такой запрос ушёл на сервер ДО престижа, но по
+  // сетевым причинам (троттлинг очереди, задержка) его ОТВЕТ пришёл на
+  // клиент уже ПОСЛЕ того, как локальный doPrestige() сбросил G.machines —
+  // merged.machines в этом ответе всё ещё отражает состояние ДО сброса
+  // (owned:true), потому что сервер обработал именно тот, более ранний
+  // запрос. Старый код ниже сливал owned безусловным OR
+  // (local.owned || mm.owned) — это "воскрешало" уже честно сброшенные
+  // престижем цеха. prestigeCount — дельта-поле, монотонно растёт и на
+  // клиенте увеличивается СИНХРОННО в начале doPrestige(), ещё до всякой
+  // сети — поэтому merged.prestigeCount меньше текущего G.prestigeCount
+  // надёжно значит "этот ответ — эхо запроса из ПРЕДЫДУЩЕГО поколения",
+  // и его machines (и вообще всё, что могло быть сброшено престижем —
+  // апгрейды и т.п., см. applyNonDeltaFields ниже) нужно просто
+  // игнорировать целиком, а не сливать.
+  const staleGen = Number(merged.prestigeCount) < Number(G.prestigeCount || 0);
+  if (!staleGen) {
+    if (Array.isArray(merged.machines)) {
+      merged.machines.forEach(mm => {
+        const local = G.machines.find(m => m.id === mm.id);
+        if (!local) return;
+        // "Апгрейд цеха почти сразу слетает обратно на 1 лвл": эта функция
+        // раньше применяла level/reward/speed от сервера БЕЗУСЛОВНО (в отличие
+        // от handleRemoteStateMerged ниже, где такая защита уже была). Если
+        // ответ сервера на save-game по любой причине пришёл с более низким
+        // level, чем только что стало локально (гонка запросов, отставшее
+        // "поколение" gen и т.п.) — локальный, только что оплаченный апгрейд
+        // стирался. Теперь то же правило, что и в handleRemoteStateMerged:
+        // owned только через OR, level/reward/speed — только если пришедшее
+        // не меньше локального.
+        local.owned = local.owned || mm.owned;
+        if (Number(mm.level) >= Number(local.level)) {
+          local.level = mm.level; local.reward = mm.reward; local.speed = mm.speed;
+        }
+      });
+    }
+    applyNonDeltaFields(merged);
   }
-  applyNonDeltaFields(merged);
   if (!G.deltaSyncBaseline) G.deltaSyncBaseline = {};
   DELTA_SYNC_FIELDS.forEach(f => { G.deltaSyncBaseline[f] = G[f]; });
 }
@@ -2286,6 +2304,22 @@ function handleRemoteStateMerged(cloud) {
     if (!G.deltaSyncBaseline) G.deltaSyncBaseline = {};
     G.deltaSyncBaseline[f] = Number(cloud[f]); // новая база — то, что сервер уже подтвердил (без нашего pending)
   });
+  // БАГ "после престижа не пропадают цехи" (тот же, что и в adoptMergedSave
+  // выше, см. подробный комментарий там) — здесь та же уязвимость: это
+  // сообщение прилетает по WebSocket асинхронно и может быть эхом чужого
+  // (или нашего же, но более раннего) сохранения, отправленного ДО
+  // локального престижа. Если его прогенерировали ДО того, как здесь
+  // случился doPrestige(), cloud.prestigeCount будет меньше текущего
+  // G.prestigeCount — такое сообщение полностью устарело относительно уже
+  // случившегося сброса и должно быть проигнорировано целиком, а не
+  // слито (иначе owned:true из "прошлой жизни" тем же OR вернёт цеха
+  // обратно, а applyNonDeltaFields — уровни сброшенных апгрейдов).
+  const staleGen = Number(cloud.prestigeCount) < Number(G.prestigeCount || 0);
+  if (staleGen) {
+    localStorage.setItem(SAVE_KEY, JSON.stringify(G));
+    fullRender();
+    return;
+  }
   if (Array.isArray(cloud.machines)) {
     cloud.machines.forEach(mm => {
       const local = G.machines.find(m => m.id === mm.id);
@@ -2622,7 +2656,27 @@ async function watchAdThen(callback) {
 // настройках, проверь актуальные условия на dev.vk.com, т.к. правила
 // монетизации VK меняются чаще, чем сам Bridge API.
 let bannerAdShown = false;
-async function showBackgroundBannerAd() {
+let bannerRetryTimer = null;
+// БАГ "баннер не всегда появляется": раньше showBackgroundBannerAd()
+// вызывалась РОВНО ОДИН раз при старте игры — если в этот момент реклама
+// VK ещё не успела подгрузиться (та же природа, что и у showRewardedAd()
+// выше, см. requestNativeAd()) или сеть на секунду подвисла, VKWebAppShowBannerAd
+// просто возвращал ошибку/result:false, bannerAdShown оставался false — и
+// всё, до конца сессии баннер больше никто не пытался показать. Теперь при
+// неудаче планируем повторную попытку: несколько быстрых ретраев в первые
+// секунды (типичный случай — баннер ещё грузится), затем более редкие
+// фоновые попытки — это постоянный доход, есть смысл пробовать ещё
+// какое-то время, а не сдаваться на всю сессию после первой же неудачи.
+const BANNER_RETRY_DELAYS = [1500, 4000, 10000];
+const BANNER_MAX_BACKGROUND_RETRIES = 6; // после этого прекращаем — либо формат выключен в настройках dev.vk.com, либо нет заполнения сейчас
+function scheduleBannerRetry(attempt) {
+  if (bannerAdShown || hasNoBannerAds()) return;
+  if (attempt >= BANNER_RETRY_DELAYS.length + BANNER_MAX_BACKGROUND_RETRIES) return;
+  const delay = attempt < BANNER_RETRY_DELAYS.length ? BANNER_RETRY_DELAYS[attempt] : 45000;
+  clearTimeout(bannerRetryTimer);
+  bannerRetryTimer = setTimeout(() => showBackgroundBannerAd(attempt + 1), delay);
+}
+async function showBackgroundBannerAd(attempt = 0) {
   if (PLATFORM !== 'vk' || !vkReady || bannerAdShown) return;
   if (hasNoBannerAds()) return; // VIP (навсегда или на месяц) или отдельная покупка "Убрать рекламу" — баннер не показываем вовсе
   try {
@@ -2634,11 +2688,13 @@ async function showBackgroundBannerAd() {
       banner_location: 'top',
       layout_type: 'resize',
     });
-    if (res && res.result !== false) bannerAdShown = true;
+    if (res && res.result !== false) { bannerAdShown = true; return; }
+    scheduleBannerRetry(attempt);
   } catch(e) {
-    // Не критично для игры — просто нет баннера в этой сессии (например,
-    // формат ещё не включён в настройках приложения, см. комментарий выше).
-    console.warn('[Ads] Фоновый баннер недоступен:', e?.error_data?.error_reason || e?.message || e);
+    // Не критично для игры — пробуем ещё раз чуть позже (см.
+    // scheduleBannerRetry) вместо того, чтобы сдаваться на всю сессию.
+    console.warn('[Ads] Фоновый баннер недоступен (попытка '+(attempt+1)+'):', e?.error_data?.error_reason || e?.message || e);
+    scheduleBannerRetry(attempt);
   }
 }
 
@@ -2651,6 +2707,7 @@ async function showBackgroundBannerAd() {
 // убирать). Если по факту метод называется иначе — стоит свериться с
 // dev.vk.com; try/catch ниже в любом случае не даст этому сломать игру.
 async function hideBackgroundBannerAd() {
+  clearTimeout(bannerRetryTimer); // иначе отложенный ретрай (см. scheduleBannerRetry) может попытаться показать баннер уже ПОСЛЕ покупки "Убрать рекламу"/VIP
   if (PLATFORM !== 'vk' || !vkReady || !bannerAdShown) return;
   try {
     await vkBridge.send('VKWebAppHideBannerAd', {});
