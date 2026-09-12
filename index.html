@@ -74,6 +74,9 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
 .tab-btn.active{color:var(--accent);}.tab-btn.active::after{transform:scaleX(1);}
 .tab-btn .tab-badge{position:absolute;top:8px;right:calc(50% - 18px);width:8px;height:8px;background:var(--teal);border-radius:50%;display:none;}
 .tab-btn .tab-badge.show{display:block;}
+/* Короткая вспышка иконки вкладки — см. flashTabIcon() */
+@keyframes tabFlashPulse{0%,100%{transform:scale(1);filter:none}30%{transform:scale(1.3);filter:drop-shadow(0 0 6px #ff5c5c)}}
+.tab-btn.tab-flash .tab-icon{display:inline-block;animation:tabFlashPulse 0.4s ease-in-out 0s 3;}
 .menu-badge{width:10px;height:10px;background:var(--teal);border-radius:50%;display:none;flex-shrink:0;}
 .menu-badge.show{display:block;}
 
@@ -341,6 +344,13 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
 .promo-status{font-size:13px;text-align:center;margin-top:12px;min-height:18px;}
 .promo-status.success{color:var(--teal);}
 .promo-status.error{color:#ff6b6b;}
+/* История активаций промокодов — листается вниз обычной прокруткой, без
+   отдельного пагинатора (записей не больше 50, см. applyPromoReward). */
+.promo-history-list{max-height:320px;overflow-y:auto;-webkit-overflow-scrolling:touch;display:flex;flex-direction:column;gap:6px;}
+.promo-history-item{display:flex;justify-content:space-between;align-items:center;gap:10px;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 12px;}
+.promo-history-code{font-family:'Exo 2',sans-serif;font-size:13px;font-weight:700;letter-spacing:.03em;color:var(--text);word-break:break-all;}
+.promo-history-reward{font-size:11px;color:var(--teal);margin-top:2px;}
+.promo-history-date{font-size:11px;color:var(--muted);white-space:nowrap;flex-shrink:0;}
 
 /* STATS */
 .stats-row{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--border);border-radius:6px;padding:11px 14px;margin-bottom:6px;}
@@ -908,6 +918,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
             <button class="btn-promo" id="promoRedeemBtn" onclick="redeemPromoCode()">Активировать</button>
           </div>
           <div class="promo-status" id="promoStatus"></div>
+          <div class="settings-block-title" style="margin-top:18px">🧾 История активаций</div>
+          <div id="promoHistoryList" class="promo-history-list"></div>
         </div>
 
         <!-- Секция: Дерево навыков -->
@@ -980,6 +992,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
     <div class="bottom-tabs">
       <button class="tab-btn active" id="tab-factory" onclick="switchTab('factory')">
         <span class="tab-icon">🏭</span><span class="tab-label">Цеха</span>
+        <span class="tab-badge" id="factoryBadge"></span>
       </button>
       <button class="tab-btn" id="tab-shop" onclick="switchTab('shop')">
         <span class="tab-icon">🛒</span><span class="tab-label">Магазин</span>
@@ -1214,22 +1227,32 @@ function t(key) { return I18N.ru[key] || key; }
 // Апгрейд цеха: +20% к награде, -5% к скорости, цена ×2.2 за уровень.
 // Улучшения магазина: дорожают ×4 за покупку (не ×2.8).
 // Авто-режим стоит дорого и покупается один раз.
+//
+// baseCost у всех цехов ×6 от исходных значений (baseReward/baseSpeed не
+// трогали) — это была основная причина "миллиарды меньше чем за час":
+// цена нового цеха окупалась за ~50-200с СОБСТВЕННОГО производства, а
+// суммарный доход от всех уже открытых цехов рос в разы быстрее payback-а
+// следующего — на практике игрок пролетал все 15 базовых цехов примерно за
+// 30-40 минут ещё ДО учёта апгрейдов, кликов, рекламных бонусов и
+// престижа. ×6 переносит это ориентировочно в район нескольких часов,
+// сохраняя тот же относительный темп между цехами (это единый множитель,
+// а не перекройка кривой).
 const MACHINES_DEF = [
-  { id:0,  name:'Болты',          emoji:'⚙️',  baseCost:80,         baseReward:6,        baseSpeed:4000  },
-  { id:1,  name:'Шестерни',          emoji:'🔩',  baseCost:600,        baseReward:56,       baseSpeed:7000  },
-  { id:2,  name:'Поршни',        emoji:'🔧',  baseCost:4500,       baseReward:495,      baseSpeed:11000 },
-  { id:3,  name:'Моторы',         emoji:'🛠️',  baseCost:34000,      baseReward:4533,     baseSpeed:16000 },
-  { id:4,  name:'Роботы',         emoji:'🤖',  baseCost:260000,     baseReward:44571,    baseSpeed:24000 },
-  { id:5,  name:'ИИ-блок',        emoji:'💡',  baseCost:2000000,    baseReward:464516,   baseSpeed:36000 },
-  { id:6,  name:'Нанофабрика',    emoji:'🔬',  baseCost:15000000,   baseReward:4588235,  baseSpeed:52000 },
-  { id:7,  name:'Квантовый цех',  emoji:'⚛️',  baseCost:115000000,  baseReward:47916667, baseSpeed:75000 },
-  { id:8,  name:'Мегакомплекс',       emoji:'🏗️',  baseCost:880000000,  baseReward:486315790,baseSpeed:105000},
-  { id:9,  name:'Орбитальный цех',  emoji:'🛸',  baseCost:6700000000, baseReward:4857500000,baseSpeed:145000},
-  { id:11, name:'Термоядерный реактор', emoji:'☢️', baseCost:51000000000,      baseReward:48000000000,      baseSpeed:190000},
-  { id:12, name:'Сфера Дайсона',        emoji:'🌞', baseCost:390000000000,     baseReward:475000000000,     baseSpeed:245000},
-  { id:13, name:'Портал в измерение',   emoji:'🌀', baseCost:2970000000000,    baseReward:4700000000000,    baseSpeed:310000},
-  { id:14, name:'Машина времени',       emoji:'⏳', baseCost:22600000000000,   baseReward:46500000000000,   baseSpeed:385000},
-  { id:15, name:'Ядро сингулярности',   emoji:'🌌', baseCost:172000000000000,  baseReward:460000000000000,  baseSpeed:470000},
+  { id:0,  name:'Болты',          emoji:'⚙️',  baseCost:480,         baseReward:6,        baseSpeed:4000  },
+  { id:1,  name:'Шестерни',          emoji:'🔩',  baseCost:3600,        baseReward:56,       baseSpeed:7000  },
+  { id:2,  name:'Поршни',        emoji:'🔧',  baseCost:27000,       baseReward:495,      baseSpeed:11000 },
+  { id:3,  name:'Моторы',         emoji:'🛠️',  baseCost:204000,      baseReward:4533,     baseSpeed:16000 },
+  { id:4,  name:'Роботы',         emoji:'🤖',  baseCost:1560000,     baseReward:44571,    baseSpeed:24000 },
+  { id:5,  name:'ИИ-блок',        emoji:'💡',  baseCost:12000000,    baseReward:464516,   baseSpeed:36000 },
+  { id:6,  name:'Нанофабрика',    emoji:'🔬',  baseCost:90000000,   baseReward:4588235,  baseSpeed:52000 },
+  { id:7,  name:'Квантовый цех',  emoji:'⚛️',  baseCost:690000000,  baseReward:47916667, baseSpeed:75000 },
+  { id:8,  name:'Мегакомплекс',       emoji:'🏗️',  baseCost:5280000000,  baseReward:486315790,baseSpeed:105000},
+  { id:9,  name:'Орбитальный цех',  emoji:'🛸',  baseCost:40200000000, baseReward:4857500000,baseSpeed:145000},
+  { id:11, name:'Термоядерный реактор', emoji:'☢️', baseCost:306000000000,      baseReward:48000000000,      baseSpeed:190000},
+  { id:12, name:'Сфера Дайсона',        emoji:'🌞', baseCost:2340000000000,     baseReward:475000000000,     baseSpeed:245000},
+  { id:13, name:'Портал в измерение',   emoji:'🌀', baseCost:17820000000000,    baseReward:4700000000000,    baseSpeed:310000},
+  { id:14, name:'Машина времени',       emoji:'⏳', baseCost:135600000000000,   baseReward:46500000000000,   baseSpeed:385000},
+  { id:15, name:'Ядро сингулярности',   emoji:'🌌', baseCost:1032000000000000,  baseReward:460000000000000,  baseSpeed:470000},
   // Платные / особые цеха — их id НИКОГДА не переиспользуй и не меняй: в
   // сохранениях игроков уже есть прогресс, привязанный именно к этим
   // номерам. Место в списке (последние) определяется порядком в этом
@@ -1613,10 +1636,51 @@ async function buyProduct(id) {
   }
 }
 
-// Спрашивает у сервера что реально куплено (после настоящей оплаты) и
-// применяет награду локально. retryHard — при только что совершённой
-// покупке уведомление от VK может дойти до сервера с небольшой задержкой,
-// поэтому пробуем несколько раз с паузами вместо одного мгновенного запроса.
+// VIP-подписка — отдельный диалог VK (VKWebAppShowSubscriptionBox), не
+// VKWebAppShowOrderBox — списывается автоматически каждый месяц, пока
+// пользователь сам не отменит. Каждое такое списание сервер получает как
+// subscription_status_change со статусом chargeable и кладёт в ту же
+// очередь pending_rewards, что и обычная разовая покупка vip_status_month
+// (см. payments.js) — поэтому здесь достаточно того же syncPurchases(),
+// никакой отдельной логики начисления не нужно.
+async function buySubscription(id) {
+  if (G.purchases?.vipStatus) {
+    showToast('👑 У тебя уже есть VIP навсегда — подписка не нужна');
+    return;
+  }
+  playSound('click');
+  if (PLATFORM !== 'vk' || !vkReady) { showToast('Покупки доступны только внутри VK'); return; }
+  if (!GLOBAL_LB_ENDPOINT) { showToast('Платежи ещё не подключены'); return; }
+  try {
+    // action:'create' — оформить новую подписку. Сам тариф (id) должен
+    // быть заранее заведён в кабинете dev.vk.com → Монетизация → Подписки —
+    // это делается один раз руками через веб-интерфейс VK, кодом не
+    // настраивается (см. комментарий у SUBSCRIPTION_CATALOG на сервере).
+    const result = await vkBridge.send('VKWebAppShowSubscriptionBox', { action: 'create', item: id });
+    if (!result || result.success === false) return; // закрыл диалог сам
+    showPaymentBanner('⏳ Обрабатываем платёж — иногда занимает несколько минут, оставайся в игре');
+    const applied = await syncPurchases(true);
+    hidePaymentBanner();
+    if (applied) showToast('✅ Подписка оформлена, VIP активирован!');
+    else showToast('⏳ Платёж пока не подтверждён VK — если спишется, VIP придёт сам при следующем заходе в игру');
+  } catch(e) {
+    hidePaymentBanner();
+    console.warn('[IAP] Оформление подписки отменено или не удалось:', e);
+  }
+}
+
+// Управление уже оформленной подпиской (в т.ч. отмена) — открывает
+// системный диалог VK (action:'manage'), где сам VK показывает статус и
+// кнопку отмены; отдельно обрабатывать результат не нужно — если подписку
+// отменят, VK сам пришлёт subscription_status_change(status:cancelled) на
+// сервер (см. payments.js), а доступ у игрока просто доработает до конца
+// уже оплаченного периода и истечёт сам по G.vipExpiresAt.
+async function manageSubscription(id) {
+  if (PLATFORM !== 'vk' || !vkReady) return;
+  try { await vkBridge.send('VKWebAppShowSubscriptionBox', { action: 'manage', item: id }); }
+  catch(e) { console.warn('[IAP] Не удалось открыть управление подпиской:', e); }
+}
+
 // Спрашивает у сервера что реально куплено (после настоящей оплаты) и
 // применяет награду локально. retryHard — при только что совершённой
 // покупке уведомление от VK до нашего сервера иногда доходит с задержкой
@@ -1750,7 +1814,34 @@ function renderIAP() {
         ${owned ? t('bought') : prod.price}
       </button>
     </div>`;
-  }).join('');
+  }).join('') + renderVipSubscriptionCard();
+}
+
+// VIP-подписка — рендерится отдельно от IAP_PRODUCTS.map() выше, т.к. идёт
+// через СОВСЕМ ДРУГОЙ диалог VK (VKWebAppShowSubscriptionBox, а не
+// VKWebAppShowOrderBox) и не вписывается в общий once/расходник шаблон
+// остальных товаров. См. buySubscription()/manageSubscription() и
+// SUBSCRIPTION_CATALOG на сервере (payments.js/routes.js).
+function renderVipSubscriptionCard() {
+  const foreverOwned = !!G.purchases?.vipStatus;
+  const activeUntil = G.vipExpiresAt && G.vipExpiresAt > Date.now() ? G.vipExpiresAt : null;
+  let extraLine = '';
+  if (foreverOwned) extraLine = 'Уже включено в VIP навсегда';
+  else if (activeUntil) {
+    const daysLeft = Math.max(1, Math.ceil((activeUntil - Date.now()) / 86400000));
+    extraLine = `👑 Активен ещё ${daysLeft} ${pluralRu(daysLeft, 'день', 'дня', 'дней')}`;
+  }
+  return `<div class="iap-item vip${foreverOwned?' owned':''}">
+    <div class="iap-info">
+      <div class="iap-name">👑 VIP-подписка${foreverOwned?' ✓':''}<span class="iap-badge">Автопродление</span></div>
+      <div class="iap-desc">То же самое, что и VIP на месяц, но продлевается сам каждый месяц — не нужно заходить и покупать заново</div>
+      ${extraLine ? `<div class="iap-desc" style="color:var(--accent);margin-top:2px">${extraLine}</div>` : ''}
+      ${(!foreverOwned) ? `<div style="margin-top:6px"><a href="#" onclick="manageSubscription('vip_subscription');return false;" style="font-size:11px;color:var(--muted);text-decoration:underline">Управлять подпиской / отменить</a></div>` : ''}
+    </div>
+    <button class="btn-iap vip" onclick="buySubscription('vip_subscription')" ${foreverOwned?'disabled':''}>
+      ${foreverOwned ? t('bought') : voicesLabel(39) + '/мес'}
+    </button>
+  </div>`;
 }
 // ── ГЛОБАЛЬНЫЙ РЕЙТИНГ VK (среди всех игроков) ──
 // Требует бэкенд (Node.js + PostgreSQL + WebSocket, см. megafactory-server/
@@ -2474,6 +2565,14 @@ document.addEventListener('visibilitychange', () => {
   // всё ещё живо (readyState OPEN/CONNECTING).
   if (document.visibilityState === 'visible' && PLATFORM === 'vk' && vkReady) {
     connectGameSocket();
+    // БАГ "баннер не всегда появляется": если все автоматические ретраи
+    // (см. scheduleBannerRetry/BANNER_MAX_BACKGROUND_RETRIES) к этому
+    // моменту уже исчерпались, а баннер так и не показался — возврат в
+    // приложение из фона это естественный момент попробовать ещё раз:
+    // рекламный инвентарь VK часто обновляется именно к этому моменту.
+    // showBackgroundBannerAd() сама ничего не сделает, если баннер уже
+    // показан (bannerAdShown) или отключён покупкой (hasNoBannerAds()).
+    showBackgroundBannerAd();
   }
 });
 // Подстраховка: на некоторых мобильных WebView внутри VK-приложения (iOS/
@@ -2668,11 +2767,17 @@ let bannerRetryTimer = null;
 // фоновые попытки — это постоянный доход, есть смысл пробовать ещё
 // какое-то время, а не сдаваться на всю сессию после первой же неудачи.
 const BANNER_RETRY_DELAYS = [1500, 4000, 10000];
-const BANNER_MAX_BACKGROUND_RETRIES = 6; // после этого прекращаем — либо формат выключен в настройках dev.vk.com, либо нет заполнения сейчас
+// Раньше был жёсткий потолок попыток (BANNER_MAX_BACKGROUND_RETRIES), после
+// которого баннер переставал пытаться показаться до конца сессии — если
+// игрок сидит в игре часами, а инвентарь рекламы освободился только через
+// 10 минут, баннер так и оставался невидимым всё оставшееся время. Это и
+// была основная причина "не всегда появляется" — не столько отдельные
+// неудачные попытки, сколько их конечное количество. Теперь фоновые
+// попытки продолжаются на протяжении всей сессии с фиксированным интервалом.
+const BANNER_BACKGROUND_RETRY_INTERVAL = 60000; // раз в минуту, пока не покажется или пока не отключат рекламу
 function scheduleBannerRetry(attempt) {
   if (bannerAdShown || hasNoBannerAds()) return;
-  if (attempt >= BANNER_RETRY_DELAYS.length + BANNER_MAX_BACKGROUND_RETRIES) return;
-  const delay = attempt < BANNER_RETRY_DELAYS.length ? BANNER_RETRY_DELAYS[attempt] : 45000;
+  const delay = attempt < BANNER_RETRY_DELAYS.length ? BANNER_RETRY_DELAYS[attempt] : BANNER_BACKGROUND_RETRY_INTERVAL;
   clearTimeout(bannerRetryTimer);
   bannerRetryTimer = setTimeout(() => showBackgroundBannerAd(attempt + 1), delay);
 }
@@ -2749,6 +2854,23 @@ function toggleSound() {
 // звуковых эффектов и наоборот, обе используют один и тот же audioCtx.
 let musicNodes = null;
 
+// БЫЛО: один и тот же аккорд (Cmaj7) держался БЕСКОНЕЧНО, единственным
+// движением был медленный свип фильтра каждые ~22с по кругу — при долгой
+// игре это ощущалось навязчиво и монотонно ("бесячая музыка", дословная
+// жалоба). Теперь — прогрессия из 4 тёплых родственных аккордов
+// (Cmaj7 → Am7 → Fmaj7 → G6, классическая мягкая последовательность), ноты
+// каждого голоса плавно "переезжают" к следующему аккорду раз в ~26с
+// (frequency.linearRampToValueAtTime — без щелчков), плюс лёгкая расстройка
+// (detune) между голосами вместо холодных чистых синусоид в унисон — звук
+// живее и теплее на слух при той же простоте синтеза.
+const AMBIENT_CHORDS = [
+  [130.81, 164.81, 196.00, 246.94], // Cmaj7
+  [110.00, 130.81, 164.81, 220.00], // Am7
+  [174.61, 220.00, 261.63, 349.23], // Fmaj7
+  [196.00, 246.94, 293.66, 392.00], // G6
+];
+const AMBIENT_CHORD_HOLD = 26; // секунд на аккорд
+
 function startAmbientMusic() {
   const ctx = getAudioCtx();
   if (!ctx || musicNodes) return;
@@ -2764,24 +2886,24 @@ function startAmbientMusicNow(ctx) {
 
   const master = ctx.createGain();
   master.gain.setValueAtTime(0.0001, ctx.currentTime);
-  master.gain.linearRampToValueAtTime(0.16, ctx.currentTime + 3); // плавный фейд-ин — раньше было 0.05, почти не слышно даже на полной громкости устройства
-  master.connect(ctx.destination);
+  master.gain.linearRampToValueAtTime(0.14, ctx.currentTime + 3); // чуть тише, чем раньше (было 0.16) — комфортнее при долгой игре
 
-  // Медленно "плывущий" фильтр — единственный источник движения в звуке,
-  // сами тона статичны, поэтому пэд не надоедает и не отвлекает от игры.
+  // Медленно "плывущий" фильтр — движение внутри одного аккорда, помимо
+  // самой смены аккордов раз в AMBIENT_CHORD_HOLD секунд.
   const filter = ctx.createBiquadFilter();
   filter.type = 'lowpass';
   filter.frequency.value = 900;
   filter.Q.value = 0.6;
   filter.connect(master);
+  master.connect(ctx.destination);
 
-  // Тёплый пэд-аккорд (Cmaj7) из нескольких синусоид — намеренно узкий
-  // и негромкий, чтобы не спорить с короткими звуковыми эффектами.
-  const notes = [130.81, 164.81, 196.00, 246.94];
-  const oscs = notes.map(freq => {
+  const startChord = AMBIENT_CHORDS[0];
+  const detunes = [-4, 3, -2, 5]; // центы — на каждый голос своя лёгкая расстройка, чтобы звук не был "стерильным" унисоном
+  const oscs = startChord.map((freq, i) => {
     const osc = ctx.createOscillator();
     osc.type = 'sine';
     osc.frequency.value = freq;
+    osc.detune.value = detunes[i];
     const g = ctx.createGain();
     g.gain.value = 0.22;
     osc.connect(g); g.connect(filter);
@@ -2797,7 +2919,24 @@ function startAmbientMusicNow(ctx) {
   lfoGain.connect(filter.frequency);
   lfo.start();
 
-  musicNodes = { master, filter, oscs, lfo, lfoGain };
+  musicNodes = { master, filter, oscs, lfo, lfoGain, chordIndex: 0, chordTimer: null };
+
+  // Плавный переход к следующему аккорду прогрессии — переезжаем частоты
+  // существующих осцилляторов (linearRampToValueAtTime) вместо остановки/
+  // запуска новых голосов, поэтому никаких щелчков или пауз в звуке.
+  function advanceChord() {
+    if (!musicNodes) return;
+    musicNodes.chordIndex = (musicNodes.chordIndex + 1) % AMBIENT_CHORDS.length;
+    const chord = AMBIENT_CHORDS[musicNodes.chordIndex];
+    const now = ctx.currentTime;
+    musicNodes.oscs.forEach((osc, i) => {
+      osc.frequency.cancelScheduledValues(now);
+      osc.frequency.setValueAtTime(osc.frequency.value, now);
+      osc.frequency.linearRampToValueAtTime(chord[i], now + 4); // 4с плавного "переезда" между аккордами
+    });
+    musicNodes.chordTimer = setTimeout(advanceChord, AMBIENT_CHORD_HOLD * 1000);
+  }
+  musicNodes.chordTimer = setTimeout(advanceChord, AMBIENT_CHORD_HOLD * 1000);
 }
 
 function stopAmbientMusic() {
@@ -2805,6 +2944,7 @@ function stopAmbientMusic() {
   const ctx = audioCtx;
   const nodes = musicNodes;
   musicNodes = null;
+  clearTimeout(nodes.chordTimer); // иначе смена аккорда продолжит тикать в фоне и попытается тронуть уже отключённые осцилляторы
   if (!ctx) return;
   try {
     const now = ctx.currentTime;
@@ -2958,28 +3098,50 @@ function updateRushBanner() {
 // maybeTriggerRandomEvent), Час пик им не мешает и наоборот.
 let brokenMachine = null;   // { id, endsAt } — сломанный цех, если есть
 let packageDrop   = null;   // { bonus, endsAt } — посылка, ждущая, чтобы её забрали
-const RANDOM_EVENT_CHECK_EVERY = 3 * 60 * 1000; // проверяем шанс раз в 3 минуты
+const RANDOM_EVENT_CHECK_EVERY = 3 * 60 * 1000; // проверяем шанс раз в 3 минуты (посылка/энергия — авария теперь отдельно, см. BREAKDOWN_CHECK_EVERY ниже)
 const RANDOM_EVENT_CHANCE      = 0.18;           // ~18% на каждую проверку
-const BREAKDOWN_DURATION       = 90 * 1000;      // авария чинится сама через 90с, если не помочь
 const PACKAGE_DURATION         = 60 * 1000;      // посылку можно забрать в течение 60с
 
+// БАГ "по факту ничего нигде не ломается": раньше поломка была лишь ОДНИМ
+// из вариантов в общем пуле случайных событий (посылка/энергия/авария) —
+// с шансом ~18% раз в 3 минуты и только 1/3 таких срабатываний — авария.
+// Итоговая частота получалась примерно раз в 40-50 минут, а само событие
+// само проходило за 90с — в итоге игрок почти никогда физически не видел
+// поломку (пропускал её, если не смотрел на экран цехов именно в эту
+// минуту). Теперь: 1) поломка проверяется ОТДЕЛЬНЫМ, более частым таймером
+// (не завязана на общий пул посылка/энергия), 2) шанс срабатывания заметно
+// выше, 3) длится дольше, чтобы реально успеть увидеть и среагировать,
+// 4) сопровождается более явной подачей — вибро-подобной вспышкой иконки
+// цеха и бейджем на вкладке "Цеха" (см. updateMenuBadge), а не только
+// тостом, который легко пропустить.
+const BREAKDOWN_CHECK_EVERY = 90 * 1000;  // проверяем отдельно от прочих случайных событий, раз в 90с
+const BREAKDOWN_CHANCE      = 0.30;        // ~30% на каждую проверку — заметно чаще, чем было
+const BREAKDOWN_DURATION    = 4 * 60 * 1000; // 4 минуты, а не 90с — есть время заметить и среагировать, само не "рассосётся" за секунды до того как игрок откроет вкладку
+
+function maybeTriggerBreakdown(now) {
+  if (brokenMachine) return; // уже что-то сломано — не наслаиваем
+  if (now < rushHourEnd) return; // не мешаем Часу пик
+  if (!tick.lastBreakdownCheck) tick.lastBreakdownCheck = now; // не в первые секунды сессии
+  if (now - tick.lastBreakdownCheck < BREAKDOWN_CHECK_EVERY) return;
+  tick.lastBreakdownCheck = now;
+  if (Math.random() >= BREAKDOWN_CHANCE) return;
+  const ownedMachines = G.machines.filter(m => m.owned);
+  // Поломка возможна только если есть хотя бы 2 цеха — не хотим выключать
+  // единственный источник дохода совсем новому игроку.
+  if (ownedMachines.length < 2) return;
+  triggerBreakdown(now, ownedMachines);
+}
+
 function maybeTriggerRandomEvent(now) {
-  if (brokenMachine || packageDrop) return; // уже что-то идёт — не наслаиваем
+  if (packageDrop) return; // авария теперь отдельно, см. maybeTriggerBreakdown() выше — здесь только посылка/энергия
   if (now < rushHourEnd) return;            // не мешаем Часу пик
   if (!tick.lastRandomEventCheck) tick.lastRandomEventCheck = now; // не в первые секунды сессии
   if (now - tick.lastRandomEventCheck < RANDOM_EVENT_CHECK_EVERY) return;
   tick.lastRandomEventCheck = now;
   if (Math.random() >= RANDOM_EVENT_CHANCE) return;
 
-  const ownedMachines = G.machines.filter(m => m.owned);
-  const pool = ['package', 'energy'];
-  // Поломка возможна только если есть хотя бы 2 цеха — не хотим выключать
-  // единственный источник дохода совсем новому игроку.
-  if (ownedMachines.length >= 2) pool.push('breakdown');
-  const type = pool[Math.floor(Math.random() * pool.length)];
-
-  if (type === 'breakdown') triggerBreakdown(now, ownedMachines);
-  else if (type === 'package') triggerPackage(now);
+  const type = Math.random() < 0.5 ? 'package' : 'energy';
+  if (type === 'package') triggerPackage(now);
   else triggerEnergySurge();
 }
 
@@ -2997,6 +3159,8 @@ function triggerBreakdown(now, ownedMachines) {
   playSound('error');
   updateMachineCardDOM(target.id);
   updateEventBanner();
+  updateMenuBadge(); // явный бейдж на вкладке "Цеха" — виден, даже если игрок сейчас на другой вкладке
+  flashTabIcon('factory'); // короткая вспышка иконки вкладки — заметно даже боковым зрением
 }
 
 // Ремонт стоит долю от стоимости апгрейда этого же цеха — так цена всегда
@@ -3733,6 +3897,7 @@ function defaultState() {
     seasonExclusiveThemesOwned: [],        // навсегда — все варианты тем, заработанные за 10 ур. премиум-трека по сезонам (см. SEASON_EXCLUSIVE_THEMES)
     seasonExclusiveMachineSkinsOwned: [],  // навсегда — все скины сезонного цеха, заработанные за 15 ур. премиум-трека по сезонам
     adChestNextAt: 0, // когда снова доступен рекламный сундук (см. openAdChest)
+    promoHistory: [], // { code, label, at } — история уже введённых промокодов, см. applyPromoReward
     machines: MACHINES_DEF.map(d=>({
       id:d.id, level:1, owned:false, auto:true,
       progress:0, reward:d.baseReward, speed:d.baseSpeed,
@@ -3811,12 +3976,13 @@ function fmt(n) {
 }
 
 // Стоимость апгрейда цеха: растёт ×2.2 за каждый уровень
-// Целевая окупаемость первого апгрейда цеха — ~30 циклов ЕГО СОБСТВЕННОГО
+// Целевая окупаемость первого апгрейда цеха — ~45 циклов ЕГО СОБСТВЕННОГО
 // производства (не секунд — так соотношение одинаковое что у цеха с 4-сек.
 // циклом, что у цеха с 470-сек. циклом), с ростом ×1.15 за уровень — чтобы
 // поздняя прокачка того же цеха оставалась ощутимо дороже относительно
-// текущей отдачи, как и раньше.
-const UPGRADE_BASE_PAYBACK_CYCLES = 30;
+// текущей отдачи, как и раньше. (Было 30 циклов — поднято до 45 в рамках
+// общего замедления экономики, см. комментарий у MACHINES_DEF/prestigeThreshold.)
+const UPGRADE_BASE_PAYBACK_CYCLES = 45;
 const UPGRADE_PAYBACK_GROWTH      = 1.15;
 
 function machineUpgCost(id) {
@@ -3845,7 +4011,13 @@ function getUpgCost(id) {
 }
 
 function prestigeThreshold() {
-  const base = Math.round(350000 * Math.pow(4, G.prestigeCount));
+  // База поднята с 350 000 до 2 000 000 — согласовано с ×6 к ценам цехов
+  // выше (см. комментарий у MACHINES_DEF): первый престиж должен требовать
+  // заметно больше игрового времени, а не открываться почти сразу после
+  // пары первых цехов. Степень роста снижена с ×4 до ×3.2 за каждый
+  // следующий престиж — при увеличенной базе рост ×4 сделал бы поздние
+  // престижи непропорционально мучительными поверх и так возросшей базы.
+  const base = Math.round(2000000 * Math.pow(3.2, G.prestigeCount));
   return Math.round(base * (1 - skillBonus('prestige_thresh')));
 }
 
@@ -4054,7 +4226,17 @@ function doPrestige() {
   // Кристаллы считаем ДО увеличения prestigeCount — порог должен быть тем,
   // который действовал в этом заходе, а не следующим.
   const crystalsEarned = calcPrestigeCrystals();
-  G.prestigeMult = parseFloat((G.prestigeMult*1.5).toFixed(1));
+  // БЫЛО ×1.5 за каждый престиж БЕЗ огранич��ния темпа роста — это и есть
+  // главный источник "космических" чисел: 1.5^10 ≈ 57×, 1.5^20 ≈ 3325×,
+  // 1.5^30 ≈ 191 751× — у активного игрока за несколько дней множитель
+  // разгонялся до величин, которые уже физически не помещались в
+  // осмысленное восприятие ("миллион икс"). ×1.25 растёт куда мягче
+  // (1.25^10 ≈ 9.3×, 1.25^20 ≈ 86.7×, 1.25^30 ≈ 807×) — по-прежнему
+  // экспоненциально и ощутимо на каждом престиже, но без разгона до
+  // астрономических значений за разумное игровое время. Это меняет темп
+  // ТОЛЬКО для будущих престижей — уже накопленный G.prestigeMult у
+  // существующих игроков не пересчитывается и не уменьшается задним числом.
+  G.prestigeMult = parseFloat((G.prestigeMult*1.25).toFixed(2));
   G.prestigeCount++;
   const mult         = G.prestigeMult;
   const cnt          = G.prestigeCount;
@@ -4108,6 +4290,7 @@ function doPrestige() {
   const seasonExclusiveThemesOwned = G.seasonExclusiveThemesOwned;
   const seasonExclusiveMachineSkinsOwned = G.seasonExclusiveMachineSkinsOwned;
   const adChestNextAt = G.adChestNextAt;
+  const promoHistory = G.promoHistory;
   const vipExpiresAt = G.vipExpiresAt; // месячный VIP переживает престиж как обычная покупка — только цех/улучшения пересоздаются
   const totalPlayTimeMs = G.totalPlayTimeMs;
   // КРИТИЧНО: deltaSyncBaseline — точка отсчёта для дельта-синхронизации
@@ -4178,6 +4361,7 @@ function doPrestige() {
   G.seasonExclusiveThemesOwned         = seasonExclusiveThemesOwned || [];
   G.seasonExclusiveMachineSkinsOwned   = seasonExclusiveMachineSkinsOwned || [];
   G.adChestNextAt = adChestNextAt || 0;
+  G.promoHistory = promoHistory || [];
   G.vipExpiresAt = vipExpiresAt;
   G.totalPlayTimeMs = totalPlayTimeMs; // lifetime-метрика — раньше по ошибке сбрасывалась престижем, хотя lifetimeCoins/lifetimeClicks и т.п. рядом не сбрасываются
   G.energy = energyMax();
@@ -4270,6 +4454,18 @@ function checkMilestones() {
 }
 
 let currentTab='factory';
+// Короткая вспышка иконки вкладки (1.2с) — используется для событий,
+// которые нужно заметить, даже если игрок сейчас на другой вкладке и не
+// увидит обычный toast (например, авария на цехе, см. triggerBreakdown).
+function flashTabIcon(tab) {
+  const btn = document.getElementById('tab-' + tab);
+  if (!btn) return;
+  btn.classList.remove('tab-flash'); // на случай повторного вызова, пока прошлая анимация ещё идёт
+  void btn.offsetWidth; // форсируем reflow, чтобы CSS-анимация перезапустилась
+  btn.classList.add('tab-flash');
+  setTimeout(() => btn.classList.remove('tab-flash'), 1200);
+}
+
 function switchTab(tab) {
   if (tab !== currentTab) playSound('click');
   currentTab=tab;
@@ -4857,6 +5053,13 @@ function workerUrl(path) {
 }
 
 // ── ПРОМОКОДЫ ────────────────────────────────────────────────────
+// Простое экранирование для вставки пользовательского текста (код промокода
+// вводит сам игрок) в innerHTML — без этого спецсимволы вроде < или &
+// в промокоде сломали бы разметку истории ниже.
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
 async function redeemPromoCode() {
   const input    = document.getElementById('promoInput');
   const statusEl = document.getElementById('promoStatus');
@@ -4900,7 +5103,7 @@ async function redeemPromoCode() {
       statusEl.className = 'promo-status success';
       input.value = '';
       G.promoCodesRedeemed = (G.promoCodesRedeemed || 0) + 1;
-      applyPromoReward(data.reward);
+      applyPromoReward(data.reward, code);
       syncNow();
     } else {
       const messages = {
@@ -4924,21 +5127,27 @@ async function redeemPromoCode() {
   btn.disabled = false;
 }
 
-function applyPromoReward(reward) {
+function applyPromoReward(reward, code) {
   const { type, value } = reward;
   playSound('levelup');
+  let label = ''; // человекочитаемое описание — то же, что кладём в историю (см. G.promoHistory ниже)
   if (type === 'coins') {
     G.coins += value;
-    showToast('🎉 +' + fmt(value) + ' ' + t('coins') + '!');
+    label = `+${fmt(value)} ${t('coins')}`;
+    showToast('🎉 ' + label + '!');
   } else if (type === 'crystals') {
     G.crystals = (G.crystals || 0) + value;
     G.lifetimeCrystals = (G.lifetimeCrystals || 0) + value;
-    showToast('🎉 +' + fmt(value) + ' 💎!');
+    label = `+${fmt(value)} 💎`;
+    showToast('🎉 ' + label + '!');
   } else if (type === 'starterPack') {
+    label = 'Стартовый набор';
     if (!G.purchases.starterPack) { G.purchases.starterPack = true; showToast('🎉 Стартовый набор активирован!'); }
   } else if (type === 'vipStatus') {
+    label = 'VIP-статус (навсегда)';
     if (!G.purchases.vipStatus) { G.purchases.vipStatus = true; showToast('🎉 VIP-статус активирован!'); }
   } else if (type === 'secretLab') {
+    label = 'Секретная лаборатория';
     if (!G.purchases.secretLab) {
       G.purchases.secretLab = true;
       const m = getMachine(10);
@@ -4949,23 +5158,29 @@ function applyPromoReward(reward) {
       showToast('🎉 Секретная лаборатория разблокирована!');
     }
   } else if (type === 'autoPilot') {
+    label = 'Автопилот завода';
     if (!G.purchases.autoPilot) { G.purchases.autoPilot = true; showToast('🎉 Автопилот завода разблокирован!'); }
   } else if (type === 'themeAurora') {
+    label = 'Тема «Аврора»';
     if (!G.purchases.themeAurora) { G.purchases.themeAurora = true; showToast('🎉 Тема «Аврора» разблокирована!'); }
   } else if (type === 'themeMagma') {
+    label = 'Тема «Магма»';
     if (!G.purchases.themeMagma) { G.purchases.themeMagma = true; showToast('🎉 Тема «Магма» разблокирована!'); }
   } else if (type === 'themeChampion') {
     // Промокод/админка всегда выдаёт БАЗОВЫЙ вариант пула (см.
     // SEASON_EXCLUSIVE_THEMES/grantSeasonExclusiveTheme) — если игрок его
     // уже собрал в игре, повторно ничего не ломает (просто вернёт false).
+    label = 'Тема «Чемпион сезона»';
     if (grantSeasonExclusiveTheme('champion')) showToast('🎉 Эксклюзивная тема «Чемпион сезона» разблокирована!');
     else showToast('Тема «Чемпион сезона» уже была получена ранее.');
     renderThemePicker();
   } else if (type === 'seasonExclusiveMachine') {
+    label = 'Сезонный цех';
     if (grantSeasonExclusiveMachineSkin('s_gold')) showToast('🎉 Эксклюзивный сезонный цех разблокирован!');
     else showToast('Этот сезонный цех уже был получен ранее.');
     fullRender();
   } else if (type === 'seasonPass') {
+    label = 'Премиум-трек сезонного пропуска';
     ensureSeasonFresh();
     if (!seasonHasPremium()) {
       G.seasonPremiumForIndex = G.seasonIndex;
@@ -4973,11 +5188,53 @@ function applyPromoReward(reward) {
       renderSeasonPass();
     }
   }
+  // История промокодов — какой код, что за него дали и когда. Храним
+  // последние 50 записей (больше ни к чему — это справочная информация,
+  // а не игровая экономика, раздувать сохранение ей незачем), новые
+  // записи — в начало списка (последний активированный сверху).
+  if (!Array.isArray(G.promoHistory)) G.promoHistory = [];
+  G.promoHistory.unshift({ code: code || '', label: label || t('coins'), at: Date.now() });
+  if (G.promoHistory.length > 50) G.promoHistory.length = 50;
+  renderPromoHistory();
   playSound('levelup');
   goldenGlow(document.getElementById('hCoins'));
   fullRender();
   renderThemePicker();
   saveGame();
+}
+
+// Список уже введённых промокодов под полем ввода — код, что дали, когда
+// (относительное время для недавних, дата — для более старых). Листается
+// вниз обычной прокруткой блока, отдельного пагинатора не нужно — записей
+// не больше 50 (см. applyPromoReward выше).
+function renderPromoHistory() {
+  const box = document.getElementById('promoHistoryList');
+  if (!box) return;
+  const list = Array.isArray(G.promoHistory) ? G.promoHistory : [];
+  if (!list.length) {
+    box.innerHTML = `<div style="font-size:11px;color:var(--muted);padding:8px 0">Здесь появятся уже введённые промокоды</div>`;
+    return;
+  }
+  box.innerHTML = list.map(h => `
+    <div class="promo-history-item">
+      <div>
+        <div class="promo-history-code">${escapeHtml(h.code || '—')}</div>
+        <div class="promo-history-reward">${escapeHtml(h.label || '')}</div>
+      </div>
+      <div class="promo-history-date">${formatPromoDate(h.at)}</div>
+    </div>
+  `).join('');
+}
+
+function formatPromoDate(ts) {
+  if (!ts) return '';
+  const diff = Date.now() - ts;
+  if (diff < 60000) return 'только что';
+  if (diff < 3600000) return Math.floor(diff / 60000) + ' мин назад';
+  if (diff < 86400000) return Math.floor(diff / 3600000) + ' ч назад';
+  const d = new Date(ts);
+  const pad = n => String(n).padStart(2, '0');
+  return `${pad(d.getDate())}.${pad(d.getMonth()+1)}.${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
 // Регистрируем код на сервере (код → мой vk_user_id), чтобы когда друг перейдёт
@@ -5662,6 +5919,28 @@ function claimAchievement(id) {
   updateQuestBadge();
   saveGame();
   syncNow();
+  reportVkMission(id); // best-effort, см. комментарий у функции — пусто, пока миссии не заведены в кабинете VK
+}
+
+// ── VK «Миссии» (dev.vk.com → Соц. механики → Миссии) ────────────────
+// Best-effort уведомление сервера о том, что игрок выполнил внутриигровую
+// ачивку — сервер сам решает, отправлять ли это как VK-миссию (см.
+// VK_MISSION_ACTIVITY_IDS в routes.js: пока конкретная ачивка там не
+// сопоставлена с activity_id настоящей миссии, сервер просто ответит
+// {ok:false, reason:'unmapped_mission'} и ничего никуда не отправит — это
+// ожидаемое поведение, а не ошибка). Ничего не блокирует и не показывается
+// игроку — совпадение или несовпадение с VK-миссией не должно влиять на
+// обычный игровой поток.
+function reportVkMission(achId) {
+  if (PLATFORM !== 'vk' || !vkReady || !GLOBAL_LB_ENDPOINT) return;
+  getLaunchParamsString().then(launchParams => {
+    if (!launchParams) return;
+    fetch(workerUrl('/report-mission'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ launchParams, missionKey: achId, value: 1 }),
+    }).catch(() => {});
+  }).catch(() => {});
 }
 
 // ── СТАТИСТИКА ───────────────────────────────────────────────────
@@ -5823,6 +6102,7 @@ function openMenuSection(section) {
   if (section==='stats')   renderStats();
   if (section==='ach')     renderAchievements();
   if (section==='friends') { renderFriends(); syncInvitedCount(); }
+  if (section==='promo')   renderPromoHistory();
 }
 
 function closeMenuSection() {
@@ -6217,6 +6497,12 @@ function updateMenuBadge() {
     }
     return false;
   })();
+  // badge на вкладке Цеха — авария (см. maybeTriggerBreakdown): раньше об
+  // аварии узнавали только тостом, который легко пропустить, если в этот
+  // момент открыта другая вкладка — теперь ещё и постоянный бейдж, пока
+  // цех не починен или пока авария не закончится сама.
+  const fb = document.getElementById('factoryBadge');
+  if (fb) fb.classList.toggle('show', !!brokenMachine && currentTab !== 'factory');
   const has = hasQuest || hasAch || hasStreak || hasSkill || streakIsNew || skillsIsNew || hasWeekly || hasSeason;
   // Карточка "Награда за вход" — появляется только после покупки первого цеха
   const streakCard = document.getElementById('streakMenuCard');
@@ -6424,6 +6710,7 @@ function tickInner(now) {
       maybeTriggerRushHour(now);
       updateRushBanner();
       maybeTriggerRandomEvent(now);
+      maybeTriggerBreakdown(now);
       updateEventBanner();
       checkVipExpiry();
       if (G.purchases?.autoPilot) runAutoPilot();
