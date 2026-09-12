@@ -872,10 +872,6 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
               <button class="settings-toggle" id="settingsSoundBtn" onclick="toggleSound(); renderSettingsPanel();"></button>
             </div>
             <div class="settings-row">
-              <div class="settings-row-label">🎵 Музыка</div>
-              <button class="settings-toggle" id="settingsMusicBtn" onclick="toggleMusic(); renderSettingsPanel();"></button>
-            </div>
-            <div class="settings-row">
               <div class="settings-row-label">📳 Вибрация</div>
               <button class="settings-toggle" id="settingsHapticBtn" onclick="toggleHaptic(); renderSettingsPanel();"></button>
             </div>
@@ -1139,7 +1135,6 @@ const I18N = {
     settingsAutoUpgrade: '⬆️ Автоапгрейд',
     settingsAutoUpgradeHint: 'Сам берёт самый дешёвый доступный апгрейд',
     settingsAutoLocked: '🔒 Открывается покупкой «Автопилот завода» в Магазине',
-    settingsMusic: '🎵 Музыка',
     premiumOnly: 'Только за реальные деньги',
     perCycle: 'за цикл',
     // Вехи новые
@@ -2846,132 +2841,18 @@ function toggleSound() {
   saveGame();
 }
 
-// ── ФОНОВАЯ МУЗЫКА ───────────────────────────────────────────────
-// Тихий зацикленный эмбиент — тоже целиком генерируется через Web Audio
-// API (несколько расстроенных тонов через медленно "плывущий" фильтр,
-// без единого аудиофайла), так же как и короткие эффекты выше. Это
-// ОТДЕЛЬНЫЙ переключатель от G.soundEnabled — можно слушать музыку без
-// звуковых эффектов и наоборот, обе используют один и тот же audioCtx.
-let musicNodes = null;
+// Фоновая музыка была убрана целиком по просьбе — раздражала при долгой
+// игре, а компромиссные варианты (тише, другая прогрессия аккордов) не
+// решали проблему в корне. G.musicEnabled/toggleMusic/AMBIENT_* больше не
+// существуют; G.soundEnabled (короткие звуковые эффекты) не затронут.
 
-// БЫЛО: один и тот же аккорд (Cmaj7) держался БЕСКОНЕЧНО, единственным
-// движением был медленный свип фильтра каждые ~22с по кругу — при долгой
-// игре это ощущалось навязчиво и монотонно ("бесячая музыка", дословная
-// жалоба). Теперь — прогрессия из 4 тёплых родственных аккордов
-// (Cmaj7 → Am7 → Fmaj7 → G6, классическая мягкая последовательность), ноты
-// каждого голоса плавно "переезжают" к следующему аккорду раз в ~26с
-// (frequency.linearRampToValueAtTime — без щелчков), плюс лёгкая расстройка
-// (detune) между голосами вместо холодных чистых синусоид в унисон — звук
-// живее и теплее на слух при той же простоте синтеза.
-const AMBIENT_CHORDS = [
-  [130.81, 164.81, 196.00, 246.94], // Cmaj7
-  [110.00, 130.81, 164.81, 220.00], // Am7
-  [174.61, 220.00, 261.63, 349.23], // Fmaj7
-  [196.00, 246.94, 293.66, 392.00], // G6
-];
-const AMBIENT_CHORD_HOLD = 26; // секунд на аккорд
-
-function startAmbientMusic() {
-  const ctx = getAudioCtx();
-  if (!ctx || musicNodes) return;
-  // Та же гонка, что и в playSound() выше — ждём реального resume(), иначе
-  // фейд-ин может начать планироваться по времени, которое к моменту
-  // фактического запуска контекста уже "в прошлом".
-  if (ctx.state !== 'running') { ctx.resume().then(() => startAmbientMusicNow(ctx)).catch(()=>{}); }
-  else startAmbientMusicNow(ctx);
-}
-
-function startAmbientMusicNow(ctx) {
-  if (musicNodes) return; // на случай, если toggle успели дважды нажать, пока ждали resume()
-
-  const master = ctx.createGain();
-  master.gain.setValueAtTime(0.0001, ctx.currentTime);
-  master.gain.linearRampToValueAtTime(0.14, ctx.currentTime + 3); // чуть тише, чем раньше (было 0.16) — комфортнее при долгой игре
-
-  // Медленно "плывущий" фильтр — движение внутри одного аккорда, помимо
-  // самой смены аккордов раз в AMBIENT_CHORD_HOLD секунд.
-  const filter = ctx.createBiquadFilter();
-  filter.type = 'lowpass';
-  filter.frequency.value = 900;
-  filter.Q.value = 0.6;
-  filter.connect(master);
-  master.connect(ctx.destination);
-
-  const startChord = AMBIENT_CHORDS[0];
-  const detunes = [-4, 3, -2, 5]; // центы — на каждый голос своя лёгкая расстройка, чтобы звук не был "стерильным" унисоном
-  const oscs = startChord.map((freq, i) => {
-    const osc = ctx.createOscillator();
-    osc.type = 'sine';
-    osc.frequency.value = freq;
-    osc.detune.value = detunes[i];
-    const g = ctx.createGain();
-    g.gain.value = 0.22;
-    osc.connect(g); g.connect(filter);
-    osc.start();
-    return osc;
-  });
-
-  const lfo = ctx.createOscillator();
-  lfo.frequency.value = 0.045; // один цикл примерно каждые 22 секунды
-  const lfoGain = ctx.createGain();
-  lfoGain.gain.value = 260;
-  lfo.connect(lfoGain);
-  lfoGain.connect(filter.frequency);
-  lfo.start();
-
-  musicNodes = { master, filter, oscs, lfo, lfoGain, chordIndex: 0, chordTimer: null };
-
-  // Плавный переход к следующему аккорду прогрессии — переезжаем частоты
-  // существующих осцилляторов (linearRampToValueAtTime) вместо остановки/
-  // запуска новых голосов, поэтому никаких щелчков или пауз в звуке.
-  function advanceChord() {
-    if (!musicNodes) return;
-    musicNodes.chordIndex = (musicNodes.chordIndex + 1) % AMBIENT_CHORDS.length;
-    const chord = AMBIENT_CHORDS[musicNodes.chordIndex];
-    const now = ctx.currentTime;
-    musicNodes.oscs.forEach((osc, i) => {
-      osc.frequency.cancelScheduledValues(now);
-      osc.frequency.setValueAtTime(osc.frequency.value, now);
-      osc.frequency.linearRampToValueAtTime(chord[i], now + 4); // 4с плавного "переезда" между аккордами
-    });
-    musicNodes.chordTimer = setTimeout(advanceChord, AMBIENT_CHORD_HOLD * 1000);
-  }
-  musicNodes.chordTimer = setTimeout(advanceChord, AMBIENT_CHORD_HOLD * 1000);
-}
-
-function stopAmbientMusic() {
-  if (!musicNodes) return;
-  const ctx = audioCtx;
-  const nodes = musicNodes;
-  musicNodes = null;
-  clearTimeout(nodes.chordTimer); // иначе смена аккорда продолжит тикать в фоне и попытается тронуть уже отключённые осцилляторы
-  if (!ctx) return;
-  try {
-    const now = ctx.currentTime;
-    nodes.master.gain.cancelScheduledValues(now);
-    nodes.master.gain.setValueAtTime(nodes.master.gain.value, now);
-    nodes.master.gain.linearRampToValueAtTime(0.0001, now + 1.2); // плавный фейд-аут
-  } catch(e) {}
-  setTimeout(() => {
-    try { nodes.oscs.forEach(o => o.stop()); nodes.lfo.stop(); } catch(e) {}
-  }, 1300);
-}
-
-function toggleMusic() {
-  G.musicEnabled = !G.musicEnabled;
-  if (G.musicEnabled) { getAudioCtx(); startAmbientMusic(); }
-  else stopAmbientMusic();
-  saveGame();
-}
-
-// Пока вкладка свёрнута/неактивна — приостанавливаем весь audioCtx (браузер
-// это и так может сделать сам, но так честнее по энергопотреблению и не
-// зависит от политики конкретного браузера). Ноды музыки при этом не
-// пересоздаются — просто "замирают" и продолжат играть с того же места.
+// Пока вкладка свёрнута/неактивна — приостанавливаем audioCtx (браузер это
+// и так может сделать сам, но так честнее по энергопотреблению и не
+// зависит от политики конкретного браузера).
 document.addEventListener('visibilitychange', () => {
   if (!audioCtx) return;
   if (document.hidden) { audioCtx.suspend().catch(()=>{}); }
-  else if (G.soundEnabled || G.musicEnabled) { audioCtx.resume().catch(()=>{}); }
+  else if (G.soundEnabled) { audioCtx.resume().catch(()=>{}); }
 });
 
 function toggleHaptic() {
@@ -3883,7 +3764,7 @@ function defaultState() {
     weeklyCompleted: 0, // сколько еженедельных челленджей всего выполнено (текущий G.weekly.claimed — только про эту неделю)
     seasonIndex: null, seasonSP: 0, seasonFreeClaimed: [], seasonPremiumClaimed: [], seasonPremiumForIndex: null,
     seasonQuests: null,
-    soundEnabled: true, musicEnabled: false,
+    soundEnabled: true,
     autoBuyMachines: false, autoUpgradeCheapest: false,
     crystals: 0, lifetimeCrystals: 0, skills: {}, promoCodesRedeemed: 0, questsCompleted: 0,
     tutorialSeen: false, seenStreakFeature: false, seenSkillsFeature: false, theme: 'classic',
@@ -4273,7 +4154,6 @@ function doPrestige() {
   const weekly = G.weekly;
   const notifAllowed = G.notifAllowed;
   const hapticEnabled = G.hapticEnabled;
-  const musicEnabled = G.musicEnabled;
   const autoBuyMachines = G.autoBuyMachines;
   const autoUpgradeCheapest = G.autoUpgradeCheapest;
   const seasonIndex = G.seasonIndex;
@@ -4344,7 +4224,6 @@ function doPrestige() {
   G.weekly              = weekly;
   G.notifAllowed        = notifAllowed;
   G.hapticEnabled       = hapticEnabled;
-  G.musicEnabled        = musicEnabled;
   G.autoBuyMachines       = autoBuyMachines;
   G.autoUpgradeCheapest   = autoUpgradeCheapest;
   G.seasonIndex           = seasonIndex;
@@ -5674,11 +5553,6 @@ function renderSettingsPanel() {
     soundBtn.textContent = G.soundEnabled ? '🔊 Включён' : '🔇 Выключен';
     soundBtn.classList.toggle('on', !!G.soundEnabled);
   }
-  const musicBtn = document.getElementById('settingsMusicBtn');
-  if (musicBtn) {
-    musicBtn.textContent = G.musicEnabled ? '🎵 Включена' : '🔇 Выключена';
-    musicBtn.classList.toggle('on', !!G.musicEnabled);
-  }
   const hapticBtn = document.getElementById('settingsHapticBtn');
   if (hapticBtn) {
     hapticBtn.textContent = G.hapticEnabled ? '📳 Включена' : '📴 Выключена';
@@ -6927,7 +6801,6 @@ document.getElementById('startBtn').addEventListener('click', () => {
   document.getElementById('splash').classList.add('hide');
   document.getElementById('game').style.display = 'flex';
   if (G.soundEnabled) getAudioCtx(); // разблокируем звук по первому жесту пользователя
-  if (G.musicEnabled) { getAudioCtx(); startAmbientMusic(); }
   fullRender();
   initIAP();
   initQuests();
