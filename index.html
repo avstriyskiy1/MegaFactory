@@ -1363,7 +1363,17 @@ const IAP_PRODUCTS = [
     // VIP навсегда — покупка технически пройдёт (VK её не блокирует), но
     // ничего не добавит: isVipActive() и так уже true, срок просто не
     // используется, пока не отменят "навсегда".
+    //
+    // hidden:true — этой карточки больше НЕТ в магазине как отдельного
+    // товара: по просьбе разовую покупку "VIP на месяц" заменили подпиской
+    // (см. renderVipSubscriptionCard()/buySubscription() ниже — там
+    // отдельный диалог VKWebAppShowSubscriptionBox с автопродлением).
+    // Сама запись НЕ удалена — её onBuy переиспользуется КАЖДЫМ платежом
+    // по подписке (продление на 30 дней ставится в pending_rewards именно
+    // с item:'vip_status_month', см. payments.js на сервере) — так
+    // подписка использует ровно ту же, уже проверенную логику начисления.
     id:       'vip_status_month',
+    hidden:   true,
     type:     'vip',
     nameKey:  'iapVipMonth',
     descKey:  'iapVipMonthDesc',
@@ -1774,7 +1784,7 @@ async function syncPurchases(retryHard) {
 function renderIAP() {
   const el = document.getElementById('iapList');
   if (!el) return;
-  el.innerHTML = IAP_PRODUCTS.map(prod => {
+  const cards = IAP_PRODUCTS.filter(prod => !prod.hidden).map(prod => {
     // season_pass — не разовая покупка (once:false, можно оформить снова в
     // следующем сезоне), но и не обычный расходник вроде пачки монет —
     // в рамках ОДНОГО сезона он ведёт себя как разовая покупка, поэтому
@@ -1782,24 +1792,7 @@ function renderIAP() {
     let owned = (prod.once && iapFlagOwned(prod.id)) || (prod.id === 'season_pass' && seasonHasPremium());
     let extraLine = '';
 
-    // VIP на месяц — единственный товар в каталоге, у которого "куплено"
-    // не бинарно: можно докупать (продлевать), поэтому кнопка НЕ
-    // блокируется как у обычных once-товаров. Единственное исключение —
-    // если уже есть VIP навсегда, тогда месячный смысла не имеет вообще.
-    if (prod.id === 'vip_status_month') {
-      if (G.purchases?.vipStatus) {
-        owned = true; // навсегда уже покрывает всё — показываем как "куплено", кнопку блокируем
-        extraLine = 'Уже включено в VIP навсегда';
-      } else if (G.vipExpiresAt && G.vipExpiresAt > Date.now()) {
-        const daysLeft = Math.max(1, Math.ceil((G.vipExpiresAt - Date.now()) / 86400000));
-        extraLine = `👑 Активен ещё ${daysLeft} ${pluralRu(daysLeft, 'день', 'дня', 'дней')} — новая покупка продлит срок`;
-      }
-    }
-    // VIP навсегда, в свою очередь, делает месячный полностью избыточным —
-    // если уже есть навсегда, отдельно показывать, что месячный "истекает",
-    // не нужно (он попросту больше ни на что не влияет).
-
-    return `<div class="iap-item ${prod.type}${owned?' owned':''}">
+    let html = `<div class="iap-item ${prod.type}${owned?' owned':''}">
       <div class="iap-info">
         <div class="iap-name">${t(prod.nameKey)}${owned?' ✓':''}${prod.badgeKey && !owned ? `<span class="iap-badge">${t(prod.badgeKey)}</span>` : ''}</div>
         <div class="iap-desc">${t(prod.descKey)}</div>
@@ -1809,7 +1802,13 @@ function renderIAP() {
         ${owned ? t('bought') : prod.price}
       </button>
     </div>`;
-  }).join('') + renderVipSubscriptionCard();
+    // Карточку подписки показываем СРАЗУ ПОСЛЕ "VIP навсегда" — это два
+    // способа получить один и тот же VIP-статус (разово или по подписке),
+    // логично держать их рядом, а не в разных концах списка магазина.
+    if (prod.id === 'vip_status') html += renderVipSubscriptionCard();
+    return html;
+  });
+  el.innerHTML = cards.join('');
 }
 
 // VIP-подписка — рендерится отдельно от IAP_PRODUCTS.map() выше, т.к. идёт
@@ -1829,7 +1828,7 @@ function renderVipSubscriptionCard() {
   return `<div class="iap-item vip${foreverOwned?' owned':''}">
     <div class="iap-info">
       <div class="iap-name">👑 VIP-подписка${foreverOwned?' ✓':''}<span class="iap-badge">Автопродление</span></div>
-      <div class="iap-desc">То же самое, что и VIP на месяц, но продлевается сам каждый месяц — не нужно заходить и покупать заново</div>
+      <div class="iap-desc">Все привилегии VIP (×1.5 к доходу, VIP-цех, эксклюзивная тема), продлевается само каждый месяц — не нужно заходить и покупать заново</div>
       ${extraLine ? `<div class="iap-desc" style="color:var(--accent);margin-top:2px">${extraLine}</div>` : ''}
       ${(!foreverOwned) ? `<div style="margin-top:6px"><a href="#" onclick="manageSubscription('vip_subscription');return false;" style="font-size:11px;color:var(--muted);text-decoration:underline">Управлять подпиской / отменить</a></div>` : ''}
     </div>
