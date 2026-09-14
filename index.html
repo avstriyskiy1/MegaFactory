@@ -814,6 +814,16 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
             <div class="menu-card-arrow">›</div>
           </div>
 
+          <!-- Кристальный магазин -->
+          <div class="menu-card" onclick="openMenuSection('crystalshop')">
+            <div class="menu-card-icon">💎</div>
+            <div class="menu-card-info">
+              <div class="menu-card-title">Кристальный магазин</div>
+              <div class="menu-card-sub">Потрать кристаллы на бусты и косметику</div>
+            </div>
+            <div class="menu-card-arrow">›</div>
+          </div>
+
           <!-- Друзья -->
           <div class="menu-card" onclick="openMenuSection('friends')">
             <div class="menu-card-icon">👥</div>
@@ -821,6 +831,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
               <div class="menu-card-title" id="menuTitleFriends">Друзья</div>
               <div class="menu-card-sub" id="menuSubFriends">Пригласи — получи бонус</div>
             </div>
+            <span class="tab-badge menu-badge" id="friendsGiftBadge"></span>
             <div class="menu-card-arrow">›</div>
           </div>
 
@@ -918,6 +929,13 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
           <div id="promoHistoryList" class="promo-history-list"></div>
         </div>
 
+        <!-- Секция: Кристальный магазин -->
+        <div id="menuSecCrystalShop" style="display:none">
+          <button class="menu-back-btn" onclick="closeMenuSection('crystalshop')">‹ Назад</button>
+          <div class="promo-desc">У тебя <b id="crystalShopBalance">0</b> 💎 — трать на бусты и косметику, не только на дерево навыков</div>
+          <div id="crystalShopList"></div>
+        </div>
+
         <!-- Секция: Дерево навыков -->
         <div id="menuSecSkills" style="display:none">
           <button class="menu-back-btn" onclick="closeMenuSection('skills')">‹ Назад</button>
@@ -980,6 +998,13 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
             <button class="btn-friends secondary" onclick="shareProgressToStory()" id="shareProgressStoryBtn" style="margin-top:8px;width:100%">📸 В историю</button>
             <div class="friends-code" id="friendsCode"></div>
           </div>
+
+          <!-- Подарки друзьям — дарить можно только тем, кого сам пригласил
+               (список ниже строится от /my-referred-list, см. renderGiftableFriends) -->
+          <div id="incomingGiftsBox"></div>
+          <div class="settings-block-title" style="margin-top:18px">🎁 Подарить другу</div>
+          <div class="promo-desc" style="margin-top:-6px;margin-bottom:10px">Полная энергия + недолгий буст к доходу — бесплатно, раз в день на каждого друга</div>
+          <div id="giftableFriendsList"><div class="friends-rank-empty">Загрузка...</div></div>
         </div>
 
       </div>
@@ -1415,6 +1440,28 @@ const IAP_PRODUCTS = [
     },
   },
   {
+    // ── Ограниченный по времени оффер ("сундук") ────────────────────
+    // hidden:true — не показывается через общий цикл renderIAP(), у него
+    // своя карточка со счётчиком времени (см. renderVaultOfferCard() и
+    // maybeOfferVault() ниже) — обычная карточка once/repeatable товара
+    // тут не подходит, нужен именно отсчёт до конца окна предложения.
+    // Единственный способ купить кристаллы за реальные деньги напрямую —
+    // обычно они только зарабатываются в игре.
+    id:       'vault_offer',
+    type:     'coins',
+    hidden:   true,
+    once:     false,
+    price:    voicesLabel(55),
+    onBuy:    () => {
+      const bonus = Math.max(Math.round(cps() * 21600), 30000); // ~6 часов дохода
+      G.coins += bonus;
+      G.crystals = (G.crystals || 0) + 15;
+      G.lifetimeCrystals = (G.lifetimeCrystals || 0) + 15;
+      G.vaultOfferExpiresAt = 0; // куплено — окно больше не нужно показывать до следующего предложения
+      showToast(`🎁 +${fmt(bonus)} ${t('coins')} +15 💎!`);
+    },
+  },
+  {
     id:       'secret_lab',
     type:     'vip',
     nameKey:  'iapLab',
@@ -1781,6 +1828,39 @@ async function syncPurchases(retryHard) {
   return false;
 }
 
+// ── ОГРАНИЧЕННЫЙ ПО ВРЕМЕНИ ОФФЕР ("сундук") ──────────────────────────
+// Показывается НЕ новым игрокам с порога (давить на только что зашедшего
+// человека — плохая практика), а после того как игрок уже проявил
+// вовлечённость (наиграл 20+ минут ИЛИ сделал первый престиж). Дальше — не
+// чаще раза в 14 дней, если не купил. Таймер честный: 24 часа реального
+// времени с момента показа, хранится в сохранении (G.vaultOfferExpiresAt),
+// а не пересчитывается заново при каждом заходе — если время вышло, оффер
+// действительно пропадает, а не "обновляется" под видом новой срочности.
+const VAULT_OFFER_COOLDOWN = 14 * 24 * 3600 * 1000;
+const VAULT_OFFER_DURATION = 24 * 3600 * 1000;
+function maybeOfferVault() {
+  if (G.vaultOfferExpiresAt && Date.now() < G.vaultOfferExpiresAt) return; // уже активен
+  const engaged = (G.totalPlayTimeMs || 0) > 20 * 60 * 1000 || (G.prestigeCount || 0) >= 1;
+  if (!engaged) return;
+  if (Date.now() - (G.vaultLastOfferedAt || 0) < VAULT_OFFER_COOLDOWN) return;
+  G.vaultOfferExpiresAt = Date.now() + VAULT_OFFER_DURATION;
+  G.vaultLastOfferedAt = Date.now();
+  saveGame();
+}
+
+function renderVaultOfferCard() {
+  if (!G.vaultOfferExpiresAt || Date.now() >= G.vaultOfferExpiresAt) return '';
+  const left = G.vaultOfferExpiresAt - Date.now();
+  const h = Math.floor(left / 3600000), m = Math.floor((left % 3600000) / 60000);
+  return `<div class="iap-item coins" style="border-color:var(--accent);background:linear-gradient(180deg, rgba(255,215,0,.08), transparent)">
+    <div class="iap-info">
+      <div class="iap-name">🎁 Праздничный сундук<span class="iap-badge">⏳ ${h}ч ${m}м</span></div>
+      <div class="iap-desc">~6 часов дохода + 15 💎 одним пакетом — только сейчас</div>
+    </div>
+    <button class="btn-iap coins" onclick="buyProduct('vault_offer')">${voicesLabel(55)}</button>
+  </div>`;
+}
+
 function renderIAP() {
   const el = document.getElementById('iapList');
   if (!el) return;
@@ -1808,7 +1888,7 @@ function renderIAP() {
     if (prod.id === 'vip_status') html += renderVipSubscriptionCard();
     return html;
   });
-  el.innerHTML = cards.join('');
+  el.innerHTML = renderVaultOfferCard() + cards.join('');
 }
 
 // VIP-подписка — рендерится отдельно от IAP_PRODUCTS.map() выше, т.к. идёт
@@ -2818,6 +2898,7 @@ async function hideBackgroundBannerAd() {
 const AD_BONUS_DURATION = 5 * 60 * 1000;
 const AD_COOLDOWN       = 5 * 60 * 1000;
 let adBonusEnd    = 0;
+let pendingGifts  = []; // текущий список неполученных подарков — см. checkMyGifts()/claimGift()
 let adCooldownEnd = 0;
 
 // ── ЗВУК ─────────────────────────────────────────────────────────
@@ -3602,6 +3683,22 @@ function getAdMultiplier() {
   return Date.now() < adBonusEnd ? 2 : 1;
 }
 
+function getCrystalBoostMultiplier() {
+  return Date.now() < (G.crystalBoostEnd || 0) ? 3 : 1;
+}
+function getGiftBoostMultiplier() {
+  return Date.now() < (G.giftBoostEnd || 0) ? 1.5 : 1;
+}
+
+// "Лучший из активных" бустов дохода, а не произведение — иначе одновременное
+// владение рекламным ×2 (см. showRewardedAd выше), кристальным ×3 (см.
+// CRYSTAL_SHOP_ITEMS ниже) и подарочным ×1.5 (см. claimGift) давало бы их
+// произведение просто по факту совпадения по времени — перебор для эффектов,
+// доступных бесплатно или за игровую валюту без денег.
+function getIncomeBoostMultiplier() {
+  return Math.max(getAdMultiplier(), getCrystalBoostMultiplier(), getGiftBoostMultiplier());
+}
+
 // Стартовый пак убирает cooldown между просмотрами рекламы
 const _origAdCooldownCheck = () => Date.now() < adCooldownEnd;
 function adIsOnCooldown() {
@@ -3778,6 +3875,11 @@ function defaultState() {
     seasonExclusiveMachineSkinsOwned: [],  // навсегда — все скины сезонного цеха, заработанные за 15 ур. премиум-трека по сезонам
     adChestNextAt: 0, // когда снова доступен рекламный сундук (см. openAdChest)
     promoHistory: [], // { code, label, at } — история уже введённых промокодов, см. applyPromoReward
+    crystalBoostEnd: 0,   // до какого момента активен буст ×3 из кристального магазина (см. CRYSTAL_SHOP_ITEMS)
+    crystalShopOwned: [], // разовые покупки кристального магазина (напр. 'theme_crystal') — навсегда, переживают престиж
+    vaultOfferExpiresAt: 0, // ограниченный по времени оффер — см. maybeOfferVault()
+    vaultLastOfferedAt: 0,
+    giftBoostEnd: 0, // временный буст ×1.5 от полученного подарка друга — см. claimGift()
     machines: MACHINES_DEF.map(d=>({
       id:d.id, level:1, owned:false, auto:true,
       progress:0, reward:d.baseReward, speed:d.baseSpeed,
@@ -4170,6 +4272,12 @@ function doPrestige() {
   const seasonExclusiveMachineSkinsOwned = G.seasonExclusiveMachineSkinsOwned;
   const adChestNextAt = G.adChestNextAt;
   const promoHistory = G.promoHistory;
+  const crystalShopOwned = G.crystalShopOwned;
+  const crystalBoostEnd = G.crystalBoostEnd; // куплен за кристаллы — нечестно терять его от клика по престижу
+  const crystalCdInstantIncome = G['crystalCd_instant_income'];
+  const vaultOfferExpiresAt = G.vaultOfferExpiresAt;
+  const vaultLastOfferedAt = G.vaultLastOfferedAt;
+  const giftBoostEnd = G.giftBoostEnd; // подарок от друга — тоже нечестно терять от клика по престижу
   const vipExpiresAt = G.vipExpiresAt; // месячный VIP переживает престиж как обычная покупка — только цех/улучшения пересоздаются
   const totalPlayTimeMs = G.totalPlayTimeMs;
   // КРИТИЧНО: deltaSyncBaseline — точка отсчёта для дельта-синхронизации
@@ -4240,6 +4348,12 @@ function doPrestige() {
   G.seasonExclusiveMachineSkinsOwned   = seasonExclusiveMachineSkinsOwned || [];
   G.adChestNextAt = adChestNextAt || 0;
   G.promoHistory = promoHistory || [];
+  G.crystalShopOwned = crystalShopOwned || [];
+  G.crystalBoostEnd = crystalBoostEnd || 0;
+  if (crystalCdInstantIncome) G['crystalCd_instant_income'] = crystalCdInstantIncome;
+  G.vaultOfferExpiresAt = vaultOfferExpiresAt || 0;
+  G.vaultLastOfferedAt = vaultLastOfferedAt || 0;
+  G.giftBoostEnd = giftBoostEnd || 0;
   G.vipExpiresAt = vipExpiresAt;
   G.totalPlayTimeMs = totalPlayTimeMs; // lifetime-метрика — раньше по ошибке сбрасывалась престижем, хотя lifetimeCoins/lifetimeClicks и т.п. рядом не сбрасываются
   G.energy = energyMax();
@@ -4992,6 +5106,7 @@ async function redeemPromoCode() {
         already_used:            'Ты уже использовал этот промокод',
         already_used_youtuber:   'Можно активировать только один блогерский промокод',
         invalid_sign:            'Ошибка проверки — попробуй позже',
+        rate_limited:            'Слишком много попыток подряд — подожди минуту и попробуй ещё раз',
       };
       statusEl.textContent = messages[data.error] || 'Не удалось активировать промокод';
       statusEl.className = 'promo-status error';
@@ -5297,6 +5412,137 @@ function renderFriends() {
   if (invitedEl) invitedEl.textContent = G.friendsInvited || 0;
   if (multEl)    multEl.textContent    = '×' + referralMult().toFixed(2);
   if (codeEl)    codeEl.textContent    = t('refYourCode') + ': ' + getMyRefCode();
+  renderGiftableFriends();
+  checkMyGifts();
+}
+
+// ── ПОДАРКИ ДРУЗЬЯМ ────────────────────────────────────────────────
+// Построено поверх реферальной системы выше — дарить можно только тем,
+// кого сам пригласил (сервер это же и проверяет, см. handleSendGift в
+// routes.js, так что даже подделанный запрос с чужим id ничего не даст).
+// Награда — полная энергия + слабый временный буст (×1.5, слабее платного
+// кристального ×3 и рекламного ×2 — это бесплатная социальная плюшка, не
+// замена им), раз в день на каждого конкретного друга.
+async function renderGiftableFriends() {
+  const el = document.getElementById('giftableFriendsList');
+  if (!el || PLATFORM !== 'vk' || !vkReady || !GLOBAL_LB_ENDPOINT) return;
+  const launchParams = await getLaunchParamsString();
+  if (!launchParams) return;
+  try {
+    const res = await fetch(workerUrl('/my-referred-list'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ launchParams }),
+    });
+    const data = await res.json();
+    if (!data.ok) return;
+    if (!data.friends.length) {
+      el.innerHTML = `<div class="friends-rank-empty">Пока никого не пригласил — поделись ссылкой выше</div>`;
+      return;
+    }
+    el.innerHTML = data.friends.map(f => `
+      <div class="friends-rank-item">
+        ${f.avatar ? `<img class="friends-rank-avatar" src="${f.avatar}" alt="">` : `<div class="friends-rank-avatar"></div>`}
+        <div class="friends-rank-name">${escapeHtml(f.name || 'Игрок')}</div>
+        <button class="btn-friends secondary" style="padding:6px 12px;font-size:12px;width:auto" onclick="sendGift('${f.userId}', this)">🎁 Подарить</button>
+      </div>`).join('');
+  } catch (e) {
+    el.innerHTML = `<div class="friends-rank-empty">Не удалось загрузить список — попробуй позже</div>`;
+  }
+}
+
+async function sendGift(toUserId, btn) {
+  if (btn) { btn.disabled = true; btn.textContent = '...'; }
+  playSound('click');
+  const launchParams = await getLaunchParamsString();
+  if (!launchParams) { if (btn) { btn.disabled = false; btn.textContent = '🎁 Подарить'; } return; }
+  try {
+    const res = await fetch(workerUrl('/send-gift'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ launchParams, toUserId }),
+    });
+    const data = await res.json();
+    if (data.ok) {
+      showToast('🎁 Подарок отправлен!');
+      if (btn) { btn.textContent = '✅ Подарено'; }
+    } else {
+      const messages = {
+        already_gifted_today: 'Этому другу уже дарил сегодня',
+        rate_limited:          'Сегодня уже отправлено 5 подарков — приходи завтра',
+        not_your_friend:       'Дарить можно только тем, кого сам пригласил',
+      };
+      showToast(messages[data.error] || 'Не удалось отправить подарок');
+      if (btn) { btn.disabled = false; btn.textContent = '🎁 Подарить'; }
+    }
+  } catch (e) {
+    showToast('Ошибка сети — попробуй позже');
+    if (btn) { btn.disabled = false; btn.textContent = '🎁 Подарить'; }
+  }
+}
+
+// Проверка входящих подарков — best-effort, вызывается при каждом заходе в
+// раздел "Друзья" (см. renderFriends выше) и один раз при старте игры.
+async function checkMyGifts() {
+  const box = document.getElementById('incomingGiftsBox');
+  if (PLATFORM !== 'vk' || !vkReady || !GLOBAL_LB_ENDPOINT) { if (box) box.innerHTML = ''; return; }
+  const launchParams = await getLaunchParamsString();
+  if (!launchParams) return;
+  try {
+    const res = await fetch(workerUrl('/my-gifts'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ launchParams }),
+    });
+    const data = await res.json();
+    if (!data.ok) return;
+    pendingGifts = data.gifts || [];
+    if (box) {
+      box.innerHTML = pendingGifts.map(g => `
+        <div class="ad-box" style="margin-top:8px;border-color:var(--accent)">
+          <div class="ad-title">🎁 Подарок от ${escapeHtml(g.fromName || 'друга')}</div>
+          <div class="ad-desc">Полная энергия + буст ×1.5 на 10 минут</div>
+          <button class="btn-ad" onclick="claimGift(${g.id}, this)">Забрать</button>
+        </div>`).join('');
+    }
+    updateMenuBadge();
+  } catch (e) { /* best-effort — не критично для игры */ }
+}
+
+async function claimGift(giftId, btn) {
+  if (btn) { btn.disabled = true; btn.textContent = '...'; }
+  const launchParams = await getLaunchParamsString();
+  if (!launchParams) return;
+  try {
+    const res = await fetch(workerUrl('/claim-gift'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ launchParams, giftId }),
+    });
+    const data = await res.json();
+    if (data.ok) {
+      G.energy = energyMax();
+      G.giftBoostEnd = Date.now() + 10 * 60 * 1000;
+      playSound('levelup');
+      goldenGlow(document.getElementById('hCoins'));
+      showToast('🎁 Энергия восстановлена, буст ×1.5 на 10 минут!');
+      pendingGifts = pendingGifts.filter(g => g.id !== giftId);
+      const box = document.getElementById('incomingGiftsBox');
+      if (box) box.innerHTML = pendingGifts.map(g => `
+        <div class="ad-box" style="margin-top:8px;border-color:var(--accent)">
+          <div class="ad-title">🎁 Подарок от ${escapeHtml(g.fromName || 'друга')}</div>
+          <div class="ad-desc">Полная энергия + буст ×1.5 на 10 минут</div>
+          <button class="btn-ad" onclick="claimGift(${g.id}, this)">Забрать</button>
+        </div>`).join('');
+      updateMenuBadge();
+      saveGame();
+    } else {
+      showToast('Этот подарок уже забрали');
+    }
+  } catch (e) {
+    showToast('Ошибка сети — попробуй позже');
+    if (btn) { btn.disabled = false; btn.textContent = 'Забрать'; }
+  }
 }
 
 // ── ЭНЕРГИЯ И РУЧНОЕ ПРОИЗВОДСТВО ─────────────────────────────────
@@ -5461,6 +5707,10 @@ const THEMES = [
     hint: 'Эксклюзив — 10 уровень премиум-трека сезонного пропуска',
     vars: st.vars,
   })),
+  { id:'crystal', name:'Кристалл', icon:'💎',
+    unlock: () => isCrystalItemOwned('theme_crystal'),
+    hint: 'Открывается в Кристальном магазине за 150 💎',
+    vars: { '--accent':'#7fe0ff', '--accent2':'#1a6ea8', '--teal':'#c9a8ff' } },
 ];
 
 function setThemeVars(id) {
@@ -5598,6 +5848,88 @@ function renderSettingsPanel() {
 // Кристаллы начисляются при каждом престиже и НИКОГДА не сгорают — как и
 // уровни навыков, купленных за них. Это отдельный, постоянный слой
 // прогрессии поверх обычного множителя престижа.
+// ── КРИСТАЛЬНЫЙ МАГАЗИН ────────────────────────────────────────────
+// Раньше кристаллы тратились ТОЛЬКО в дереве навыков ниже (SKILLS_DEF) —
+// после того как игрок закрывал всё дерево, кристаллы становились мёртвым
+// грузом без единого применения, хотя источников (сезонный пропуск,
+// ачивки, рекламный сундук, промокоды) уже несколько. Эта витрина даёт
+// кристаллам применение и после максимального дерева навыков — разовая
+// косметика и повторяемые временные эффекты.
+const CRYSTAL_SHOP_ITEMS = [
+  { id: 'energy_refill',  name: '⚡ Полная энергия',        cost: 5,   repeatable: true,
+    desc: 'Мгновенно восстанавливает энергию до максимума — без рекламы и без ожидания' },
+  { id: 'boost_x3',       name: '🚀 Буст ×3 на 15 минут',   cost: 20,  repeatable: true,
+    desc: 'Утраивает доход на 15 минут — сильнее бонуса за рекламу (не складывается с ним, действует лучший из двух)' },
+  { id: 'instant_income', name: '⏱️ Мгновенный доход',      cost: 25,  repeatable: true, cooldownMs: 10*60*1000,
+    desc: 'Начисляет 2 часа дохода прямо сейчас, по твоей текущей скорости производства' },
+  { id: 'theme_crystal',  name: '💎 Тема «Кристалл»',       cost: 150, repeatable: false,
+    desc: 'Эксклюзивное оформление интерфейса, доступное только за кристаллы' },
+];
+
+function isCrystalItemOwned(id) {
+  return Array.isArray(G.crystalShopOwned) && G.crystalShopOwned.includes(id);
+}
+function crystalItemCooldownLeft(item) {
+  if (!item.cooldownMs) return 0;
+  return Math.max(0, (G['crystalCd_' + item.id] || 0) - Date.now());
+}
+
+function buyCrystalItem(id) {
+  const item = CRYSTAL_SHOP_ITEMS.find(i => i.id === id);
+  if (!item) return;
+  if (!item.repeatable && isCrystalItemOwned(id)) return;
+  if (crystalItemCooldownLeft(item) > 0) return;
+  if ((G.crystals || 0) < item.cost) { showToast('Не хватает кристаллов 💎'); return; }
+
+  G.crystals -= item.cost;
+
+  if (item.id === 'energy_refill') {
+    G.energy = energyMax();
+    showToast('⚡ Энергия восстановлена!');
+  } else if (item.id === 'boost_x3') {
+    G.crystalBoostEnd = Date.now() + 15 * 60 * 1000;
+    showToast('🚀 Буст ×3 активирован на 15 минут!');
+  } else if (item.id === 'instant_income') {
+    // Пропорционально ТЕКУЩЕЙ скорости производства (как офлайн-доход), а
+    // не фиксированное число — иначе на раннем старте это было бы читом,
+    // а в позднем — бесполезной мелочью.
+    const bonus = Math.max(1, Math.round(cps() * 3600 * 2));
+    G.coins += bonus;
+    G['crystalCd_' + item.id] = Date.now() + item.cooldownMs;
+    showToast(`⏱️ +${fmt(bonus)} ${t('coins')}!`);
+  } else if (item.id === 'theme_crystal') {
+    if (!Array.isArray(G.crystalShopOwned)) G.crystalShopOwned = [];
+    G.crystalShopOwned.push(id);
+    showToast('💎 Тема «Кристалл» разблокирована!');
+    renderThemePicker();
+  }
+
+  playSound('levelup');
+  goldenGlow(document.getElementById('hCoins'));
+  renderCrystalShop();
+  renderHeader();
+  saveGame();
+}
+
+function renderCrystalShop() {
+  const bal = document.getElementById('crystalShopBalance');
+  if (bal) bal.textContent = fmt(G.crystals || 0);
+  const list = document.getElementById('crystalShopList');
+  if (!list) return;
+  list.innerHTML = CRYSTAL_SHOP_ITEMS.map(item => {
+    const owned = !item.repeatable && isCrystalItemOwned(item.id);
+    const cdLeft = crystalItemCooldownLeft(item);
+    const affordable = (G.crystals || 0) >= item.cost;
+    const disabled = owned || cdLeft > 0 || !affordable;
+    const btnLabel = owned ? t('bought') : (cdLeft > 0 ? `${Math.ceil(cdLeft/60000)} мин` : `${item.cost} 💎`);
+    return `<div class="ad-box" style="margin-top:8px${owned?';opacity:.6':''}">
+      <div class="ad-title">${item.name}</div>
+      <div class="ad-desc">${item.desc}</div>
+      <button class="btn-ad" ${disabled?'disabled':''} onclick="buyCrystalItem('${item.id}')">${btnLabel}</button>
+    </div>`;
+  }).join('');
+}
+
 const SKILLS_DEF = [
   { id:'prod_mult',      branch:'prod', name:'Оптимизация цехов',   icon:'🏭', desc:'+8% ко всему доходу',        maxLevel:12, baseCost:5,  costMult:1.35, perLevel:0.08 },
   { id:'prestige_thresh',branch:'prestige', name:'Быстрый рестарт', icon:'⏱️', desc:'-4% к порогу престижа',       maxLevel:10, baseCost:8,  costMult:1.4,  perLevel:0.04 },
@@ -5958,6 +6290,7 @@ function openMenuSection(section) {
   document.getElementById('menuSecStreak').style.display  = section==='streak'  ? 'block':'none';
   document.getElementById('menuSecSkills').style.display  = section==='skills'  ? 'block':'none';
   document.getElementById('menuSecPromo').style.display   = section==='promo'   ? 'block':'none';
+  document.getElementById('menuSecCrystalShop').style.display = section==='crystalshop' ? 'block':'none';
   document.getElementById('menuSecTrophy').style.display  = section==='trophy'  ? 'block':'none';
   document.getElementById('menuSecTheme').style.display   = section==='theme'   ? 'block':'none';
   document.getElementById('menuSecDaily').style.display   = section==='daily'   ? 'block':'none';
@@ -5976,6 +6309,7 @@ function openMenuSection(section) {
   if (section==='ach')     renderAchievements();
   if (section==='friends') { renderFriends(); syncInvitedCount(); }
   if (section==='promo')   renderPromoHistory();
+  if (section==='crystalshop') renderCrystalShop();
 }
 
 function closeMenuSection() {
@@ -5984,6 +6318,7 @@ function closeMenuSection() {
   document.getElementById('menuSecStreak').style.display  = 'none';
   document.getElementById('menuSecSkills').style.display  = 'none';
   document.getElementById('menuSecPromo').style.display   = 'none';
+  document.getElementById('menuSecCrystalShop').style.display = 'none';
   document.getElementById('menuSecTrophy').style.display  = 'none';
   document.getElementById('menuSecTheme').style.display   = 'none';
   document.getElementById('menuSecDaily').style.display   = 'none';
@@ -6376,6 +6711,8 @@ function updateMenuBadge() {
   // цех не починен или пока авария не закончится сама.
   const fb = document.getElementById('factoryBadge');
   if (fb) fb.classList.toggle('show', !!brokenMachine && currentTab !== 'factory');
+  const gb = document.getElementById('friendsGiftBadge');
+  if (gb) gb.classList.toggle('show', pendingGifts.length > 0);
   const has = hasQuest || hasAch || hasStreak || hasSkill || streakIsNew || skillsIsNew || hasWeekly || hasSeason;
   // Карточка "Награда за вход" — появляется только после покупки первого цеха
   const streakCard = document.getElementById('streakMenuCard');
@@ -6523,7 +6860,7 @@ function tickInner(now) {
     if(m.progress>0){
       m.progress+=dt;
       if(m.progress>=m.speed){
-        const earned = m.reward * incomeMult() * getAdMultiplier() * getRushMultiplier();
+        const earned = m.reward * incomeMult() * getIncomeBoostMultiplier() * getRushMultiplier();
         G.coins += earned;
         G.sold  += 1;
         m.progress = 0;
@@ -6579,6 +6916,7 @@ function tickInner(now) {
     try {
       updateAdButton();
       updateAdChestUI();
+      if (currentMenuSection === 'crystalshop') renderCrystalShop(); // живой countdown кулдауна/буста, только пока раздел реально открыт
       updateMenuBadge();
       maybeTriggerRushHour(now);
       updateRushBanner();
@@ -6777,8 +7115,10 @@ async function initSDK() {
   document.getElementById('startBtn').style.display   = 'block';
 }
 
-// Запускаем инициализацию SDK сразу при загрузке страницы
-initSDK();
+// Запускаем инициализацию SDK сразу при загрузке страницы. Промис
+// сохраняем — он нужен ниже в обработчике startBtn (см. БАГ "обучение
+// всплывает у старых игроков" в комментарии там).
+const sdkInitPromise = initSDK();
 
 // Страховка — если SDK/сеть реально зависли (не просто "чуть дольше
 // грузится"), через 8 секунд показываем кнопку без дальнейшего ожидания —
@@ -6796,7 +7136,25 @@ setTimeout(() => {
   document.getElementById('startBtn').style.display   = 'block';
 }, 8000);
 
-document.getElementById('startBtn').addEventListener('click', () => {
+document.getElementById('startBtn').addEventListener('click', async () => {
+  const btn = document.getElementById('startBtn');
+  // БАГ "обучение всплывает у уже старых игроков": страховка выше
+  // (setTimeout на 8с) показывает эту кнопку ДОСРОЧНО, если SDK/облачное
+  // сохранение почему-то грузится дольше обычного — в этот момент G ещё
+  // содержит значения по умолчанию (в т.ч. tutorialSeen:false), и игрок,
+  // тапнувший "Начать" сразу же, попадал в игру ДО того, как применялось
+  // его настоящее сохранение — отсюда обучение для новичков у ветеранов
+  // (и в теории тот же риск для офлайн-модалки/дневной награды ниже).
+  // Теперь клик всегда дожидается настоящего завершения инициализации: в
+  // подавляющем большинстве случаев sdkInitDone уже true и await
+  // возвращается мгновенно, доп. ожидание платится только в этом самом
+  // редком случае, когда правда что-то тормозило больше 8 секунд.
+  if (!sdkInitDone) {
+    btn.textContent = '⏳ Загрузка...';
+    btn.disabled = true;
+    await sdkInitPromise;
+    btn.disabled = false;
+  }
   document.getElementById('splash').classList.add('hide');
   document.getElementById('game').style.display = 'flex';
   if (G.soundEnabled) getAudioCtx(); // разблокируем звук по первому жесту пользователя
@@ -6805,6 +7163,7 @@ document.getElementById('startBtn').addEventListener('click', () => {
   initQuests();
   initWeeklyChallenge();
   ensureSeasonQuests(); // тоже приводит G.season* в актуальное состояние (через ensureSeasonFresh внутри)
+  maybeOfferVault(); // ограниченный по времени оффер — см. комментарий у функции
   checkIncomingReferral();
   renderFriends();
   syncInvitedCount();
