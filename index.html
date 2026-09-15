@@ -55,7 +55,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
 @keyframes rushPulse{0%,100%{filter:brightness(1);}50%{filter:brightness(1.25);}}
 .game-title{font-family:'Russo One',sans-serif;font-size:20px;color:var(--accent);letter-spacing:1px;}
 .stat-pill{background:var(--bg3);border:1px solid var(--border);border-radius:20px;padding:5px 10px;font-size:12px;color:var(--muted);display:flex;align-items:center;gap:4px;flex-shrink:0;white-space:nowrap;}
-.stat-pill b{color:var(--text);font-weight:500;}.stat-pill.gold b{color:var(--accent);}.stat-pill.teal b{color:var(--teal);}
+.stat-pill b{color:var(--text);font-weight:500;}.stat-pill.gold b{color:var(--accent);}.stat-pill.teal b{color:var(--teal);}.stat-pill.crystal b{color:#7fe0ff;}
 .header-right{display:flex;gap:8px;flex-shrink:0;}
 .btn-hdr{padding:6px 14px;background:transparent;border:1px solid var(--border);border-radius:4px;color:var(--muted);font-size:12px;cursor:pointer;font-family:'Exo 2',sans-serif;transition:all .15s;}
 
@@ -652,6 +652,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
     </div>
     <div class="header-stats">
       <div class="stat-pill gold">💰 <b id="hCoins">0</b></div>
+      <div class="stat-pill crystal">💎 <b id="hCrystals">0</b></div>
       <div class="stat-pill teal">⚡ <b id="hCps">0/с</b></div>
       <div class="stat-pill">🏭 <b id="hSold">0</b></div>
       <div class="stat-pill">✨ x<b id="hMult">1.0</b></div>
@@ -696,6 +697,12 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
       <div class="tab-pane" id="pane-shop">
         <div class="sec-hdr">Магазин улучшений</div>
         <div class="upg-list" id="upgList"></div>
+
+        <!-- Кристальный магазин — за игровую валюту (кристаллы), не за
+             деньги: раньше жил отдельным разделом в меню, перенесён сюда,
+             рядом с остальными тратами внутриигровых ресурсов. -->
+        <div class="sec-hdr" style="margin-top:12px">💎 Кристальный магазин</div>
+        <div id="crystalShopList"></div>
 
         <!-- Донат-магазин -->
         <div class="sec-hdr" style="margin-top:12px">💎 Премиум</div>
@@ -814,16 +821,6 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
             <div class="menu-card-arrow">›</div>
           </div>
 
-          <!-- Кристальный магазин -->
-          <div class="menu-card" onclick="openMenuSection('crystalshop')">
-            <div class="menu-card-icon">💎</div>
-            <div class="menu-card-info">
-              <div class="menu-card-title">Кристальный магазин</div>
-              <div class="menu-card-sub">Потрать кристаллы на бусты и косметику</div>
-            </div>
-            <div class="menu-card-arrow">›</div>
-          </div>
-
           <!-- Друзья -->
           <div class="menu-card" onclick="openMenuSection('friends')">
             <div class="menu-card-icon">👥</div>
@@ -927,13 +924,6 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
           <div class="promo-status" id="promoStatus"></div>
           <div class="settings-block-title" style="margin-top:18px">🧾 История активаций</div>
           <div id="promoHistoryList" class="promo-history-list"></div>
-        </div>
-
-        <!-- Секция: Кристальный магазин -->
-        <div id="menuSecCrystalShop" style="display:none">
-          <button class="menu-back-btn" onclick="closeMenuSection('crystalshop')">‹ Назад</button>
-          <div class="promo-desc">У тебя <b id="crystalShopBalance">0</b> 💎 — трать на бусты и косметику, не только на дерево навыков</div>
-          <div id="crystalShopList"></div>
         </div>
 
         <!-- Секция: Дерево навыков -->
@@ -1863,6 +1853,7 @@ function renderVaultOfferCard() {
 
 function renderIAP() {
   const el = document.getElementById('iapList');
+  renderCrystalShop(); // теперь живёт в этой же вкладке (Магазин) — обновляем вместе
   if (!el) return;
   const cards = IAP_PRODUCTS.filter(prod => !prod.hidden).map(prod => {
     // season_pass — не разовая покупка (once:false, можно оформить снова в
@@ -3880,6 +3871,7 @@ function defaultState() {
     vaultOfferExpiresAt: 0, // ограниченный по времени оффер — см. maybeOfferVault()
     vaultLastOfferedAt: 0,
     giftBoostEnd: 0, // временный буст ×1.5 от полученного подарка друга — см. claimGift()
+    adCrystalsNextAt: 0, // кулдаун "5 кристаллов за рекламу" — см. claimAdCrystals()
     machines: MACHINES_DEF.map(d=>({
       id:d.id, level:1, owned:false, auto:true,
       progress:0, reward:d.baseReward, speed:d.baseSpeed,
@@ -4278,6 +4270,7 @@ function doPrestige() {
   const vaultOfferExpiresAt = G.vaultOfferExpiresAt;
   const vaultLastOfferedAt = G.vaultLastOfferedAt;
   const giftBoostEnd = G.giftBoostEnd; // подарок от друга — тоже нечестно терять от клика по престижу
+  const adCrystalsNextAt = G.adCrystalsNextAt;
   const vipExpiresAt = G.vipExpiresAt; // месячный VIP переживает престиж как обычная покупка — только цех/улучшения пересоздаются
   const totalPlayTimeMs = G.totalPlayTimeMs;
   // КРИТИЧНО: deltaSyncBaseline — точка отсчёта для дельта-синхронизации
@@ -4354,6 +4347,7 @@ function doPrestige() {
   G.vaultOfferExpiresAt = vaultOfferExpiresAt || 0;
   G.vaultLastOfferedAt = vaultLastOfferedAt || 0;
   G.giftBoostEnd = giftBoostEnd || 0;
+  G.adCrystalsNextAt = adCrystalsNextAt || 0;
   G.vipExpiresAt = vipExpiresAt;
   G.totalPlayTimeMs = totalPlayTimeMs; // lifetime-метрика — раньше по ошибке сбрасывалась престижем, хотя lifetimeCoins/lifetimeClicks и т.п. рядом не сбрасываются
   G.energy = energyMax();
@@ -4879,6 +4873,7 @@ function tickRender(now) {
 
 function renderHeader() {
   document.getElementById('hCoins').textContent = fmt(G.coins);
+  document.getElementById('hCrystals').textContent = fmt(G.crystals || 0);
   updateGlobalLbStat();
   document.getElementById('hCps').textContent   = fmt(cps())+t('cpsUnit');
   document.getElementById('hSold').textContent  = fmt(G.sold);
@@ -5857,9 +5852,9 @@ function renderSettingsPanel() {
 // косметика и повторяемые временные эффекты.
 const CRYSTAL_SHOP_ITEMS = [
   { id: 'energy_refill',  name: '⚡ Полная энергия',        cost: 5,   repeatable: true,
-    desc: 'Мгновенно восстанавливает энергию до максимума — без рекламы и без ожидания' },
+    desc: 'Мгновенно восстанавливает энергию до максимума' },
   { id: 'boost_x3',       name: '🚀 Буст ×3 на 15 минут',   cost: 20,  repeatable: true,
-    desc: 'Утраивает доход на 15 минут — сильнее бонуса за рекламу (не складывается с ним, действует лучший из двух)' },
+    desc: 'Утраивает доход на 15 минут (не складывается с бонусом за рекламу, действует лучший из двух)' },
   { id: 'instant_income', name: '⏱️ Мгновенный доход',      cost: 25,  repeatable: true, cooldownMs: 10*60*1000,
     desc: 'Начисляет 2 часа дохода прямо сейчас, по твоей текущей скорости производства' },
   { id: 'theme_crystal',  name: '💎 Тема «Кристалл»',       cost: 150, repeatable: false,
@@ -5872,6 +5867,31 @@ function isCrystalItemOwned(id) {
 function crystalItemCooldownLeft(item) {
   if (!item.cooldownMs) return 0;
   return Math.max(0, (G['crystalCd_' + item.id] || 0) - Date.now());
+}
+
+// ── КРИСТАЛЛЫ ЗА РЕКЛАМУ ────────────────────────────────────────────
+// Отдельная от "Рекламного сундука" (openAdChest) награда — тот даёт
+// случайный приз раз в 3 часа, здесь — гарантированные 5💎 раз в 2 минуты.
+// Использует общий requestNativeAd()/watchAdThen() — та же догрузка/ретраи,
+// что и у остальной рекламы в игре (см. комментарий у requestNativeAd).
+const AD_CRYSTALS_COOLDOWN = 2 * 60 * 1000;
+function canClaimAdCrystals() { return Date.now() >= (G.adCrystalsNextAt || 0); }
+
+async function claimAdCrystals() {
+  if (!canClaimAdCrystals()) return;
+  const btn = document.getElementById('adCrystalsBtn');
+  if (btn) { btn.disabled = true; btn.textContent = t('adLoading'); }
+  await watchAdThen(() => {
+    G.crystals = (G.crystals || 0) + 5;
+    G.lifetimeCrystals = (G.lifetimeCrystals || 0) + 5;
+    G.adCrystalsNextAt = Date.now() + AD_CRYSTALS_COOLDOWN;
+    playSound('levelup');
+    goldenGlow(document.getElementById('hCoins'));
+    showToast('💎 +5 кристаллов!');
+    renderHeader();
+    saveGame();
+  });
+  renderCrystalShop();
 }
 
 function buyCrystalItem(id) {
@@ -5912,11 +5932,20 @@ function buyCrystalItem(id) {
 }
 
 function renderCrystalShop() {
-  const bal = document.getElementById('crystalShopBalance');
-  if (bal) bal.textContent = fmt(G.crystals || 0);
   const list = document.getElementById('crystalShopList');
   if (!list) return;
-  list.innerHTML = CRYSTAL_SHOP_ITEMS.map(item => {
+  const adCdLeft = Math.max(0, (G.adCrystalsNextAt || 0) - Date.now());
+  const adCdLabel = adCdLeft > 0
+    ? `${Math.floor(adCdLeft/60000)}:${String(Math.ceil((adCdLeft%60000)/1000)).padStart(2,'0')}`
+    : '▶ Смотреть рекламу';
+  const adCard = `<div class="ad-box">
+    <div class="ad-title">📺 Кристаллы за рекламу</div>
+    <div class="ad-desc">Посмотри рекламу и получи 5 💎</div>
+    <button class="btn-ad" id="adCrystalsBtn" ${adCdLeft > 0 ? 'disabled' : ''} onclick="claimAdCrystals()">
+      ${adCdLabel}
+    </button>
+  </div>`;
+  list.innerHTML = adCard + CRYSTAL_SHOP_ITEMS.map(item => {
     const owned = !item.repeatable && isCrystalItemOwned(item.id);
     const cdLeft = crystalItemCooldownLeft(item);
     const affordable = (G.crystals || 0) >= item.cost;
@@ -6290,7 +6319,6 @@ function openMenuSection(section) {
   document.getElementById('menuSecStreak').style.display  = section==='streak'  ? 'block':'none';
   document.getElementById('menuSecSkills').style.display  = section==='skills'  ? 'block':'none';
   document.getElementById('menuSecPromo').style.display   = section==='promo'   ? 'block':'none';
-  document.getElementById('menuSecCrystalShop').style.display = section==='crystalshop' ? 'block':'none';
   document.getElementById('menuSecTrophy').style.display  = section==='trophy'  ? 'block':'none';
   document.getElementById('menuSecTheme').style.display   = section==='theme'   ? 'block':'none';
   document.getElementById('menuSecDaily').style.display   = section==='daily'   ? 'block':'none';
@@ -6309,7 +6337,6 @@ function openMenuSection(section) {
   if (section==='ach')     renderAchievements();
   if (section==='friends') { renderFriends(); syncInvitedCount(); }
   if (section==='promo')   renderPromoHistory();
-  if (section==='crystalshop') renderCrystalShop();
 }
 
 function closeMenuSection() {
@@ -6318,7 +6345,6 @@ function closeMenuSection() {
   document.getElementById('menuSecStreak').style.display  = 'none';
   document.getElementById('menuSecSkills').style.display  = 'none';
   document.getElementById('menuSecPromo').style.display   = 'none';
-  document.getElementById('menuSecCrystalShop').style.display = 'none';
   document.getElementById('menuSecTrophy').style.display  = 'none';
   document.getElementById('menuSecTheme').style.display   = 'none';
   document.getElementById('menuSecDaily').style.display   = 'none';
@@ -6916,7 +6942,7 @@ function tickInner(now) {
     try {
       updateAdButton();
       updateAdChestUI();
-      if (currentMenuSection === 'crystalshop') renderCrystalShop(); // живой countdown кулдауна/буста, только пока раздел реально открыт
+      if (currentTab === 'shop') renderCrystalShop(); // живой countdown кулдауна/буста, только пока вкладка "Магазин" реально открыта
       updateMenuBadge();
       maybeTriggerRushHour(now);
       updateRushBanner();
