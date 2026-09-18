@@ -47,11 +47,27 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
 .header-stats::-webkit-scrollbar{display:none;}
 .rush-banner{background:linear-gradient(90deg,#ff2e6b,#ff8a00);color:#fff;text-align:center;padding:7px 10px;font-size:12px;font-weight:700;letter-spacing:.02em;animation:rushPulse 1.2s ease-in-out infinite;}
 .event-banner{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 12px;font-size:12px;font-weight:600;color:#fff;}
-.event-banner.breakdown{background:linear-gradient(90deg,#7a1f1f,#c23b2e);}
+.event-banner.breakdown{background:linear-gradient(90deg,#7a1f1f,#c23b2e);animation: breakdownBannerPulse 1.1s ease-in-out infinite;}
+@keyframes breakdownBannerPulse {
+  0%, 100% { background: linear-gradient(90deg,#7a1f1f,#c23b2e); }
+  50%      { background: linear-gradient(90deg,#c23b2e,#ff5c5c); }
+}
 .event-banner.package{background:linear-gradient(90deg,#1f5c3a,#2e9e5b);}
 .event-banner-btn{flex-shrink:0;padding:6px 12px;border-radius:20px;border:1px solid rgba(255,255,255,.5);background:rgba(255,255,255,.15);color:#fff;font-family:'Exo 2',sans-serif;font-size:12px;font-weight:700;cursor:pointer;transition:background .15s;}
 .event-banner-btn:hover{background:rgba(255,255,255,.28);}
+/* Мигающая авария — раньше карточка была просто статично подкрашена
+   красным, что легко не заметить. Теперь пульсирует, пока не починят или
+   не пройдёт время само (см. BREAKDOWN_DURATION). vipInactive использует
+   тот же класс .broken, но у него нет отдельной анимации по смыслу — там
+   VIP истёк, а не поломка, animation накладывается только когда есть
+   ЖИВАЯ авария (см. data-breakdown="1" в разметке карточки).
+*/
+@keyframes breakdownPulse {
+  0%, 100% { border-color: #c23b2e; background: linear-gradient(135deg, rgba(194,59,46,.12), rgba(122,31,31,.08)); }
+  50%      { border-color: #ff5c5c; background: linear-gradient(135deg, rgba(255,92,92,.28), rgba(194,59,46,.14)); }
+}
 .mcard.broken{border-color:#c23b2e;background:linear-gradient(135deg,rgba(194,59,46,.12),rgba(122,31,31,.08));}
+.mcard.broken[data-breakdown="1"]{animation: breakdownPulse 1.1s ease-in-out infinite;}
 @keyframes rushPulse{0%,100%{filter:brightness(1);}50%{filter:brightness(1.25);}}
 .game-title{font-family:'Russo One',sans-serif;font-size:20px;color:var(--accent);letter-spacing:1px;}
 .stat-pill{background:var(--bg3);border:1px solid var(--border);border-radius:20px;padding:5px 10px;font-size:12px;color:var(--muted);display:flex;align-items:center;gap:4px;flex-shrink:0;white-space:nowrap;}
@@ -336,6 +352,10 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
 .promo-desc{font-size:12px;color:var(--muted);text-align:center;padding:4px 0 14px;}
 .promo-input-row{display:flex;gap:8px;}
 .promo-input{flex:1;background:var(--card);border:1px solid var(--border);border-radius:6px;padding:10px 12px;color:var(--text);font-family:'Exo 2',sans-serif;font-size:14px;letter-spacing:.04em;text-transform:uppercase;min-width:0;}
+/* Как .promo-input, но без принудительного капса — для полей, где регистр
+   важен как есть (название/описание клана и т.п.), а не для промокода. */
+.plain-input{flex:1;background:var(--card);border:1px solid var(--border);border-radius:6px;padding:10px 12px;color:var(--text);font-family:'Exo 2',sans-serif;font-size:14px;min-width:0;}
+.plain-input::placeholder{color:var(--muted);}
 .promo-input:focus{outline:none;border-color:var(--accent);}
 .promo-input::placeholder{text-transform:none;letter-spacing:normal;color:var(--muted);}
 .btn-promo{padding:10px 16px;background:var(--accent);border:none;border-radius:6px;color:#000;font-family:'Exo 2',sans-serif;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0;transition:filter .15s;}
@@ -364,6 +384,10 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
 .theme-swatch.locked{cursor:default;opacity:.55;}
 .theme-swatch-dot{width:34px;height:34px;border-radius:50%;background:var(--sw);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;}
 .theme-swatch.locked .theme-swatch-dot{background:var(--bg3);}
+.clan-icon-btn{width:38px;height:38px;font-size:18px;border-radius:8px;background:var(--card);border:2px solid var(--border);cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.clan-icon-btn.selected{border-color:var(--accent);background:rgba(240,165,0,.08);}
+.clan-jointype-opt{background:var(--card);border:2px solid var(--border);border-radius:8px;padding:10px 12px;cursor:pointer;}
+.clan-jointype-opt.selected{border-color:var(--accent);background:rgba(240,165,0,.08);}
 .theme-swatch-name{flex:1;font-size:14px;font-weight:500;}
 .theme-swatch-hint{font-size:11px;color:var(--muted);}
 
@@ -832,6 +856,17 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
             <div class="menu-card-arrow">›</div>
           </div>
 
+          <!-- Клан -->
+          <div class="menu-card" onclick="openMenuSection('clan')">
+            <div class="menu-card-icon">🛡️</div>
+            <div class="menu-card-info">
+              <div class="menu-card-title">Клан</div>
+              <div class="menu-card-sub" id="menuSubClan">Общая цель с другими игроками</div>
+            </div>
+            <span class="tab-badge menu-badge" id="clanBadge"></span>
+            <div class="menu-card-arrow">›</div>
+          </div>
+
           <!-- Промокоды -->
           <div class="menu-card" onclick="openMenuSection('promo')">
             <div class="menu-card-icon">🎟️</div>
@@ -995,6 +1030,82 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
           <div class="settings-block-title" style="margin-top:18px">🎁 Подарить другу</div>
           <div class="promo-desc" style="margin-top:-6px;margin-bottom:10px">Полная энергия + недолгий буст к доходу — бесплатно, раз в день на каждого друга</div>
           <div id="giftableFriendsList"><div class="friends-rank-empty">Загрузка...</div></div>
+        </div>
+
+        <!-- Секция: Клан -->
+        <div id="menuSecClan" style="display:none">
+          <button class="menu-back-btn" onclick="closeMenuSection('clan')">‹ Назад</button>
+
+          <div id="clanNoneView">
+            <div id="clanKickNotice"></div>
+            <div class="promo-desc">Объединись с другими игроками ради общей еженедельной цели — выполняйте задания все вместе</div>
+
+            <button class="btn-friends" onclick="openClanCreateForm()" id="clanOpenCreateBtn" style="width:100%;margin-top:12px">➕ Создать клан (500 💎)</button>
+
+            <div id="clanCreateForm" style="display:none;margin-top:14px">
+              <input type="text" id="clanNameInput" class="plain-input" placeholder="Название клана" maxlength="24" style="width:100%;margin-bottom:8px">
+              <textarea id="clanDescInput" class="plain-input" placeholder="Описание (необязательно)" maxlength="200" style="width:100%;margin-bottom:10px;min-height:56px;resize:vertical;font-family:inherit"></textarea>
+              <div style="font-size:12px;color:var(--muted);margin-bottom:6px">Логотип</div>
+              <div id="clanIconPicker" style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap"></div>
+              <div style="font-size:12px;color:var(--muted);margin-bottom:6px">Тип вступления</div>
+              <div id="clanJoinTypePicker" style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px"></div>
+              <button class="btn-friends" onclick="createClan()" id="clanCreateBtn" style="width:100%">Создать за 500 💎</button>
+              <button class="btn-friends secondary" onclick="closeClanCreateForm()" style="width:100%;margin-top:6px">Отмена</button>
+              <div id="clanCreateStatus" class="promo-status"></div>
+            </div>
+
+            <div class="settings-block-title" style="margin-top:18px">Или присоединиться</div>
+            <div class="promo-input-row" style="margin-bottom:10px">
+              <input type="text" id="clanSearchInput" class="plain-input" placeholder="Поиск по названию">
+              <button class="btn-promo" onclick="searchClans()">🔍</button>
+            </div>
+            <div id="clanListBox"><div class="friends-rank-empty">Загрузка...</div></div>
+          </div>
+
+          <div id="clanMineView" style="display:none">
+            <div style="text-align:center;padding:10px 0">
+              <div style="font-size:32px" id="clanMineIcon">🏭</div>
+              <div style="font-size:16px;font-weight:700;margin-top:4px" id="clanMineName"></div>
+              <div style="font-size:12px;color:var(--muted)" id="clanMineCount"></div>
+              <div style="font-size:12px;color:var(--muted);margin-top:4px" id="clanMineDesc"></div>
+              <button class="btn-friends secondary" id="clanRenameBtn" onclick="openClanRename()" style="display:none;margin-top:8px;padding:6px 14px;font-size:12px;width:auto">✏️ Переименовать (250 💎)</button>
+            </div>
+
+            <div id="clanRenameForm" style="display:none;margin-bottom:14px">
+              <input type="text" id="clanRenameInput" class="plain-input" placeholder="Новое название" maxlength="24" style="width:100%;margin-bottom:8px">
+              <button class="btn-friends" onclick="submitClanRename()" style="width:100%">Переименовать за 250 💎</button>
+              <div id="clanRenameStatus" class="promo-status"></div>
+            </div>
+
+            <div class="settings-block-title">🎯 Цель недели: выполнить задания</div>
+            <div class="pbar-wrap" style="margin:8px 0;height:8px">
+              <div class="pbar" id="clanProgressFill" style="width:0%"></div>
+            </div>
+            <div class="promo-desc" id="clanProgressLabel" style="margin-top:-4px"></div>
+            <button class="btn-friends" id="clanClaimBtn" onclick="claimClanWeekly()" style="width:100%;margin-top:8px;display:none">🎁 Забрать награду клана</button>
+
+            <div id="clanApplicationsBox"></div>
+
+            <div class="settings-block-title" style="margin-top:18px">Участники</div>
+            <div style="display:flex;gap:6px;margin-bottom:8px">
+              <select id="clanSortSelect" onchange="renderClanMineView()" style="flex:1;background:var(--card);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px;font-size:12px">
+                <option value="contribution">По вкладу за неделю</option>
+                <option value="prestige">По престижам</option>
+                <option value="days">По дням в клане</option>
+                <option value="lastSeen">По последнему заходу</option>
+                <option value="name">По имени</option>
+              </select>
+              <select id="clanFilterSelect" onchange="renderClanMineView()" style="flex:1;background:var(--card);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px;font-size:12px">
+                <option value="all">Все роли</option>
+                <option value="leader">Лидер</option>
+                <option value="deputy">Заместители</option>
+                <option value="member">Участники</option>
+              </select>
+            </div>
+            <div id="clanMembersList"></div>
+
+            <button class="btn-friends secondary" onclick="leaveClan()" style="width:100%;margin-top:16px;color:var(--danger, #ff6b6b)">Покинуть клан</button>
+          </div>
         </div>
 
       </div>
@@ -1449,6 +1560,21 @@ const IAP_PRODUCTS = [
       G.lifetimeCrystals = (G.lifetimeCrystals || 0) + 15;
       G.vaultOfferExpiresAt = 0; // куплено — окно больше не нужно показывать до следующего предложения
       showToast(`🎁 +${fmt(bonus)} ${t('coins')} +15 💎!`);
+    },
+  },
+  {
+    // ── Награда за недельную цель клана ──────────────────────────────
+    // hidden:true — не покупается, выдаётся только сервером через
+    // pending_rewards при достижении клановой цели (см. handleClanClaimWeekly
+    // в clans.js). Здесь только обработчик начисления, переиспользующий уже
+    // существующий механизм выдачи из очереди.
+    id:       'clan_weekly_crystals',
+    hidden:   true,
+    once:     false,
+    onBuy:    () => {
+      G.crystals = (G.crystals || 0) + 20;
+      G.lifetimeCrystals = (G.lifetimeCrystals || 0) + 20;
+      showToast('🛡️ Клан выполнил недельную цель! +20 💎');
     },
   },
   {
@@ -1916,11 +2042,13 @@ function renderVipSubscriptionCard() {
 const GLOBAL_LB_ENDPOINT = 'https://megafactory-f0f4df.dada-tuda.ru/submit-score';
 
 let cachedLaunchParams = null;
+let cachedMyVkUserId = null; // нужен для сравнения "это я" в списке участников клана — кэшируется тут же, из того же ответа VKWebAppGetLaunchParams
 async function getLaunchParamsString() {
   if (cachedLaunchParams) return cachedLaunchParams;
   if (PLATFORM !== 'vk' || !vkReady) return null;
   try {
     const res = await vkBridge.send('VKWebAppGetLaunchParams', {});
+    cachedMyVkUserId = res.vk_user_id != null ? String(res.vk_user_id) : null;
     cachedLaunchParams = Object.keys(res)
       .filter(k => k.startsWith('vk_') || k === 'sign')
       .map(k => `${k}=${encodeURIComponent(res[k])}`)
@@ -3066,8 +3194,8 @@ const PACKAGE_DURATION         = 60 * 1000;      // посылку можно з
 // 4) сопровождается более явной подачей — вибро-подобной вспышкой иконки
 // цеха и бейджем на вкладке "Цеха" (см. updateMenuBadge), а не только
 // тостом, который легко пропустить.
-const BREAKDOWN_CHECK_EVERY = 90 * 1000;  // проверяем отдельно от прочих случайных событий, раз в 90с
-const BREAKDOWN_CHANCE      = 0.30;        // ~30% на каждую проверку — заметно чаще, чем было
+const BREAKDOWN_CHECK_EVERY = 60 * 1000;   // раз в минуту — ещё чаще, чем было (было 90с)
+const BREAKDOWN_CHANCE      = 0.45;        // ~45% на каждую проверку — заметно чаще, чем было (было 30%)
 const BREAKDOWN_DURATION    = 4 * 60 * 1000; // 4 минуты, а не 90с — есть время заметить и среагировать, само не "рассосётся" за секунды до того как игрок откроет вкладку
 
 function maybeTriggerBreakdown(now) {
@@ -3115,10 +3243,14 @@ function triggerBreakdown(now, ownedMachines) {
   flashTabIcon('factory'); // короткая вспышка иконки вкладки — заметно даже боковым зрением
 }
 
-// Ремонт стоит долю от стоимости апгрейда этого же цеха — так цена всегда
-// соразмерна текущему прогрессу игрока (как и апгрейды).
+// Ремонт должен ощутимо бить по карману, а не быть мелочью — раньше было
+// всего 35% от цены апгрейда (дешевле одного улучшения), чинить было
+// выгоднее почти всегда. Теперь это 3× апгрейда — реальный выбор между
+// "заплатить дорого и почистить сейчас" и "потерять 4 минуты производства
+// бесплатно, просто подождав" (см. BREAKDOWN_DURATION), а не решение
+// "чинить всегда, не задумываясь".
 function repairCost(id) {
-  return Math.max(20, Math.round(machineUpgCost(id) * 0.35));
+  return Math.max(500, Math.round(machineUpgCost(id) * 3));
 }
 
 function repairMachine(id) {
@@ -4663,7 +4795,7 @@ function buildMachineCard(m) {
   if (broken) {
     const cost = repairCost(m.id);
     const canRepair = G.coins >= cost;
-    return `<div class="mcard broken" data-mid="${m.id}">
+    return `<div class="mcard broken" data-mid="${m.id}" data-breakdown="1">
       <div class="mcard-head">
         <div class="mcard-icon" style="filter:grayscale(1);opacity:.6">🔧</div>
         <div>
@@ -5400,6 +5532,470 @@ async function shareProgressToStory() {
 }
 
 // ── «Поделиться прогрессом» — пост на стену VK ─────────────────────
+// ── КЛАНЫ ────────────────────────────────────────────────────────────
+// Прогресс клана считается сервером САМ, как побочный эффект обычного
+// сохранения игры (см. gameData.js/saveFullState на сервере) — по числу
+// выполненных заданий (questsCompleted), не по монетам: монеты у разных
+// игроков отличаются на порядки, а задания — count-метрика, естественно
+// ограниченная в день и не покупаемая, поэтому справедливая для общей
+// цели между сильными и слабыми аккаунтами. Клиенту не нужно ничего
+// специально "сдавать" — только показывать текущее состояние.
+let myClan = null;
+const CLAN_ICONS = ['🏭', '⚙️', '🚀', '💎', '🔥', '⚡', '🛡️', '🏆'];
+
+const CLAN_CREATE_COST = 500;
+const CLAN_RENAME_COST = 250;
+const CLAN_JOIN_TYPES = [
+  { id: 'open',   label: '🔓 Открытый',   desc: 'Вступить может любой сразу' },
+  { id: 'apply',  label: '📝 По заявкам', desc: 'Вступление одобряет лидер/заместитель' },
+  { id: 'closed', label: '🔒 Закрытый',   desc: 'Только по приглашению лидера/заместителя' },
+];
+
+async function renderClanSection() {
+  await checkClanKickNotice();
+  const noneView = document.getElementById('clanNoneView');
+  const mineView = document.getElementById('clanMineView');
+  if (PLATFORM !== 'vk' || !vkReady || !GLOBAL_LB_ENDPOINT) return;
+  const launchParams = await getLaunchParamsString();
+  if (!launchParams) return;
+  try {
+    const res = await fetch(workerUrl('/clan/mine'), {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ launchParams }),
+    });
+    const data = await res.json();
+    if (!data.ok) return;
+    myClan = data.clan;
+    if (myClan) {
+      noneView.style.display = 'none';
+      mineView.style.display = 'block';
+      renderClanMineView();
+      if (myClan.myRole !== 'member') renderClanApplications();
+      else document.getElementById('clanApplicationsBox').innerHTML = '';
+    } else {
+      noneView.style.display = 'block';
+      mineView.style.display = 'none';
+      renderClanIconPicker();
+      renderClanJoinTypePicker();
+      searchClans();
+    }
+    updateMenuBadge();
+  } catch (e) { /* best-effort */ }
+}
+
+// Показывается один раз, если между сессиями игрока исключили из клана —
+// причина (если лидер её указал) приходит через отдельную лёгкую очередь
+// (см. handleClanMyKickNotice на сервере), т.к. полноценного центра
+// уведомлений пока нет.
+async function checkClanKickNotice() {
+  const box = document.getElementById('clanKickNotice');
+  if (!box || PLATFORM !== 'vk' || !vkReady || !GLOBAL_LB_ENDPOINT) return;
+  const launchParams = await getLaunchParamsString();
+  if (!launchParams) return;
+  try {
+    const res = await fetch(workerUrl('/clan/my-kick-notice'), {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ launchParams }),
+    });
+    const data = await res.json();
+    if (data.ok && data.notice) {
+      box.innerHTML = `<div class="ad-box" style="border-color:#ff5c5c;margin-bottom:12px">
+        <div class="ad-title" style="color:#ff5c5c">Тебя исключили из клана «${escapeHtml(data.notice.clanName || '')}»</div>
+        ${data.notice.reason ? `<div class="ad-desc">Причина: ${escapeHtml(data.notice.reason)}</div>` : ''}
+      </div>`;
+    } else {
+      box.innerHTML = '';
+    }
+  } catch (e) { /* best-effort */ }
+}
+
+function renderClanIconPicker() {
+  const box = document.getElementById('clanIconPicker');
+  if (!box || box.dataset.built) return;
+  box.dataset.built = '1';
+  box.dataset.selected = CLAN_ICONS[0];
+  box.innerHTML = CLAN_ICONS.map((ic, i) => `
+    <button type="button" class="clan-icon-btn${i===0?' selected':''}" onclick="selectClanIcon('${ic}', this)">${ic}</button>
+  `).join('');
+}
+function selectClanIcon(icon, btn) {
+  const box = document.getElementById('clanIconPicker');
+  box.dataset.selected = icon;
+  box.querySelectorAll('.clan-icon-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+}
+
+function renderClanJoinTypePicker() {
+  const box = document.getElementById('clanJoinTypePicker');
+  if (!box || box.dataset.built) return;
+  box.dataset.built = '1';
+  box.dataset.selected = 'open';
+  box.innerHTML = CLAN_JOIN_TYPES.map((jt, i) => `
+    <div class="clan-jointype-opt${i===0?' selected':''}" onclick="selectClanJoinType('${jt.id}', this)">
+      <div style="font-weight:600;font-size:13px">${jt.label}</div>
+      <div style="font-size:11px;color:var(--muted)">${jt.desc}</div>
+    </div>
+  `).join('');
+}
+function selectClanJoinType(id, el) {
+  document.getElementById('clanJoinTypePicker').dataset.selected = id;
+  el.parentElement.querySelectorAll('.clan-jointype-opt').forEach(b => b.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+function openClanCreateForm() {
+  document.getElementById('clanOpenCreateBtn').style.display = 'none';
+  document.getElementById('clanCreateForm').style.display = 'block';
+  renderClanIconPicker();
+  renderClanJoinTypePicker();
+}
+function closeClanCreateForm() {
+  document.getElementById('clanCreateForm').style.display = 'none';
+  document.getElementById('clanOpenCreateBtn').style.display = 'block';
+}
+
+async function createClan() {
+  const status = document.getElementById('clanCreateStatus');
+  const btn = document.getElementById('clanCreateBtn');
+  const name = document.getElementById('clanNameInput').value.trim();
+  const description = document.getElementById('clanDescInput').value.trim();
+  if (name.length < 2) { status.textContent = 'Название слишком короткое'; status.className = 'promo-status error'; return; }
+  if ((G.crystals || 0) < CLAN_CREATE_COST) { status.textContent = `Не хватает кристаллов (нужно ${CLAN_CREATE_COST} 💎)`; status.className = 'promo-status error'; return; }
+  const icon = document.getElementById('clanIconPicker').dataset.selected || '🏭';
+  const joinType = document.getElementById('clanJoinTypePicker').dataset.selected || 'open';
+  btn.disabled = true;
+  playSound('click');
+  const launchParams = await getLaunchParamsString();
+  try {
+    const res = await fetch(workerUrl('/clan/create'), {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ launchParams, name, description, icon, joinType }),
+    });
+    const data = await res.json();
+    if (data.ok) {
+      // Сервер списал кристаллы атомарно и авторитетно — здесь просто
+      // отражаем то же самое локально, чтобы шапка не показывала старое
+      // число до следующей полной синхронизации.
+      G.crystals = data.crystalsLeft;
+      renderHeader();
+      showToast('🛡️ Клан создан!');
+      closeClanCreateForm();
+      renderClanSection();
+    } else {
+      const messages = {
+        invalid_name: 'Название от 2 до 24 символов',
+        name_banned: 'Такое название недопустимо',
+        name_taken: 'Такое имя уже занято',
+        already_in_clan: 'Ты уже состоишь в клане',
+        rate_limited: 'Слишком много попыток — подожди немного',
+        not_enough_crystals: `Не хватает кристаллов (нужно ${CLAN_CREATE_COST} 💎)`,
+      };
+      status.textContent = messages[data.error] || 'Не удалось создать клан';
+      status.className = 'promo-status error';
+    }
+  } catch (e) {
+    status.textContent = 'Ошибка сети — попробуй позже';
+    status.className = 'promo-status error';
+  }
+  btn.disabled = false;
+}
+
+function openClanRename() {
+  document.getElementById('clanRenameForm').style.display = 'block';
+  document.getElementById('clanRenameInput').value = myClan?.name || '';
+}
+async function submitClanRename() {
+  const status = document.getElementById('clanRenameStatus');
+  const name = document.getElementById('clanRenameInput').value.trim();
+  if (name.length < 2) { status.textContent = 'Название слишком короткое'; status.className = 'promo-status error'; return; }
+  if ((G.crystals || 0) < CLAN_RENAME_COST) { status.textContent = `Не хватает кристаллов (нужно ${CLAN_RENAME_COST} 💎)`; status.className = 'promo-status error'; return; }
+  playSound('click');
+  const launchParams = await getLaunchParamsString();
+  try {
+    const res = await fetch(workerUrl('/clan/rename'), {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ launchParams, name }),
+    });
+    const data = await res.json();
+    if (data.ok) {
+      G.crystals = data.crystalsLeft;
+      renderHeader();
+      showToast('✏️ Клан переименован');
+      document.getElementById('clanRenameForm').style.display = 'none';
+      renderClanSection();
+    } else {
+      const messages = {
+        invalid_name: 'Название от 2 до 24 символов', name_banned: 'Такое название недопустимо',
+        name_taken: 'Такое имя уже занято', leader_only: 'Переименовать может только лидер',
+        not_enough_crystals: `Не хватает кристаллов (нужно ${CLAN_RENAME_COST} 💎)`,
+      };
+      status.textContent = messages[data.error] || 'Не удалось переименовать';
+      status.className = 'promo-status error';
+    }
+  } catch (e) {
+    status.textContent = 'Ошибка сети — попробуй позже';
+    status.className = 'promo-status error';
+  }
+}
+
+async function searchClans() {
+  const box = document.getElementById('clanListBox');
+  const search = document.getElementById('clanSearchInput')?.value.trim() || '';
+  box.innerHTML = '<div class="friends-rank-empty">Загрузка...</div>';
+  const launchParams = await getLaunchParamsString();
+  try {
+    const res = await fetch(workerUrl('/clan/list'), {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ launchParams, search }),
+    });
+    const data = await res.json();
+    if (!data.ok || !data.clans.length) { box.innerHTML = '<div class="friends-rank-empty">Кланов пока не нашлось — создай свой первым</div>'; return; }
+    const typeLabel = { open: '🔓', apply: '📝', closed: '🔒' };
+    box.innerHTML = data.clans.map(c => {
+      let actionBtn;
+      if (c.joinType === 'closed') actionBtn = `<span style="font-size:11px;color:var(--muted)">🔒 По приглашению</span>`;
+      else if (c.joinType === 'apply') actionBtn = `<button class="btn-friends secondary" style="padding:6px 12px;font-size:12px;width:auto" onclick="applyToClan(${c.id}, this)">Подать заявку</button>`;
+      else actionBtn = `<button class="btn-friends secondary" style="padding:6px 12px;font-size:12px;width:auto" onclick="joinClan(${c.id}, this)">Вступить</button>`;
+      return `<div class="friends-rank-item">
+        <div style="font-size:20px">${c.icon}</div>
+        <div class="friends-rank-name">${typeLabel[c.joinType]||''} ${escapeHtml(c.name)}<div style="font-size:10px;color:var(--muted)">${c.memberCount} участников · ${fmt(c.weeklyScore)} за неделю</div></div>
+        ${actionBtn}
+      </div>`;
+    }).join('');
+  } catch (e) {
+    box.innerHTML = '<div class="friends-rank-empty">Не удалось загрузить — попробуй позже</div>';
+  }
+}
+
+async function joinClan(clanId, btn) {
+  if (btn) { btn.disabled = true; btn.textContent = '...'; }
+  playSound('click');
+  const launchParams = await getLaunchParamsString();
+  try {
+    const res = await fetch(workerUrl('/clan/join'), {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ launchParams, clanId }),
+    });
+    const data = await res.json();
+    if (data.ok) { showToast('🛡️ Добро пожаловать в клан!'); renderClanSection(); }
+    else {
+      const messages = { already_in_clan: 'Ты уже состоишь в клане', banned: 'Тебя забанили в этом клане', closed_clan: 'Клан закрыт — нужно приглашение' };
+      showToast(messages[data.error] || 'Не удалось вступить');
+      if (btn) { btn.disabled = false; btn.textContent = 'Вступить'; }
+    }
+  } catch (e) {
+    showToast('Ошибка сети — попробуй позже');
+    if (btn) { btn.disabled = false; btn.textContent = 'Вступить'; }
+  }
+}
+
+async function applyToClan(clanId, btn) {
+  if (btn) { btn.disabled = true; btn.textContent = '...'; }
+  playSound('click');
+  const launchParams = await getLaunchParamsString();
+  try {
+    const res = await fetch(workerUrl('/clan/apply'), {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ launchParams, clanId }),
+    });
+    const data = await res.json();
+    if (data.ok) { showToast('📝 Заявка отправлена — жди решения лидера'); if (btn) btn.textContent = 'Заявка отправлена'; }
+    else { showToast('Не удалось отправить заявку'); if (btn) { btn.disabled = false; btn.textContent = 'Подать заявку'; } }
+  } catch (e) {
+    showToast('Ошибка сети — попробуй позже');
+    if (btn) { btn.disabled = false; btn.textContent = 'Подать заявку'; }
+  }
+}
+
+async function renderClanApplications() {
+  const box = document.getElementById('clanApplicationsBox');
+  const launchParams = await getLaunchParamsString();
+  try {
+    const res = await fetch(workerUrl('/clan/applications'), {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ launchParams }),
+    });
+    const data = await res.json();
+    if (!data.ok || !data.applications.length) { box.innerHTML = ''; return; }
+    box.innerHTML = `<div class="settings-block-title" style="margin-top:18px">📝 Заявки (${data.applications.length})</div>` +
+      data.applications.map(a => `
+      <div class="friends-rank-item">
+        ${a.avatar ? `<img class="friends-rank-avatar" src="${a.avatar}" alt="">` : `<div class="friends-rank-avatar"></div>`}
+        <div class="friends-rank-name">${escapeHtml(a.name || 'Игрок')}</div>
+        <div style="display:flex;gap:4px;flex-shrink:0">
+          <button class="btn-friends secondary" style="padding:6px 10px;font-size:12px;width:auto" onclick="respondClanApplication(${a.id}, true, this)">✅</button>
+          <button class="btn-friends secondary" style="padding:6px 10px;font-size:12px;width:auto" onclick="respondClanApplication(${a.id}, false, this)">❌</button>
+        </div>
+      </div>`).join('');
+  } catch (e) { box.innerHTML = ''; }
+}
+
+async function respondClanApplication(applicationId, accept, btn) {
+  if (btn) btn.closest('.friends-rank-item').style.opacity = '.5';
+  playSound('click');
+  const launchParams = await getLaunchParamsString();
+  try {
+    await fetch(workerUrl('/clan/applications/respond'), {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ launchParams, applicationId, accept }),
+    });
+    showToast(accept ? '✅ Игрок принят в клан' : 'Заявка отклонена');
+    renderClanSection();
+  } catch (e) {
+    showToast('Ошибка сети — попробуй позже');
+  }
+}
+
+function clanSortValue(m, key) {
+  if (key === 'contribution') return m.weeklyContribution;
+  if (key === 'prestige') return m.prestigeCount;
+  if (key === 'days') return Date.now() - m.joinedAt;
+  if (key === 'lastSeen') return m.lastSeen || 0;
+  if (key === 'name') return (m.name || '').toLowerCase();
+  return 0;
+}
+
+function renderClanMineView() {
+  if (!myClan) return;
+  document.getElementById('clanMineIcon').textContent = myClan.icon;
+  document.getElementById('clanMineName').textContent = myClan.name;
+  document.getElementById('clanMineCount').textContent = `${myClan.memberCount} ${pluralRu(myClan.memberCount,'участник','участника','участников')}`;
+  document.getElementById('clanMineDesc').textContent = myClan.description || '';
+  document.getElementById('clanRenameBtn').style.display = myClan.myRole === 'leader' ? 'inline-block' : 'none';
+
+  const pct = Math.min(100, Math.round(myClan.weeklyScore / myClan.goal * 100));
+  document.getElementById('clanProgressFill').style.width = pct + '%';
+  document.getElementById('clanProgressLabel').textContent = `${fmt(myClan.weeklyScore)} / ${fmt(myClan.goal)} заданий выполнено кланом на этой неделе`;
+  const claimBtn = document.getElementById('clanClaimBtn');
+  if (myClan.goalMet && !myClan.alreadyClaimed) {
+    claimBtn.style.display = 'block'; claimBtn.disabled = false;
+    claimBtn.textContent = '🎁 Забрать награду клана (+20 💎)';
+  } else if (myClan.goalMet && myClan.alreadyClaimed) {
+    claimBtn.style.display = 'block'; claimBtn.disabled = true;
+    claimBtn.textContent = '✅ Награда уже забрана на этой неделе';
+  } else {
+    claimBtn.style.display = 'none';
+  }
+
+  const sortKey = document.getElementById('clanSortSelect')?.value || 'contribution';
+  const filterKey = document.getElementById('clanFilterSelect')?.value || 'all';
+  let members = myClan.members.filter(m => filterKey === 'all' || m.role === filterKey);
+  members = members.slice().sort((a, b) => {
+    const av = clanSortValue(a, sortKey), bv = clanSortValue(b, sortKey);
+    if (typeof av === 'string') return av.localeCompare(bv);
+    return bv - av; // по убыванию — самый активный/старший сверху
+  });
+
+  const roleLabel = { leader: '👑 Лидер', deputy: '🛡️ Заместитель', member: 'Участник' };
+  const iAmLeader = myClan.myRole === 'leader';
+  const iCanModerate = myClan.myRole === 'leader' || myClan.myRole === 'deputy';
+
+  document.getElementById('clanMembersList').innerHTML = members.map(m => {
+    const isMe = String(m.userId) === String(cachedMyVkUserId);
+    const daysInClan = Math.max(0, Math.floor((Date.now() - m.joinedAt) / 86400000));
+    const lastSeenLabel = m.lastSeen ? formatPromoDate(m.lastSeen) : '—';
+    let actions = '';
+    if (!isMe && iCanModerate && m.role !== 'leader') {
+      if (iAmLeader) {
+        actions += m.role === 'deputy'
+          ? `<button class="btn-friends secondary" style="padding:4px 8px;font-size:11px;width:auto" onclick="demoteClanMember('${m.userId}')">Снять зама</button>`
+          : `<button class="btn-friends secondary" style="padding:4px 8px;font-size:11px;width:auto" onclick="promoteClanMember('${m.userId}')">Сделать замом</button>`;
+      }
+      if (iAmLeader || m.role === 'member') {
+        actions += `<button class="btn-friends secondary" style="padding:4px 8px;font-size:11px;width:auto;color:#ff6b6b" onclick="kickClanMember('${m.userId}', '${escapeHtml(m.name||'Игрок').replace(/'/g,"")}')">Исключить</button>`;
+      }
+    }
+    return `<div class="friends-rank-item" style="align-items:flex-start;flex-wrap:wrap">
+      ${m.avatar ? `<img class="friends-rank-avatar" src="${m.avatar}" alt="">` : `<div class="friends-rank-avatar"></div>`}
+      <div class="friends-rank-name" style="white-space:normal">
+        ${escapeHtml(m.name || 'Игрок')}
+        <div style="font-size:10px;color:var(--muted)">${roleLabel[m.role]} · вклад ${fmt(m.weeklyContribution)} · 🏆${m.prestigeCount} · ${daysInClan}д в клане · заходил: ${lastSeenLabel}</div>
+        ${actions ? `<div style="display:flex;gap:4px;margin-top:4px">${actions}</div>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function promoteClanMember(targetUserId) {
+  playSound('click');
+  const launchParams = await getLaunchParamsString();
+  await fetch(workerUrl('/clan/set-role'), {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ launchParams, targetUserId, role: 'deputy' }),
+  }).catch(()=>{});
+  showToast('🛡️ Назначен заместителем');
+  renderClanSection();
+}
+async function demoteClanMember(targetUserId) {
+  playSound('click');
+  const launchParams = await getLaunchParamsString();
+  await fetch(workerUrl('/clan/set-role'), {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ launchParams, targetUserId, role: 'member' }),
+  }).catch(()=>{});
+  showToast('Заместитель снят');
+  renderClanSection();
+}
+
+async function kickClanMember(targetUserId, name) {
+  if (!confirm(`Исключить ${name} из клана?`)) return;
+  const reason = prompt('Причина (необязательно, увидит исключённый):', '') || '';
+  const blacklist = confirm('Также занести в чёрный список клана (не сможет вступить/подать заявку снова)?');
+  playSound('click');
+  const launchParams = await getLaunchParamsString();
+  try {
+    await fetch(workerUrl('/clan/kick'), {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ launchParams, targetUserId, reason, blacklist }),
+    });
+    showToast('Игрок исключён из клана');
+    renderClanSection();
+  } catch (e) {
+    showToast('Ошибка сети — попробуй позже');
+  }
+}
+
+async function claimClanWeekly() {
+  const btn = document.getElementById('clanClaimBtn');
+  btn.disabled = true;
+  playSound('click');
+  const launchParams = await getLaunchParamsString();
+  try {
+    const res = await fetch(workerUrl('/clan/claim-weekly'), {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ launchParams }),
+    });
+    const data = await res.json();
+    if (data.ok) {
+      showToast('🎁 Награда клана в пути — заберётся при следующей синхронизации покупок');
+      await syncPurchases(true);
+      renderClanSection();
+    } else {
+      showToast(data.error === 'already_claimed' ? 'Уже забрано на этой неделе' : 'Цель ещё не достигнута');
+      btn.disabled = false;
+    }
+  } catch (e) {
+    showToast('Ошибка сети — попробуй позже');
+    btn.disabled = false;
+  }
+}
+
+async function leaveClan() {
+  if (!confirm('Точно покинуть клан? Недельный прогресс будет потерян.')) return;
+  playSound('click');
+  const launchParams = await getLaunchParamsString();
+  try {
+    const res = await fetch(workerUrl('/clan/leave'), {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ launchParams }),
+    });
+    const data = await res.json();
+    if (data.ok) { showToast('Ты покинул клан'); myClan = null; renderClanSection(); }
+  } catch (e) {
+    showToast('Ошибка сети — попробуй позже');
+  }
+}
+
 function renderFriends() {
   const invitedEl = document.getElementById('friendsInvited');
   const multEl    = document.getElementById('friendsBonusMult');
@@ -6326,6 +6922,7 @@ function openMenuSection(section) {
   document.getElementById('menuSecStats').style.display   = section==='stats'   ? 'block':'none';
   document.getElementById('menuSecAch').style.display     = section==='ach'     ? 'block':'none';
   document.getElementById('menuSecFriends').style.display = section==='friends' ? 'block':'none';
+  document.getElementById('menuSecClan').style.display    = section==='clan'    ? 'block':'none';
   document.querySelector('.menu-hub').style.display = 'none';
   if (section==='streak')  { renderDailyStreak(); if (!G.seenStreakFeature) { G.seenStreakFeature = true; updateMenuBadge(); saveGame(); } }
   if (section==='skills')  { renderSkillTree();   if (!G.seenSkillsFeature) { G.seenSkillsFeature = true; updateMenuBadge(); saveGame(); } }
@@ -6337,6 +6934,7 @@ function openMenuSection(section) {
   if (section==='ach')     renderAchievements();
   if (section==='friends') { renderFriends(); syncInvitedCount(); }
   if (section==='promo')   renderPromoHistory();
+  if (section==='clan')    renderClanSection();
 }
 
 function closeMenuSection() {
@@ -6352,6 +6950,7 @@ function closeMenuSection() {
   document.getElementById('menuSecStats').style.display   = 'none';
   document.getElementById('menuSecAch').style.display     = 'none';
   document.getElementById('menuSecFriends').style.display = 'none';
+  document.getElementById('menuSecClan').style.display    = 'none';
   document.querySelector('.menu-hub').style.display = 'flex';
   updateMenuBadge();
 }
@@ -6739,6 +7338,8 @@ function updateMenuBadge() {
   if (fb) fb.classList.toggle('show', !!brokenMachine && currentTab !== 'factory');
   const gb = document.getElementById('friendsGiftBadge');
   if (gb) gb.classList.toggle('show', pendingGifts.length > 0);
+  const cb = document.getElementById('clanBadge');
+  if (cb) cb.classList.toggle('show', !!(myClan && myClan.goalMet && !myClan.alreadyClaimed));
   const has = hasQuest || hasAch || hasStreak || hasSkill || streakIsNew || skillsIsNew || hasWeekly || hasSeason;
   // Карточка "Награда за вход" — появляется только после покупки первого цеха
   const streakCard = document.getElementById('streakMenuCard');
