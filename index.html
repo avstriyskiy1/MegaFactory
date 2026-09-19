@@ -1064,17 +1064,30 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
 
           <div id="clanMineView" style="display:none">
             <div style="text-align:center;padding:10px 0">
-              <div style="font-size:32px" id="clanMineIcon">🏭</div>
+              <div id="clanMineAvatarBox" style="font-size:32px">🏭</div>
               <div style="font-size:16px;font-weight:700;margin-top:4px" id="clanMineName"></div>
               <div style="font-size:12px;color:var(--muted)" id="clanMineCount"></div>
               <div style="font-size:12px;color:var(--muted);margin-top:4px" id="clanMineDesc"></div>
-              <button class="btn-friends secondary" id="clanRenameBtn" onclick="openClanRename()" style="display:none;margin-top:8px;padding:6px 14px;font-size:12px;width:auto">✏️ Переименовать (250 💎)</button>
+              <div id="clanMineGroupLink" style="font-size:12px;margin-top:4px"></div>
+              <div style="display:flex;gap:8px;justify-content:center;margin-top:8px">
+                <button class="btn-friends secondary" id="clanRenameBtn" onclick="openClanRename()" style="display:none;padding:6px 14px;font-size:12px;width:auto">✏️ Переименовать (250 💎)</button>
+                <button class="btn-friends secondary" id="clanGroupBtn" onclick="openClanGroupForm()" style="display:none;padding:6px 14px;font-size:12px;width:auto">🔗 Сообщество/аватар</button>
+              </div>
             </div>
 
             <div id="clanRenameForm" style="display:none;margin-bottom:14px">
               <input type="text" id="clanRenameInput" class="plain-input" placeholder="Новое название" maxlength="24" style="width:100%;margin-bottom:8px">
               <button class="btn-friends" onclick="submitClanRename()" style="width:100%">Переименовать за 250 💎</button>
               <div id="clanRenameStatus" class="promo-status"></div>
+            </div>
+
+            <div id="clanGroupForm" style="display:none;margin-bottom:14px">
+              <div class="promo-desc" style="margin-top:-4px">ID или короткое имя сообщества VK (необязательно)</div>
+              <input type="text" id="clanGroupIdInput" class="plain-input" placeholder="Например: 123456 или my_community" style="width:100%;margin-bottom:8px">
+              <div class="promo-desc" style="margin-top:-4px">Ссылка на картинку для аватарки клана (необязательно) — можно взять аватар сообщества: открой его в браузере и скопируй ссылку на изображение</div>
+              <input type="text" id="clanAvatarUrlInput" class="plain-input" placeholder="https://... .jpg/.png" style="width:100%;margin-bottom:8px">
+              <button class="btn-friends" onclick="submitClanGroup()" style="width:100%">Сохранить</button>
+              <div id="clanGroupStatus" class="promo-status"></div>
             </div>
 
             <div class="settings-block-title">🎯 Цель недели: выполнить задания</div>
@@ -1085,6 +1098,16 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
             <button class="btn-friends" id="clanClaimBtn" onclick="claimClanWeekly()" style="width:100%;margin-top:8px;display:none">🎁 Забрать награду клана</button>
 
             <div id="clanApplicationsBox"></div>
+
+            <div class="settings-block-title" style="margin-top:18px">🏭 Общие заводы клана</div>
+            <div class="promo-desc" style="margin-top:-4px">Открывает/качает лидер или заместитель — нужны и монеты в казне, и накопленный опыт клана (выполненные задания). Пользоваться бонусом может только тот, кто выполнил ≥3 задания за эту неделю.</div>
+            <div class="promo-desc" style="margin-top:4px">Казна: <b id="clanTreasury">0</b> 💰 · Опыт клана: <b id="clanXp">0</b></div>
+            <div class="promo-input-row" style="margin:8px 0">
+              <input type="number" id="clanDonateInput" class="plain-input" placeholder="Сколько пожертвовать" min="1">
+              <button class="btn-promo" onclick="donateToClan()">Внести</button>
+            </div>
+            <div id="clanFactoriesList"></div>
+            <div id="clanBonusStatus" class="promo-desc" style="margin-top:6px"></div>
 
             <div class="settings-block-title" style="margin-top:18px">Участники</div>
             <div style="display:flex;gap:6px;margin-bottom:8px">
@@ -3394,7 +3417,7 @@ function seasonFreeReward(tier) {
   // "Огранка кристаллов" (skillBonus('crystal_gain')) применяется и тут —
   // см. комментарий у calcPrestigeCrystals(), почему сам престиж теперь
   // фиксирован, а этот навык переехал на другие источники кристаллов.
-  const crystal = (tier % 5 === 0) ? Math.round(tier / 5 * (1 + skillBonus('crystal_gain'))) : 0;
+  const crystal = (tier % 5 === 0) ? Math.round(tier / 5 * crystalGainMult()) : 0;
   return { coins, crystal };
 }
 // ── ЭКСКЛЮЗИВНЫЕ НАГРАДЫ ПРЕМИУМ-ТРЕКА (тема на 10 ур., цех на 15 ур.) ──
@@ -3471,7 +3494,7 @@ function grantSeasonExclusiveMachineSkin(skinId) {
 function seasonPremiumReward(tier) {
   const coins = Math.max(300, Math.round(cps() * (60 + tier * 30)));
   const crystalBase = (tier % 5 === 0) ? Math.round(tier / 5) * 2 : (tier % 3 === 0 ? 1 : 0);
-  const crystal = Math.round(crystalBase * (1 + skillBonus('crystal_gain')));
+  const crystal = Math.round(crystalBase * crystalGainMult());
   // Эксклюзивы премиум-трека — то, чего нет ни за деньги напрямую, ни на
   // бесплатном треке: на 10 уровне тема оформления, на макс. (15) —
   // скин отдельного цеха. Какой именно вариант из пула — зависит от номера
@@ -4057,8 +4080,23 @@ const getUpgState= id => G.upgrades.find(u=>u.id===id);
 // Используется как единая точка правды и для реального начисления, и для
 // всех превью/расчётов "сколько сейчас приносит цех" — раньше эти места
 // разъезжались, и превью на карточках занижало реальный доход.
+// Бонус общих заводов клана — только тому, кто выполнил ≥3 задания за
+// текущую неделю (myBonusEligible уже посчитан сервером, см. handleClanMine
+// в clans.js), и только пока актуальны данные клана в кэше (см.
+// refreshClanBonusQuietly — обновляется в фоне раз в несколько минут).
+function getClanFactoryBonus(bonusType) {
+  if (!myClan || !myClan.myBonusEligible) return 0;
+  const def = CLAN_FACTORY_DEFS.find(f => f.bonusType === bonusType);
+  if (!def) return 0;
+  const level = Number((myClan.factoryLevels || {})[def.id] || 0);
+  return level * def.bonusPerLevel;
+}
+function crystalGainMult() {
+  return 1 + skillBonus('crystal_gain') + getClanFactoryBonus('crystal');
+}
+
 function incomeMult() {
-  return totalPrestigeMult() * iapMultiplier() * achievementMult() * referralMult();
+  return totalPrestigeMult() * iapMultiplier() * achievementMult() * referralMult() * (1 + getClanFactoryBonus('income'));
 }
 
 function cps() {
@@ -5542,6 +5580,16 @@ async function shareProgressToStory() {
 // специально "сдавать" — только показывать текущее состояние.
 let myClan = null;
 const CLAN_ICONS = ['🏭', '⚙️', '🚀', '💎', '🔥', '⚡', '🛡️', '🏆'];
+// Зеркало CLAN_FACTORY_DEFS с сервера (clans.js) — коэффициенты должны
+// совпадать 1-в-1, сервер всё равно авторитетен при самой прокачке, здесь
+// только для отображения текущего/следующего уровня и расчёта бонуса.
+const CLAN_FACTORY_DEFS = [
+  { id: 0, name: 'Клановый реактор',     icon: '⚡', bonusType: 'income',  bonusPerLevel: 0.015, maxLevel: 30 },
+  { id: 1, name: 'Клановая лаборатория', icon: '🔬', bonusType: 'crystal', bonusPerLevel: 0.01,  maxLevel: 20 },
+];
+const CLAN_BONUS_MIN_WEEKLY_QUESTS = 3;
+function clanFactoryCoinCost(level) { return Math.round(1000 * Math.pow(2.5, level)); }
+function clanFactoryXpCost(level)   { return Math.round(50 * Math.pow(1.4, level)); }
 
 const CLAN_CREATE_COST = 500;
 const CLAN_RENAME_COST = 250;
@@ -5606,6 +5654,94 @@ async function checkClanKickNotice() {
     } else {
       box.innerHTML = '';
     }
+  } catch (e) { /* best-effort */ }
+}
+
+function renderClanFactories() {
+  if (!myClan) return;
+  document.getElementById('clanTreasury').textContent = fmt(myClan.treasury || 0);
+  document.getElementById('clanXp').textContent = fmt(myClan.totalScore || 0);
+  const canManage = myClan.myRole === 'leader' || myClan.myRole === 'deputy';
+  document.getElementById('clanFactoriesList').innerHTML = CLAN_FACTORY_DEFS.map(def => {
+    const level = Number((myClan.factoryLevels || {})[def.id] || 0);
+    const maxed = level >= def.maxLevel;
+    const coinCost = maxed ? 0 : clanFactoryCoinCost(level);
+    const xpCost = maxed ? 0 : clanFactoryXpCost(level);
+    const canAfford = !maxed && myClan.treasury >= coinCost && myClan.totalScore >= xpCost;
+    const bonusNow = (level * def.bonusPerLevel * 100).toFixed(1);
+    return `<div class="ad-box" style="margin-top:8px">
+      <div class="ad-title">${def.icon} ${def.name} — уровень ${level}${maxed ? ' (макс.)' : ''}</div>
+      <div class="ad-desc">Сейчас: +${bonusNow}% к ${def.bonusType === 'income' ? 'доходу' : 'приросту кристаллов'} для активных участников</div>
+      ${!maxed ? `<div class="ad-desc">Следующий уровень: ${fmt(coinCost)} 💰 из казны + ${fmt(xpCost)} опыта клана</div>` : ''}
+      ${canManage && !maxed ? `<button class="btn-ad" ${canAfford ? '' : 'disabled'} onclick="upgradeClanFactory(${def.id})">Улучшить</button>` : ''}
+    </div>`;
+  }).join('');
+  const statusEl = document.getElementById('clanBonusStatus');
+  statusEl.textContent = myClan.myBonusEligible
+    ? '✅ Ты выполнил достаточно заданий на этой неделе — бонусы клана действуют на тебя'
+    : `⚠️ Выполни ещё ${Math.max(0, CLAN_BONUS_MIN_WEEKLY_QUESTS)} заданий на этой неделе, чтобы бонусы клана начали действовать на тебя`;
+}
+
+async function donateToClan() {
+  const input = document.getElementById('clanDonateInput');
+  const amount = Math.round(Number(input.value));
+  if (!amount || amount <= 0) { showToast('Укажи сумму'); return; }
+  if (amount > G.coins) { showToast('Не хватает монет'); return; }
+  playSound('click');
+  const launchParams = await getLaunchParamsString();
+  try {
+    const res = await fetch(workerUrl('/clan/donate'), {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ launchParams, amount }),
+    });
+    const data = await res.json();
+    if (data.ok) {
+      G.coins = data.coinsLeft;
+      renderHeader();
+      input.value = '';
+      showToast(`💰 Внесено ${fmt(amount)} в казну клана`);
+      renderClanSection();
+    } else {
+      showToast('Не удалось внести — попробуй позже');
+    }
+  } catch (e) {
+    showToast('Ошибка сети — попробуй позже');
+  }
+}
+
+async function upgradeClanFactory(factoryId) {
+  playSound('click');
+  const launchParams = await getLaunchParamsString();
+  try {
+    const res = await fetch(workerUrl('/clan/factory/upgrade'), {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ launchParams, factoryId }),
+    });
+    const data = await res.json();
+    if (data.ok) { showToast('🏭 Уровень повышен!'); renderClanSection(); }
+    else {
+      const messages = { not_enough_treasury: 'Не хватает монет в казне', not_enough_xp: 'Не хватает опыта клана', max_level: 'Уже максимальный уровень' };
+      showToast(messages[data.error] || 'Не удалось улучшить');
+    }
+  } catch (e) {
+    showToast('Ошибка сети — попробуй позже');
+  }
+}
+
+// Фоновое обновление кэша клана — бонус общих заводов должен действовать,
+// даже если игрок не заходит в раздел "Клан" каждую сессию. Раз в 10 минут
+// достаточно: это не значение, критичное к секундам, как энергия/реклама.
+async function refreshClanBonusQuietly() {
+  if (PLATFORM !== 'vk' || !vkReady || !GLOBAL_LB_ENDPOINT) return;
+  const launchParams = await getLaunchParamsString();
+  if (!launchParams) return;
+  try {
+    const res = await fetch(workerUrl('/clan/mine'), {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ launchParams }),
+    });
+    const data = await res.json();
+    if (data.ok) myClan = data.clan; // null, если не в клане — бонус просто перестанет применяться
   } catch (e) { /* best-effort */ }
 }
 
@@ -5700,6 +5836,37 @@ async function createClan() {
   btn.disabled = false;
 }
 
+function openClanGroupForm() {
+  document.getElementById('clanGroupForm').style.display = 'block';
+  document.getElementById('clanGroupIdInput').value = myClan?.vkGroupId || '';
+  document.getElementById('clanAvatarUrlInput').value = myClan?.avatarUrl || '';
+}
+async function submitClanGroup() {
+  const status = document.getElementById('clanGroupStatus');
+  const groupId = document.getElementById('clanGroupIdInput').value.trim();
+  const avatarUrl = document.getElementById('clanAvatarUrlInput').value.trim();
+  playSound('click');
+  const launchParams = await getLaunchParamsString();
+  try {
+    const res = await fetch(workerUrl('/clan/set-group'), {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ launchParams, groupId, avatarUrl }),
+    });
+    const data = await res.json();
+    if (data.ok) {
+      showToast('🔗 Сохранено');
+      document.getElementById('clanGroupForm').style.display = 'none';
+      renderClanSection();
+    } else {
+      status.textContent = data.error === 'leader_only' ? 'Изменять может только лидер' : 'Не удалось сохранить';
+      status.className = 'promo-status error';
+    }
+  } catch (e) {
+    status.textContent = 'Ошибка сети — попробуй позже';
+    status.className = 'promo-status error';
+  }
+}
+
 function openClanRename() {
   document.getElementById('clanRenameForm').style.display = 'block';
   document.getElementById('clanRenameInput').value = myClan?.name || '';
@@ -5757,7 +5924,7 @@ async function searchClans() {
       else if (c.joinType === 'apply') actionBtn = `<button class="btn-friends secondary" style="padding:6px 12px;font-size:12px;width:auto" onclick="applyToClan(${c.id}, this)">Подать заявку</button>`;
       else actionBtn = `<button class="btn-friends secondary" style="padding:6px 12px;font-size:12px;width:auto" onclick="joinClan(${c.id}, this)">Вступить</button>`;
       return `<div class="friends-rank-item">
-        <div style="font-size:20px">${c.icon}</div>
+        ${c.avatarUrl ? `<img src="${c.avatarUrl}" style="width:20px;height:20px;border-radius:50%;object-fit:cover" onerror="this.outerHTML='${c.icon}'">` : `<div style="font-size:20px">${c.icon}</div>`}
         <div class="friends-rank-name">${typeLabel[c.joinType]||''} ${escapeHtml(c.name)}<div style="font-size:10px;color:var(--muted)">${c.memberCount} участников · ${fmt(c.weeklyScore)} за неделю</div></div>
         ${actionBtn}
       </div>`;
@@ -5857,11 +6024,19 @@ function clanSortValue(m, key) {
 
 function renderClanMineView() {
   if (!myClan) return;
-  document.getElementById('clanMineIcon').textContent = myClan.icon;
+  document.getElementById('clanMineAvatarBox').innerHTML = myClan.avatarUrl
+    ? `<img src="${myClan.avatarUrl}" style="width:56px;height:56px;border-radius:50%;object-fit:cover" onerror="this.parentElement.textContent='${myClan.icon}'">`
+    : myClan.icon;
   document.getElementById('clanMineName').textContent = myClan.name;
   document.getElementById('clanMineCount').textContent = `${myClan.memberCount} ${pluralRu(myClan.memberCount,'участник','участника','участников')}`;
   document.getElementById('clanMineDesc').textContent = myClan.description || '';
+  const groupLink = document.getElementById('clanMineGroupLink');
+  groupLink.innerHTML = myClan.vkGroupId
+    ? `<a href="https://vk.com/club${myClan.vkGroupId}" target="_blank" rel="noopener" style="color:var(--teal)">🔗 Сообщество ВК клана</a>`
+    : '';
   document.getElementById('clanRenameBtn').style.display = myClan.myRole === 'leader' ? 'inline-block' : 'none';
+  document.getElementById('clanGroupBtn').style.display = myClan.myRole === 'leader' ? 'inline-block' : 'none';
+  renderClanFactories();
 
   const pct = Math.min(100, Math.round(myClan.weeklyScore / myClan.goal * 100));
   document.getElementById('clanProgressFill').style.width = pct + '%';
@@ -7157,7 +7332,7 @@ function claimWeeklyChallenge() {
   // здесь, а не к престижу (тот теперь фиксирован — см. calcPrestigeCrystals) —
   // это фиксированная награда за фиксированное действие раз в неделю,
   // без риска эксплойта вроде "накопи побольше и получи больше".
-  const crystals = Math.round(5 * (1 + skillBonus('crystal_gain')));
+  const crystals = Math.round(5 * crystalGainMult());
   G.coins += coins;
   G.crystals = (G.crystals||0) + crystals;
   G.lifetimeCrystals = (G.lifetimeCrystals||0) + crystals;
@@ -7798,6 +7973,8 @@ document.getElementById('startBtn').addEventListener('click', async () => {
   updateMenuBadge();
   showBackgroundBannerAd(); // постоянный рекламный баннер — см. комментарий у функции выше
   warmUpRewardedAd(); // заранее "будим" рекламный SDK VK — см. комментарий у функции ниже
+  refreshClanBonusQuietly(); // бонус общих заводов клана — см. комментарий у функции
+  setInterval(refreshClanBonusQuietly, 10 * 60 * 1000);
 
   // Офлайн доход
   const offlineCoins = calcOfflineIncome();
