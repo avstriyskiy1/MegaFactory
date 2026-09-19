@@ -400,6 +400,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
 .settings-toggle.locked{opacity:.55;cursor:pointer;}
 .settings-hint{font-size:11px;color:var(--muted);padding:0 0 4px;}
 .settings-block-title{font-size:13px;font-weight:600;color:var(--accent);margin:16px 0 8px;}
+.menu-group-title{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin:18px 0 8px;padding-left:2px;}
+.menu-group-title:first-of-type{margin-top:4px;}
 .settings-save-info{font-size:12px;color:var(--muted);text-align:center;margin-bottom:10px;}
 
 /* TROPHY ROOM */
@@ -780,6 +782,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
         <!-- Хаб: карточки-разделы -->
         <div class="menu-hub">
 
+          <div class="menu-group-title">📈 Прогресс</div>
           <!-- Награда за вход (стрик) — открывается после покупки первого цеха -->
           <div class="menu-card" id="streakMenuCard" onclick="openMenuSection('streak')" style="display:none">
             <div class="menu-card-icon">🎁</div>
@@ -835,6 +838,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
           </div>
 
           <!-- Дерево навыков -->
+          <div class="menu-group-title">🚀 Развитие</div>
           <div class="menu-card" onclick="openMenuSection('skills')">
             <div class="menu-card-icon">🌳</div>
             <div class="menu-card-info">
@@ -845,6 +849,17 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
             <div class="menu-card-arrow">›</div>
           </div>
 
+          <!-- Коллекция -->
+          <div class="menu-card" onclick="openMenuSection('trophy')">
+            <div class="menu-card-icon">🏆</div>
+            <div class="menu-card-info">
+              <div class="menu-card-title">Коллекция</div>
+              <div class="menu-card-sub">Витрина открытых цехов и наград</div>
+            </div>
+            <div class="menu-card-arrow">›</div>
+          </div>
+
+          <div class="menu-group-title">🤝 Социальное</div>
           <!-- Друзья -->
           <div class="menu-card" onclick="openMenuSection('friends')">
             <div class="menu-card-icon">👥</div>
@@ -867,22 +882,24 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
             <div class="menu-card-arrow">›</div>
           </div>
 
+          <!-- Уведомления -->
+          <div class="menu-card" onclick="openMenuSection('notifications')">
+            <div class="menu-card-icon">🔔</div>
+            <div class="menu-card-info">
+              <div class="menu-card-title">Уведомления</div>
+              <div class="menu-card-sub">Новости, награды, статус клана</div>
+            </div>
+            <span class="tab-badge menu-badge" id="notifBadge"></span>
+            <div class="menu-card-arrow">›</div>
+          </div>
+
           <!-- Промокоды -->
+          <div class="menu-group-title">⚙️ Прочее</div>
           <div class="menu-card" onclick="openMenuSection('promo')">
             <div class="menu-card-icon">🎟️</div>
             <div class="menu-card-info">
               <div class="menu-card-title">Промокоды</div>
               <div class="menu-card-sub">Введи код — получи награду</div>
-            </div>
-            <div class="menu-card-arrow">›</div>
-          </div>
-
-          <!-- Коллекция -->
-          <div class="menu-card" onclick="openMenuSection('trophy')">
-            <div class="menu-card-icon">🏆</div>
-            <div class="menu-card-info">
-              <div class="menu-card-title">Коллекция</div>
-              <div class="menu-card-sub">Витрина открытых цехов и наград</div>
             </div>
             <div class="menu-card-arrow">›</div>
           </div>
@@ -1129,6 +1146,12 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
 
             <button class="btn-friends secondary" onclick="leaveClan()" style="width:100%;margin-top:16px;color:var(--danger, #ff6b6b)">Покинуть клан</button>
           </div>
+        </div>
+
+        <!-- Секция: Уведомления -->
+        <div id="menuSecNotifications" style="display:none">
+          <button class="menu-back-btn" onclick="closeMenuSection('notifications')">‹ Назад</button>
+          <div id="notifList"></div>
         </div>
 
       </div>
@@ -3259,6 +3282,7 @@ function triggerBreakdown(now, ownedMachines) {
   brokenMachine = { id: target.id, endsAt: now + BREAKDOWN_DURATION };
   const d = getDef(target.id);
   showToast(`🔧 Авария на цехе «${d.name}»! Почини или подожди`);
+  pushNotification('🔧', `Авария на цехе «${d.name}»`);
   playSound('error');
   updateMachineCardDOM(target.id);
   updateEventBanner();
@@ -4026,6 +4050,7 @@ function defaultState() {
     vaultOfferExpiresAt: 0, // ограниченный по времени оффер — см. maybeOfferVault()
     vaultLastOfferedAt: 0,
     giftBoostEnd: 0, // временный буст ×1.5 от полученного подарка друга — см. claimGift()
+    notifications: [], // { icon, text, at, read } — см. pushNotification()
     adCrystalsNextAt: 0, // кулдаун "5 кристаллов за рекламу" — см. claimAdCrystals()
     machines: MACHINES_DEF.map(d=>({
       id:d.id, level:1, owned:false, auto:true,
@@ -4440,6 +4465,7 @@ function doPrestige() {
   const vaultOfferExpiresAt = G.vaultOfferExpiresAt;
   const vaultLastOfferedAt = G.vaultLastOfferedAt;
   const giftBoostEnd = G.giftBoostEnd; // подарок от друга — тоже нечестно терять от клика по престижу
+  const notifications = G.notifications;
   const adCrystalsNextAt = G.adCrystalsNextAt;
   const vipExpiresAt = G.vipExpiresAt; // месячный VIP переживает престиж как обычная покупка — только цех/улучшения пересоздаются
   const totalPlayTimeMs = G.totalPlayTimeMs;
@@ -4517,6 +4543,7 @@ function doPrestige() {
   G.vaultOfferExpiresAt = vaultOfferExpiresAt || 0;
   G.vaultLastOfferedAt = vaultLastOfferedAt || 0;
   G.giftBoostEnd = giftBoostEnd || 0;
+  G.notifications = notifications || [];
   G.adCrystalsNextAt = adCrystalsNextAt || 0;
   G.vipExpiresAt = vipExpiresAt;
   G.totalPlayTimeMs = totalPlayTimeMs; // lifetime-метрика — раньше по ошибке сбрасывалась престижем, хотя lifetimeCoins/lifetimeClicks и т.п. рядом не сбрасываются
@@ -5578,6 +5605,38 @@ async function shareProgressToStory() {
 // ограниченная в день и не покупаемая, поэтому справедливая для общей
 // цели между сильными и слабыми аккаунтами. Клиенту не нужно ничего
 // специально "сдавать" — только показывать текущее состояние.
+// ── ЦЕНТР УВЕДОМЛЕНИЙ ────────────────────────────────────────────────
+// Общий журнал заметных событий — раньше это были разрозненные тосты
+// (которые легко пропустить, если в этот момент не смотришь на экран) без
+// единого места, где всё это можно посмотреть позже. Хранит последние 50
+// записей, новые сверху; непрочитанные считаются для бейджа на карточке
+// меню, все отмечаются прочитанными при открытии раздела.
+function pushNotification(icon, text) {
+  if (!Array.isArray(G.notifications)) G.notifications = [];
+  G.notifications.unshift({ icon, text, at: Date.now(), read: false });
+  if (G.notifications.length > 50) G.notifications.length = 50;
+  updateMenuBadge();
+  saveGame();
+}
+
+function renderNotifications() {
+  const list = document.getElementById('notifList');
+  const items = Array.isArray(G.notifications) ? G.notifications : [];
+  if (!items.length) {
+    list.innerHTML = `<div class="friends-rank-empty">Пока пусто — здесь будут появляться новости, награды и статус клана</div>`;
+  } else {
+    list.innerHTML = items.map(n => `
+      <div class="ad-box" style="margin-top:8px${n.read?';opacity:.6':''}">
+        <div class="ad-title">${n.icon} ${escapeHtml(n.text)}</div>
+        <div class="ad-desc">${formatPromoDate(n.at)}</div>
+      </div>`).join('');
+  }
+  // Отмечаем прочитанным по факту открытия раздела — специальной кнопки
+  // "прочитано" не нужно, самим фактом просмотра список уже закрывает счётчик.
+  items.forEach(n => { n.read = true; });
+  updateMenuBadge();
+}
+
 let myClan = null;
 const CLAN_ICONS = ['🏭', '⚙️', '🚀', '💎', '🔥', '⚡', '🛡️', '🏆'];
 // Зеркало CLAN_FACTORY_DEFS с сервера (clans.js) — коэффициенты должны
@@ -5651,6 +5710,7 @@ async function checkClanKickNotice() {
         <div class="ad-title" style="color:#ff5c5c">Тебя исключили из клана «${escapeHtml(data.notice.clanName || '')}»</div>
         ${data.notice.reason ? `<div class="ad-desc">Причина: ${escapeHtml(data.notice.reason)}</div>` : ''}
       </div>`;
+      pushNotification('🛡️', `Исключён из клана «${data.notice.clanName || ''}»${data.notice.reason ? ` — причина: ${data.notice.reason}` : ''}`);
     } else {
       box.innerHTML = '';
     }
@@ -5741,7 +5801,16 @@ async function refreshClanBonusQuietly() {
       body: JSON.stringify({ launchParams }),
     });
     const data = await res.json();
-    if (data.ok) myClan = data.clan; // null, если не в клане — бонус просто перестанет применяться
+    if (data.ok) {
+      // Замечаем именно ПЕРЕХОД в выполненное состояние — иначе при каждом
+      // фоновом обновлении (раз в 10 мин) слали бы уведомление заново, пока
+      // награду не заберут.
+      const wasGoalMet = myClan && myClan.goalMet;
+      if (data.clan && data.clan.goalMet && !data.clan.alreadyClaimed && !wasGoalMet) {
+        pushNotification('🎯', `Клан «${data.clan.name}» выполнил недельную цель — забери награду!`);
+      }
+      myClan = data.clan; // null, если не в клане — бонус просто перестанет применяться
+    }
   } catch (e) { /* best-effort */ }
 }
 
@@ -6292,6 +6361,7 @@ async function claimGift(giftId, btn) {
       playSound('levelup');
       goldenGlow(document.getElementById('hCoins'));
       showToast('🎁 Энергия восстановлена, буст ×1.5 на 10 минут!');
+      pushNotification('🎁', 'Получен подарок от друга');
       pendingGifts = pendingGifts.filter(g => g.id !== giftId);
       const box = document.getElementById('incomingGiftsBox');
       if (box) box.innerHTML = pendingGifts.map(g => `
@@ -6334,6 +6404,7 @@ function regenEnergy(dtMs) {
   const max = energyMax();
   if (G.energy < max) {
     G.energy = Math.min(max, G.energy + energyRegen() * (dtMs/1000));
+    if (G.energy >= max) pushNotification('⚡', 'Энергия полностью восстановлена');
   }
 }
 
@@ -7098,6 +7169,7 @@ function openMenuSection(section) {
   document.getElementById('menuSecAch').style.display     = section==='ach'     ? 'block':'none';
   document.getElementById('menuSecFriends').style.display = section==='friends' ? 'block':'none';
   document.getElementById('menuSecClan').style.display    = section==='clan'    ? 'block':'none';
+  document.getElementById('menuSecNotifications').style.display = section==='notifications' ? 'block':'none';
   document.querySelector('.menu-hub').style.display = 'none';
   if (section==='streak')  { renderDailyStreak(); if (!G.seenStreakFeature) { G.seenStreakFeature = true; updateMenuBadge(); saveGame(); } }
   if (section==='skills')  { renderSkillTree();   if (!G.seenSkillsFeature) { G.seenSkillsFeature = true; updateMenuBadge(); saveGame(); } }
@@ -7110,6 +7182,7 @@ function openMenuSection(section) {
   if (section==='friends') { renderFriends(); syncInvitedCount(); }
   if (section==='promo')   renderPromoHistory();
   if (section==='clan')    renderClanSection();
+  if (section==='notifications') renderNotifications();
 }
 
 function closeMenuSection() {
@@ -7126,6 +7199,7 @@ function closeMenuSection() {
   document.getElementById('menuSecAch').style.display     = 'none';
   document.getElementById('menuSecFriends').style.display = 'none';
   document.getElementById('menuSecClan').style.display    = 'none';
+  document.getElementById('menuSecNotifications').style.display = 'none';
   document.querySelector('.menu-hub').style.display = 'flex';
   updateMenuBadge();
 }
@@ -7212,8 +7286,11 @@ const TUTORIAL_SLIDES = [
   { icon:'👆', title:'Добро пожаловать на завод!', text:'Нажимай на цех, чтобы запустить его вручную и сразу получить монеты. Цеха с пометкой «АВТО» работают сами, даже пока ты не в игре.' },
   { icon:'🏭', title:'Открывай новые цеха', text:'Покупай цеха по порядку — каждый следующий стоит дороже, но и приносит намного больше. Первым делом купи «Болты».' },
   { icon:'⬆️', title:'Прокачивай', text:'У каждого цеха есть апгрейд — увеличивает награду и ускоряет цикл. В «Магазине» ещё больше усилений: автоматика, буст дохода, бонус за офлайн.' },
-  { icon:'⚡', title:'Престиж и кристаллы', text:'Когда накопишь достаточно монет — сделай престиж: доход сгорает, зато остаётся постоянный множитель и кристаллы. За кристаллы в «Меню → Дерево навыков» покупаются улучшения, которые никогда не сгорают.' },
-  { icon:'🎁', title:'Возвращайся каждый день', text:'В «Меню» тебя ждут ежедневные задания, награда за вход и промокоды — не забывай туда заглядывать.' },
+  { icon:'⚡', title:'Престиж и кристаллы', text:'Когда накопишь достаточно монет — сделай престиж: доход сгорает, зато остаётся постоянный множитель. Кристаллы не сгорают никогда — их можно потратить в «Дереве навыков» или в «Кристальном магазине» на бусты и косметику.' },
+  { icon:'📺', title:'Реклама — это не только деньги игре', text:'Ролик за бонус ×2 к доходу, «Рекламный сундук» раз в несколько часов и 5 кристаллов раз в пару минут — всё в «Магазине» и на вкладке «Цеха».' },
+  { icon:'🔧', title:'Следи за авариями', text:'Цех может сломаться — карточка начнёт мигать красным, производство остановится. Почини сразу (это дорого!) или просто подожди несколько минут — само пройдёт.' },
+  { icon:'🛡️', title:'Объединяйся в клан', text:'В «Меню → Клан» можно создать или найти клан (недёшево — за кристаллы), выполнять общие задания и качать общие заводы клана вместе с другими игроками.' },
+  { icon:'🔔', title:'Возвращайся каждый день', text:'В «Меню» тебя ждут ежедневные задания, награда за вход, промокоды, подарки от друзей и «Уведомления» — там собираются все важные события, если что-то пропустишь.' },
 ];
 let tutSlideIdx = 0;
 
@@ -7515,6 +7592,8 @@ function updateMenuBadge() {
   if (gb) gb.classList.toggle('show', pendingGifts.length > 0);
   const cb = document.getElementById('clanBadge');
   if (cb) cb.classList.toggle('show', !!(myClan && myClan.goalMet && !myClan.alreadyClaimed));
+  const nb = document.getElementById('notifBadge');
+  if (nb) nb.classList.toggle('show', Array.isArray(G.notifications) && G.notifications.some(n => !n.read));
   const has = hasQuest || hasAch || hasStreak || hasSkill || streakIsNew || skillsIsNew || hasWeekly || hasSeason;
   // Карточка "Награда за вход" — появляется только после покупки первого цеха
   const streakCard = document.getElementById('streakMenuCard');
