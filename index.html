@@ -667,6 +667,17 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
   </div>
 </div>
 
+<div class="modal-overlay" id="whatsNewModal">
+  <div class="modal offline-modal" style="max-height:80vh;overflow-y:auto">
+    <div class="offline-icon">🆕</div>
+    <h2>Что нового</h2>
+    <div id="whatsNewList" style="text-align:left;margin-top:14px;display:flex;flex-direction:column;gap:12px"></div>
+    <div class="modal-btns">
+      <button class="btn-modal primary" onclick="closeWhatsNew()" style="width:100%">Понятно, погнали!</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="tutorialModal">
   <div class="modal offline-modal">
     <div class="offline-icon" id="tutIcon">🏭</div>
@@ -4089,6 +4100,7 @@ function defaultState() {
     autoBuyMachines: false, autoUpgradeCheapest: false,
     crystals: 0, lifetimeCrystals: 0, skills: {}, promoCodesRedeemed: 0, questsCompleted: 0,
     tutorialSeen: false, seenStreakFeature: false, seenSkillsFeature: false, theme: 'classic',
+    lastSeenWhatsNew: '', // см. maybeShowWhatsNew()
     weekly: null, notifAllowed: false, hapticEnabled: true,
     firstPlayedAt: Date.now(),
     purchases: { starterPack: false, vipStatus: false, secretLab: false, autoPilot: false, themeAurora: false, themeMagma: false, removeAds: false },
@@ -4492,6 +4504,7 @@ function doPrestige() {
   const questsCompleted = G.questsCompleted;
   const theme = G.theme;
   const tutorialSeen = G.tutorialSeen;
+  const lastSeenWhatsNew = G.lastSeenWhatsNew;
   const seenStreakFeature = G.seenStreakFeature;
   const seenSkillsFeature = G.seenSkillsFeature;
   const weekly = G.weekly;
@@ -4570,6 +4583,7 @@ function doPrestige() {
   G.questsCompleted    = questsCompleted;
   G.theme              = theme;
   G.tutorialSeen        = tutorialSeen;
+  G.lastSeenWhatsNew    = lastSeenWhatsNew;
   G.seenStreakFeature   = seenStreakFeature;
   G.seenSkillsFeature   = seenSkillsFeature;
   G.weekly              = weekly;
@@ -7504,6 +7518,39 @@ function claimDailyReward() {
 }
 
 // ── ОБУЧЕНИЕ ДЛЯ НОВИЧКОВ ─────────────────────────────────────────
+// ── ЭКРАН "ЧТО НОВОГО" ────────────────────────────────────────────────
+// Раньше все крупные обновления (кланы, кристальный магазин, подарки,
+// уведомления, подписка) добавлялись молча — старый игрок мог месяцами не
+// узнать, что это появилось, если сам случайно не наткнётся в меню.
+// Показывается один раз при первом заходе ПОСЛЕ обновления — только уже
+// играющим (у кого обучение отмечено пройденным), новичкам всё это и так
+// объясняет обучение по порядку, дублировать незачем.
+const WHATS_NEW_VERSION = 'clans-2026-09';
+const WHATS_NEW_ITEMS = [
+  { icon:'🛡️', title:'Кланы', text:'Создавай или вступай в клан, выполняйте задания все вместе — общая цель открывает бонусы для всех активных участников.' },
+  { icon:'💎', title:'Кристальный магазин', text:'Кристаллы теперь тратятся не только на дерево навыков — бусты, мгновенный доход, эксклюзивная тема оформления.' },
+  { icon:'🎁', title:'Подарки друзьям', text:'Дари энергию и бусты друзьям, которых сам пригласил — раз в день на каждого, бесплатно.' },
+  { icon:'🔔', title:'Уведомления', text:'Колокольчик в шапке — там теперь собираются все важные события: энергия, аварии, подарки, статус клана.' },
+  { icon:'👑', title:'VIP-подписка', text:'VIP теперь можно оформить подпиской с автопродлением — не нужно заходить и покупать заново каждый месяц.' },
+];
+
+function maybeShowWhatsNew() {
+  if (!G.tutorialSeen) return; // новичкам всё это расскажет обучение — не дублируем
+  if (G.lastSeenWhatsNew === WHATS_NEW_VERSION) return;
+  const list = document.getElementById('whatsNewList');
+  list.innerHTML = WHATS_NEW_ITEMS.map(item => `
+    <div class="ad-box">
+      <div class="ad-title">${item.icon} ${item.title}</div>
+      <div class="ad-desc">${item.text}</div>
+    </div>`).join('');
+  document.getElementById('whatsNewModal').classList.add('show');
+}
+function closeWhatsNew() {
+  G.lastSeenWhatsNew = WHATS_NEW_VERSION;
+  document.getElementById('whatsNewModal').classList.remove('show');
+  saveGame();
+}
+
 const TUTORIAL_SLIDES = [
   { icon:'👆', title:'Добро пожаловать на завод!', text:'Нажимай на цех, чтобы запустить его вручную и сразу получить монеты. Цеха с пометкой «АВТО» работают сами, даже пока ты не в игре.' },
   { icon:'🏭', title:'Открывай новые цеха', text:'Покупай цеха по порядку — каждый следующий стоит дороже, но и приносит намного больше. Первым делом купи «Болты».' },
@@ -7547,6 +7594,10 @@ function skipTutorial() {
   playSound('click');
   document.getElementById('tutorialModal').classList.remove('show');
   G.tutorialSeen = true;
+  // Обучение и так рассказало обо всём перечисленном в "Что нового" — не
+  // показывать этот экран сразу следующей сессией новичку, который только
+  // что прошёл обучение.
+  G.lastSeenWhatsNew = WHATS_NEW_VERSION;
   saveGame();
 }
 
@@ -8289,9 +8340,18 @@ document.getElementById('startBtn').addEventListener('click', async () => {
   // Офлайн доход
   const offlineCoins = calcOfflineIncome();
   const elapsed = Math.min(Date.now() - (G.lastSaved||0), MAX_OFFLINE_HOURS * 3600000);
-  if (!G.tutorialSeen) showTutorial();
-  else if (offlineCoins > 0) showOfflineModal(offlineCoins, elapsed);
-  else maybeShowDailyModal();
+  // Модалки при старте показываются по приоритету, никогда не вместе:
+  // обучение (новичкам) → "Что нового" (разово, старым игрокам после
+  // обновления) → офлайн-доход → награда за вход.
+  if (!G.tutorialSeen) {
+    showTutorial();
+  } else if (G.lastSeenWhatsNew !== WHATS_NEW_VERSION) {
+    maybeShowWhatsNew();
+  } else if (offlineCoins > 0) {
+    showOfflineModal(offlineCoins, elapsed);
+  } else {
+    maybeShowDailyModal();
+  }
 
   setTimeout(() => document.getElementById('splash').style.display = 'none', 900);
 
